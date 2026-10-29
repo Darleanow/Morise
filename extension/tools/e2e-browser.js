@@ -17,6 +17,7 @@ const results = [];
 let failShot = async () => {};
 let sentLog = () => [];
 async function check(label, fn) {
+  if (process.env.ONLY && !label.includes(process.env.ONLY)) return;
   try { await fn(); results.push(['PASS', label]); } catch (e) { await failShot(label); if (process.env.DEBUG_SENT) console.error('  last sent:', JSON.stringify(sentLog().slice(-8).map((m) => m.type + (m.parent ? ':' + m.parent : '') + (m.property ? ':' + m.name + '.' + m.property + '=' + JSON.stringify(m.value) : '')))); failures++; results.push(['FAIL', label + '\n      ' + String(e.message).split('\n').slice(0, 6).join(' | ')]); }
 }
 
@@ -270,6 +271,7 @@ async function check(label, fn) {
     await page.keyboard.type('9bad name');
     await page.keyboard.press('Enter');
     assert.match(await page.locator('.rename-error').textContent(), /letters/);
+    await shot('e2e-rename');
     await page.keyboard.press('Escape');
     assert.ok((await backendNow()).objects.some((x) => x.name === 'confirmButton'));
   });
@@ -289,6 +291,21 @@ async function check(label, fn) {
     const s = await backendNow();
     assert.equal(s.objects.length, n + 1);
     assert.ok(s.objects.some((o) => o.class === 'QLineEdit'));
+  });
+  await check('quick add: the toolbar button and a mouse click on a row add the widget', async () => {
+    const n = (await backendNow()).objects.length;
+    await page.locator('button.tb.add').click();
+    await page.waitForSelector('.popup.quickadd');
+    await page.keyboard.type('check box');
+    const row = page.locator('.qa-item', { hasText: 'Check Box' }).first();
+    const b = await row.boundingBox();
+    await page.mouse.move(b.x + 20, b.y + b.height / 2, { steps: 4 });
+    await page.evaluate(() => { window.__ev = []; for (const t of ['pointerdown','pointerup','mousedown','mouseup','click']) document.addEventListener(t, (e) => window.__ev.push(t + ':' + (e.target.className || e.target.tagName)), true); });
+    await page.mouse.down(); await page.mouse.move(b.x + 24, b.y + b.height / 2, { steps: 3 }); await page.mouse.up();
+    await settle();
+    if (process.env.DEBUG_EV) console.log(await page.evaluate(() => window.__ev.join(' ')), JSON.stringify(b));
+    assert.equal(await page.locator('.popup.quickadd').count(), 0, 'the search closed');
+    assert.equal((await backendNow()).objects.length, n + 1, 'a widget was added');
   });
   await check('palette: drag a widget from the palette onto the form', async () => {
     const n = (await backendNow()).objects.length;
@@ -416,6 +433,7 @@ async function check(label, fn) {
     const c = await obj('caption');
     await page.mouse.dblclick(...(await at(c.x + 10, c.y + 8))); await settle();
     await page.waitForSelector('.inplace');
+    await shot('e2e-inplace');
     await page.keyboard.press('Control+A'); await page.keyboard.type('Bonjour');
     await page.keyboard.press('Enter'); await settle();
     assert.equal((await prop('caption', 'text')).value, 'Bonjour');

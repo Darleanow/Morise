@@ -27,7 +27,7 @@ export function openRename(): void {
     input.setAttribute('aria-label', 'New object name');
     const error = el('div', { className: 'rename-error' });
     const box = el('div', { className: 'popup rename' }, el('div', { className: 'qa-row' }, icon('edit'), input), error,
-        el('div', { className: 'qa-hint' }, `Renaming ${o.name} (used as ui->${o.name} in code)`, el('span', { className: 'dim' }, '↵ apply  Esc cancel')));
+        el('div', { className: 'qa-hint' }, el('span', { className: 'qa-hint-text' }, `Renaming ${o.name}, used as ui->${o.name} in code`), el('span', { className: 'dim qa-keys' }, '↵ apply  ·  Esc cancel')));
     const scrim = el('div', { className: 'scrim' }, box);
     root = scrim;
     popups.append(scrim);

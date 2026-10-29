@@ -406,3 +406,14 @@ table.grid input { width: 100%; min-width: 70px; box-sizing: border-box; }
 .action-meta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .action-new { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .action-new input[type=text] { flex: 1; min-width: 0; }
+
+.qa-item { user-select: none; }
+.qa-item img { -webkit-user-drag: none; pointer-events: none; }
+
+body.inplace-open .pill, body.inplace-open .tag { visibility: hidden; }
+.inplace { min-width: 0; line-height: 1.2; }
+input.inplace { padding: 0 6px; }
+textarea.inplace { padding: 4px 6px; resize: none; }
+
+.qa-hint-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qa-keys { flex: none; white-space: nowrap; }

@@ -36,8 +36,8 @@ export function openQuickAdd(at?: { x: number; y: number }, startInCommands = fa
     const input = el('input', { type: 'text', placeholder: 'Add a widget: button, label, line edit… (type > for commands)', className: 'qa-input', value: startInCommands ? '>' : '' });
     input.setAttribute('aria-label', 'Add a widget, or type > to search commands');
     const list = el('div', { className: 'qa-list', role: 'listbox' });
-    const hintText = el('span', {}, '');
-    const hint = el('div', { className: 'qa-hint' }, hintText, el('span', { className: 'dim' }, '↑↓ choose  ↵ run  > commands  Esc close'));
+    const hintText = el('span', { className: 'qa-hint-text' }, '');
+    const hint = el('div', { className: 'qa-hint' }, hintText, el('span', { className: 'dim qa-keys' }, '↑↓ choose  ↵ run  > commands  Esc close'));
     const box = el('div', { className: 'popup quickadd' }, el('div', { className: 'qa-row' }, icon('add'), input), list, hint);
     const scrim = el('div', { className: 'scrim' }, box);
     root = scrim;
@@ -85,13 +85,17 @@ export function openQuickAdd(at?: { x: number; y: number }, startInCommands = fa
                 row = el('div', { className: `qa-item${i === active ? ' active' : ''}${e.enabled === false ? ' off' : ''}`, role: 'option' },
                     icon(e.icon), el('span', { className: 'qa-name' }, e.label), el('span', { className: 'spacer' }), e.shortcut ? el('kbd', {}, e.shortcut) : '');
             } else {
-                const glyph = e.w.icon ? el('img', { className: 'wicon', src: e.w.icon, alt: '' }) : icon('symbol-field');
+                const glyph = e.w.icon ? el('img', { className: 'wicon', src: e.w.icon, alt: '', draggable: false }) : icon('symbol-field');
                 row = el('div', { className: `qa-item${i === active ? ' active' : ''}`, role: 'option' }, glyph, el('span', { className: 'qa-name' }, e.w.name), el('span', { className: 'dim' }, e.w.className), el('span', { className: 'dim qa-cat' }, e.categoryName));
             }
             row.setAttribute('aria-selected', String(i === active));
+            // Only move the highlight: rebuilding the rows here would replace the one under the pointer and swallow its click.
             row.addEventListener('mouseenter', () => {
                 active = i;
-                paint();
+                list.querySelectorAll('.qa-item').forEach((r, j) => {
+                    r.classList.toggle('active', j === i);
+                    r.setAttribute('aria-selected', String(j === i));
+                });
             });
             row.addEventListener('click', () => choose(e));
             return row;

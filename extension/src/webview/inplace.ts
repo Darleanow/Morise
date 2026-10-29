@@ -31,6 +31,7 @@ export function closeInplace(): void {
     // Detach first: removing a focused input fires blur, whose handler closes the editor again.
     const e = editor;
     editor = null;
+    document.body.classList.remove('inplace-open');
     e?.remove();
 }
 
@@ -81,8 +82,10 @@ function openEditor(target: string, tp: { name: string; value: string }, at: { x
     input.className = 'inplace';
     input.setAttribute('aria-label', label);
     const box = { left: at.x * z, top: at.y * z, width: Math.max(at.w * z, 80), height: Math.max(at.h * z, 24) };
-    Object.assign(input.style, { left: `${box.left}px`, top: `${box.top}px`, minWidth: `${box.width}px`, height: multi ? `${Math.max(box.height, 60)}px` : `${box.height}px` });
+    // Exactly over the widget (its size, its zoom), with the floating toolbar out of the way.
+    Object.assign(input.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: multi ? `${Math.max(box.height, 60)}px` : `${box.height}px`, fontSize: `${Math.min(24, Math.max(11, 13 * z))}px` });
     editor = input;
+    document.body.classList.add('inplace-open');
     stage.append(input);
     let done = false;
     const finish = (apply: boolean) => {
