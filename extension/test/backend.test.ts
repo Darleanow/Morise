@@ -176,3 +176,12 @@ describe('bundled backend', () => {
         }
     });
 });
+
+describe('moveEntry message', () => {
+    it('needs a target and two non-negative integers', () => {
+        assert.deepEqual(parseWebviewMessage({ type: 'moveEntry', target: 'toolBar', from: 0, to: 2 }), { type: 'moveEntry', target: 'toolBar', from: 0, to: 2 });
+        assert.equal(parseWebviewMessage({ type: 'moveEntry', target: 'toolBar', from: -1, to: 2 }), undefined);
+        assert.equal(parseWebviewMessage({ type: 'moveEntry', target: 'toolBar', from: 0.5, to: 2 }), undefined);
+        assert.equal(parseWebviewMessage({ type: 'moveEntry', from: 0, to: 2 }), undefined);
+    });
+});

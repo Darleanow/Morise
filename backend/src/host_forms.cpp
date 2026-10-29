@@ -771,8 +771,15 @@ QJsonArray Host::actionTargets(QDesignerFormWindowInterface *fw) const
         const bool menu = qobject_cast<QMenu *>(w) != nullptr;
         if ((!menu && !qobject_cast<QToolBar *>(w)) || w->objectName().isEmpty())
             continue;
+        QJsonArray entries;
+        for (QAction *a : w->actions())
+            if (!isPlaceholder(a))
+                entries.append(QJsonObject{{QLatin1String("name"), a->menu() ? a->menu()->objectName() : a->objectName()},
+                                           {QLatin1String("text"), a->isSeparator() ? QString() : (a->menu() ? a->menu()->title() : a->text())},
+                                           {QLatin1String("separator"), a->isSeparator()}});
         out.append(QJsonObject{{QLatin1String("name"), w->objectName()}, {QLatin1String("kind"), menu ? QLatin1String("menu") : QLatin1String("toolbar")},
-                               {QLatin1String("title"), menu ? static_cast<QMenu *>(w)->title() : w->windowTitle()}});
+                               {QLatin1String("title"), menu ? static_cast<QMenu *>(w)->title() : w->windowTitle()},
+                               {QLatin1String("entries"), entries}});
     }
     return out;
 }
@@ -826,6 +833,66 @@ QJsonObject Host::useAction(const QJsonObject &p)
         after = at + 1 < list.size() ? list.at(at + 1) : nullptr;
     }
     fw->commandHistory()->push(new UseActionCommand(target, action, remove ? after : before, !remove));
+    return snapshot(fw);
+}
+
+
+namespace {
+
+/// Puts the entries of a menu or tool bar in another order: the engine's insertion command is not exported.
+class ReorderCommand : public QUndoCommand
+{
+public:
+    ReorderCommand(QWidget *target, const QList<QAction *> &before, const QList<QAction *> &after)
+        : QUndoCommand(QStringLiteral("Move entry")), m_target(target)
+    {
+        for (QAction *a : before) m_old.append(a);
+        for (QAction *a : after) m_new.append(a);
+    }
+    void redo() override { apply(m_new); }
+    void undo() override { apply(m_old); }
+
+private:
+    void apply(const QList<QPointer<QAction>> &order)
+    {
+        if (!m_target)
+            return;
+        for (QAction *a : m_target->actions())
+            m_target->removeAction(a);
+        for (const auto &a : order)
+            if (a)
+                m_target->addAction(a);
+        m_target->update();
+    }
+    QPointer<QWidget> m_target;
+    QList<QPointer<QAction>> m_old, m_new;
+};
+
+} // namespace
+
+/// Moves one entry of a menu or tool bar (`from`, an index among its entries) to another position (`to`).
+QJsonObject Host::moveEntry(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    const QString targetName = p.value(QLatin1String("target")).toString();
+    QWidget *target = nullptr;
+    for (QWidget *w : fw->mainContainer()->findChildren<QWidget *>(targetName))
+        if (w->objectName() == targetName && (qobject_cast<QMenu *>(w) || qobject_cast<QToolBar *>(w)))
+            target = w;
+    if (!target)
+        throw ProtocolError{QStringLiteral("unknown menu or tool bar: ") + targetName};
+    const QList<QAction *> all = target->actions();
+    QList<QAction *> real, rest;
+    for (QAction *a : all)
+        (isPlaceholder(a) ? rest : real).append(a);
+    const int from = p.value(QLatin1String("from")).toInt(-1), to = p.value(QLatin1String("to")).toInt(-1);
+    if (from < 0 || from >= real.size() || to < 0 || to >= real.size())
+        throw ProtocolError{QStringLiteral("no such entry")};
+    if (from == to)
+        throw ProtocolError{QStringLiteral("nothing to move")};
+    QList<QAction *> next = real;
+    next.move(from, to);
+    fw->commandHistory()->push(new ReorderCommand(target, all, next + rest));
     return snapshot(fw);
 }
 

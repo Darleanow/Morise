@@ -392,6 +392,9 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             case 'addAction':
                 doc.snapshot = await client.request('addAction', { docId: doc.docId, text: msg.text, checkable: msg.checkable, shortcut: msg.shortcut });
                 break;
+            case 'moveEntry':
+                doc.snapshot = await client.request('moveEntry', { docId: doc.docId, target: msg.target, from: msg.from, to: msg.to });
+                break;
             case 'actionGroup':
                 doc.snapshot = await client.request('actionGroup', { docId: doc.docId, name: msg.name, remove: msg.remove, action: msg.action, group: msg.group });
                 break;

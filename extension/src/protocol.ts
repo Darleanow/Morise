@@ -118,7 +118,7 @@ export interface FormInfo {
 
 export interface ActionGroupInfo { name: string; exclusive: boolean; actions: string[] }
 
-export interface ActionTarget { name: string; kind: 'menu' | 'toolbar'; title: string }
+export interface ActionTarget { name: string; kind: 'menu' | 'toolbar'; title: string; /** Its entries in order: a menu entry that opens a sub menu carries that menu's name. */ entries?: { name: string; text: string; separator: boolean }[] }
 
 export interface ActionInfo { name: string; text: string; separator: boolean; checkable: boolean; shortcut: string; hasIcon: boolean; usedIn: string[] }
 
@@ -241,6 +241,7 @@ export interface BackendMethods {
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     addAction: { params: { docId: string; text: string; name?: string; checkable?: boolean; shortcut?: string }; result: Snapshot };
+    moveEntry: { params: { docId: string; target: string; from: number; to: number }; result: Snapshot };
     actionGroup: { params: { docId: string; name?: string; remove?: boolean; action?: string; group?: string }; result: Snapshot };
     useAction: { params: { docId: string; target: string; action?: string; separator?: boolean; remove?: boolean }; result: Snapshot };
     setCustomMethods: { params: { docId: string; name?: string; slots: string[]; signals: string[] }; result: Snapshot };
@@ -316,6 +317,7 @@ export type WebviewToHost =
     | { type: 'addAction'; text: string; checkable?: boolean; shortcut?: string }
     | { type: 'removeAction'; name: string }
     | { type: 'setCustomMethods'; slots: string[]; signals: string[] }
+    | { type: 'moveEntry'; target: string; from: number; to: number }
     | { type: 'actionGroup'; name?: string; remove?: boolean; action?: string; group?: string }
     | { type: 'useAction'; target: string; action?: string; separator?: boolean; remove?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }

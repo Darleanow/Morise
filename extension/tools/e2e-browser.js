@@ -51,7 +51,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','actionGroup','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','actionGroup','moveEntry','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -74,6 +74,7 @@ async function check(label, fn) {
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
         case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
+        case 'moveEntry': snap = await client.request('moveEntry', { ...d, target: m.target, from: m.from, to: m.to }); break;
         case 'actionGroup': snap = await client.request('actionGroup', { ...d, name: m.name, remove: m.remove, action: m.action, group: m.group }); break;
         case 'saveImage': return;
         case 'checkStyleSheet': await post({ type: 'styleSheetCheck', text: m.text, valid: (await client.request('checkStyleSheet', { text: m.text })).valid }); return;
@@ -912,6 +913,26 @@ async function check(label, fn) {
     await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();
     const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
     assert.ok(String(icon.value).includes('save.png'), String(icon.value));
+  });
+  await check('entry order: a tool bar entry moves down in the Form tab, and undo puts it back', async () => {
+    await open('mainwindow.ui');
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Add Tool Bar' });
+    const tb = (await client.request('formInfo', { docId })).actionTargets.find((t) => t.kind === 'toolbar').name;
+    await page.mouse.click(...(await at(60, 120))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const text = page.locator('.action-new input[aria-label="Text of the new action"]');
+    for (const t of ['Alpha', 'Beta']) { await text.fill(t); await text.press('Enter'); await settle(); }
+    for (const t of ['Alpha', 'Beta']) {
+      await page.locator('.action-row', { hasText: t }).locator('button[aria-label^="Place"]').click();
+      await page.locator('.menu-item', { hasText: 'Add to' }).first().click(); await settle();
+    }
+    const order = async () => (await page.locator('.entry-row .action-text').allTextContents());
+    assert.deepEqual(await order(), ['Alpha', 'Beta']);
+    await page.locator('button[aria-label="Move Alpha down"]').click(); await settle();
+    assert.deepEqual(await order(), ['Beta', 'Alpha']);
+    await shot('e2e-entry-order');
+    await page.locator('#toolbar button[title^="Undo"]').first().click(); await settle();
+    assert.deepEqual(await order(), ['Alpha', 'Beta']);
   });
   await check('action groups: created in the Form tab, an action put in it and taken out, removed, and undo restores', async () => {
     await open('mainwindow.ui');

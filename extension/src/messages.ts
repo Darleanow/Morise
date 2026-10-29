@@ -54,6 +54,9 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'addAction':
             return typeof m.text === 'string' && m.text.trim() !== '' && m.text.length < 200 && (m.shortcut === undefined || (typeof m.shortcut === 'string' && m.shortcut.length < 100))
                 ? { type: 'addAction', text: m.text, ...(m.checkable === true ? { checkable: true } : {}), ...(typeof m.shortcut === 'string' && m.shortcut !== '' ? { shortcut: m.shortcut } : {}) } : undefined;
+        case 'moveEntry':
+            return typeof m.target === 'string' && m.target.length > 0 && m.target.length < 200 && Number.isInteger(m.from) && Number.isInteger(m.to) && (m.from as number) >= 0 && (m.to as number) >= 0 && (m.from as number) < 10000 && (m.to as number) < 10000
+                ? { type: 'moveEntry', target: m.target, from: m.from as number, to: m.to as number } : undefined;
         case 'actionGroup': {
             const ok = (v: unknown) => typeof v === 'string' && v.length < 200;
             if (typeof m.action === 'string') {

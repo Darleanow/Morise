@@ -111,6 +111,27 @@ function placeButton(a: ActionInfo, info: NonNullable<typeof S.formInfo>): HTMLE
     return b;
 }
 
+/** The entries of each menu and tool bar in order, with arrows to move one up or down (the canvas cannot drag them). */
+function entryLists(info: NonNullable<typeof S.formInfo>): HTMLElement {
+    const box = el('div', { className: 'action-list entry-lists' });
+    for (const t of info.actionTargets.filter((x) => (x.entries?.length ?? 0) > 1)) {
+        const entries = t.entries ?? [];
+        box.append(el('div', { className: 'dim entry-head' }, icon(t.kind === 'menu' ? 'list-flat' : 'tools'), ` ${t.title || t.name}`));
+        entries.forEach((e, i) => {
+            const label = e.separator ? '(separator)' : e.text || e.name;
+            const up = button(`Move ${label} up`, icon('arrow-up'), () => send({ type: 'moveEntry', target: t.name, from: i, to: i - 1 }), 'icon-btn');
+            const down = button(`Move ${label} down`, icon('arrow-down'), () => send({ type: 'moveEntry', target: t.name, from: i, to: i + 1 }), 'icon-btn');
+            up.disabled = i === 0;
+            down.disabled = i === entries.length - 1;
+            box.append(el('div', { className: 'action-row entry-row' }, el('span', { className: 'action-text' }, label), up, down));
+        });
+    }
+    if (box.childElementCount === 0) {
+        box.append(el('p', { className: 'note' }, 'Menus and tool bars with two or more entries are listed here so you can reorder them.'));
+    }
+    return box;
+}
+
 /** Action groups (QActionGroup: exclusive choices such as left/centre/right): a row per group with its members, and a field to create one. */
 function groupList(info: NonNullable<typeof S.formInfo>): HTMLElement {
     const box = el('div', { className: 'action-list' });
@@ -252,6 +273,8 @@ export function renderFormTab(): void {
         actionList(info),
         el('div', { className: 'section-title' }, 'Action groups', el('span', { className: 'dim count' }, String((info.actionGroups ?? []).length))),
         groupList(info),
+        el('div', { className: 'section-title' }, 'Menu and tool bar order'),
+        entryLists(info),
         el('div', { className: 'section-title' }, 'Keyboard focus order', el('span', { className: 'dim count' }, String(S.tabOrder?.length ?? 0))),
         el('p', { className: 'note' }, 'The order Tab moves through the widgets, numbered on the form. Drag a row, or use the arrows.'));
     frag.append(S.tabOrder && S.tabOrder.length > 0 ? tabOrderList(S.tabOrder) : el('div', { className: 'hint' }, 'No widget takes keyboard focus.'));

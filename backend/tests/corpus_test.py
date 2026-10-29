@@ -162,7 +162,7 @@ for rnd in range(rounds):
             elif k == "act":
                 acts = ["actionNew", "actionOpen", "actionSaveAs", "actionNew_2"]
                 targets = ["menuFile", "menuEdit", "menuRecent", "toolBar", "toolBar_2", "nope"]
-                op = rng.choice(["add", "add", "use", "use", "unuse", "sep", "del", "grp", "grp", "grp"])
+                op = rng.choice(["add", "add", "use", "use", "unuse", "sep", "del", "grp", "grp", "grp", "mv", "mv"])
                 if op == "add":
                     req = ("addAction", dict(text=rng.choice(["New", "Open", "Save As"]), checkable=rng.random() < 0.3))
                 elif op == "use":
@@ -171,6 +171,8 @@ for rnd in range(rounds):
                     req = ("useAction", dict(action=rng.choice(acts), target=rng.choice(targets), remove=True))
                 elif op == "sep":
                     req = ("useAction", dict(target=rng.choice(targets), separator=True))
+                elif op == "mv":
+                    req = ("moveEntry", {"target": rng.choice(targets), "from": rng.randint(0, 4), "to": rng.randint(0, 4)})
                 elif op == "grp":
                     groups = ["g1", "g2", "viewGroup", "nope"]
                     sub = rng.choice(["new", "put", "put", "out", "rm"])

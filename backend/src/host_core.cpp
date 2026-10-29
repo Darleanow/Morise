@@ -62,6 +62,7 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("removeAction")) return removeAction(p);
     if (method == QLatin1String("useAction")) return useAction(p);
     if (method == QLatin1String("actionGroup")) return actionGroup(p);
+    if (method == QLatin1String("moveEntry")) return moveEntry(p);
     if (method == QLatin1String("customMethods")) return customMethods(p);
     // The clipboard lives in this process: the extension host mirrors it with the system clipboard.
     if (method == QLatin1String("getClipboard")) return {{QLatin1String("text"), QGuiApplication::clipboard()->text()}};

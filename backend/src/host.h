@@ -294,6 +294,7 @@ private:
     QJsonObject removeAction(const QJsonObject &p);
     QJsonObject useAction(const QJsonObject &p);
     QJsonObject actionGroup(const QJsonObject &p);
+    QJsonObject moveEntry(const QJsonObject &p);
     QJsonArray actionGroupsOf(QDesignerFormWindowInterface *fw) const;
     QJsonObject customMethods(const QJsonObject &p);
     static QJsonObject checkStyleSheet(const QJsonObject &p);
