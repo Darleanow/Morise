@@ -176,7 +176,7 @@ function fontEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
 
 function imageEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
     const path = String(p.value ?? '');
-    const thumb = p.thumb ? el('img', { className: 'thumb', src: p.thumb, alt: '' }) : el('span', { className: 'thumb empty' }, icon('file-media'));
+    const thumb = p.thumb ? el('img', { className: 'thumb', src: p.thumb, alt: '', draggable: false }) : el('span', { className: 'thumb empty' }, icon('file-media'));
     const name = el('span', { className: 'file-name', title: path || 'No image' }, path ? (path.split(/[\\/]/).pop() ?? path) : 'None');
     const pick = button('Choose an image', icon('folder-opened'), () => ctx.pickFile(p), 'icon-btn');
     const clear = button('Remove the image', icon('close'), () => ctx.commit(p, ''), 'icon-btn');

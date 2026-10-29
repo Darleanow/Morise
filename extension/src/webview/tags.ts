@@ -66,7 +66,7 @@ export function tag(r: Rect, className: string, ...content: (Node | string)[]): 
 export function classGlyph(o: { class: string; parent?: string | null }): HTMLElement {
     const src = classIcons.get(o.class);
     if (src) {
-        const img = el('img', { className: 'wicon', src, alt: '' });
+        const img = el('img', { className: 'wicon', src, alt: '', draggable: false });
         img.draggable = false;
         return img;
     }
