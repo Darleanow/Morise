@@ -18,6 +18,11 @@ Rules: no commit, no push, nothing deleted outside files created here. Every ste
 - Menu bar editing (QMainWindow): add menu, add entry, add separator, remove entry/menu, action properties; all through the
   engine's own menu bar editor driven by events, undoable, saved, accepted by uic.
 
+- Live interactive preview (click, type, scroll, combo popups) verified in Chromium and in the real VS Code.
+- Resources (.qrc): add/remove (undoable), contents listed, icons chosen from them, saved as Designer saves them.
+- Table/tree grid editor, items editor for combo/list, buddy editor, free widget into layout, drop sides.
+- Web refactor: canvas.ts split into view/tags/guides/arrows/layoutslot modules (1335 -> 930 lines for canvas.ts).
+
 ## Findings / not done
 - Known engine crash (stack overflow in DesignerComponents recursion), found by fuzz seed 92, only with a long exact
   sequence: rich.ui + MDI Area + group box + a tab widget move, then moving the MDI area onto the group box.
