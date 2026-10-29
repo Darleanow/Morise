@@ -149,7 +149,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), tree and table widget item editors, sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, palette
+- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, palette
   editing, rulers, custom widget plugins.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
