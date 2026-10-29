@@ -51,3 +51,21 @@ describe('new form templates', () => {
         }
     });
 });
+
+describe('crash report', () => {
+    it('the backend writes its stack and the running request when the engine crashes', async () => {
+        const log = path.join(os.tmpdir(), `qtd-crash-${process.pid}.log`);
+        fs.rmSync(log, { force: true });
+        const client = new BackendClient({ executable: exe, requestTimeoutMs: 20000, crashLog: log });
+        await client.start();
+        await client.request('open', { docId: 'c', xml: templateXml('widget', 'Crash') });
+        const exited = new Promise<string | null>((resolve) => client.once('exit', (_code: number | null, signal: string | null) => resolve(signal)));
+        process.kill((client as unknown as { proc: { pid: number } }).proc.pid, 'SIGSEGV');
+        assert.equal(await exited, 'SIGSEGV', 'the process still dies from the signal');
+        const text = fs.readFileSync(log, 'utf8');
+        assert.match(text, /^crash, last request: .*"method":"open"/);
+        assert.match(text, /designer_backend/);
+        fs.rmSync(log, { force: true });
+        client.dispose();
+    });
+});

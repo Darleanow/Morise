@@ -69,10 +69,21 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 return Promise.reject(new Error(`Backend executable not found: ${exe}. Build it (see README) or set qtDesignerRevamped.backendPath.`));
             }
             const pluginPaths = vscode.workspace.getConfiguration('qtDesignerRevamped').get<string[]>('pluginPaths', []).map((p) => p.trim()).filter(Boolean);
-            const client = new BackendClient({ executable: exe, pluginPaths });
+            const crashLog = path.join(this.context.logUri.fsPath, 'backend-crash.log');
+            fs.mkdirSync(this.context.logUri.fsPath, { recursive: true });
+            const client = new BackendClient({ executable: exe, pluginPaths, crashLog });
             client.on('stderr', (text: string) => this.log.trace(String(text).trimEnd()));
             client.on('exit', (code: number | null, signal: string | null) => {
                 this.log.warn(`backend exited (code ${code}, signal ${signal})`);
+                try {
+                    const crash = fs.readFileSync(crashLog, 'utf8').trim();
+                    if (crash !== '') {
+                        this.log.error(`backend crash report (also in ${crashLog}):\n${crash.split('\n').slice(-60).join('\n')}`);
+                        fs.truncateSync(crashLog, 0);
+                    }
+                } catch {
+                    // no crash report: the process was stopped on purpose
+                }
                 if (this.client === client) {
                     this.client = undefined;
                 }

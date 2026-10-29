@@ -13,6 +13,8 @@ export interface BackendClientOptions {
     executable: string;
     /** Folders holding a `designer` directory of custom widget plugins (added to QT_PLUGIN_PATH). */
     pluginPaths?: string[];
+    /** File the backend writes its call stack to if the engine crashes. */
+    crashLog?: string;
     /** Per-request timeout in ms. */
     requestTimeoutMs?: number;
     /** Time allowed for the backend's `ready` event. */
@@ -47,6 +49,9 @@ export class BackendClient extends EventEmitter {
             // Custom widget plugins: folders that contain a `designer` directory with the plugin libraries.
             if (this.options.pluginPaths?.length) {
                 env.QT_PLUGIN_PATH = [...this.options.pluginPaths, env.QT_PLUGIN_PATH ?? ''].filter(Boolean).join(path.delimiter);
+            }
+            if (this.options.crashLog) {
+                env.QDR_CRASH_LOG = this.options.crashLog;
             }
             const proc = spawn(this.options.executable, [], { stdio: ['pipe', 'pipe', 'pipe'], env });
             this.proc = proc;
