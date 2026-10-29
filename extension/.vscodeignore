@@ -1,0 +1,8 @@
+**
+!package.json
+!README.md
+!LICENSE
+!out/src/**
+!media/**
+!bin/**
+!node_modules/.keep

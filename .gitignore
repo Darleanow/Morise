@@ -6,3 +6,6 @@ extension/out/
 extension/media/webview/
 extension/media/codicons/
 *.vsix
+backend/build-relocatable/
+extension/bin/
+extension/README.md

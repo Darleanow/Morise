@@ -43,7 +43,11 @@
     ],
     "menus": {
       "explorer/context": [
-        { "command": "qtDesignerRevamped.newForm", "when": "explorerResourceIsFolder", "group": "navigation@50" }
+        {
+          "command": "qtDesignerRevamped.newForm",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation@50"
+        }
       ]
     },
     "configuration": {
@@ -51,7 +55,9 @@
       "properties": {
         "qtDesignerRevamped.pluginPaths": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "markdownDescription": "Folders that contain a `designer` directory with Qt Designer custom widget plugins (the same layout as `QT_PLUGIN_PATH`). The plugins must be built for the same Qt version as the backend. Restart the backend after changing it."
         },
@@ -68,7 +74,8 @@
     "watch": "node scripts/bundle-webview.js --watch",
     "test": "npm run build && node --test out/test/",
     "test:integration": "npm run build && node out/test-integration/run.js",
-    "copy-assets": "node scripts/copy-assets.js"
+    "copy-assets": "node scripts/copy-assets.js",
+    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --skip-license --allow-missing-repository --target linux-x64 -o qt-designer-revamped-linux-x64.vsix"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
@@ -76,6 +83,7 @@
     "@types/vscode": "1.90.0",
     "@vscode/codicons": "^0.0.36",
     "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^2.32.0",
     "esbuild": "^0.24.0",
     "jsdom": "^24.1.3",
     "typescript": "5.6.3"
