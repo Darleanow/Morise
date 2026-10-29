@@ -25,6 +25,10 @@ QJsonObject Host::reparent(const QJsonObject &p)
     QWidget *container = m_core->widgetFactory()->containerOfWidget(parent);
     if (!container || !m_core->widgetDataBase()->isContainer(parent))
         throw ProtocolError{QStringLiteral("the target is not a container")};
+    for (const QJsonValue &it : p.value(QLatin1String("items")).toArray()) {
+        if (qobject_cast<QDockWidget *>(widgetByName(fw, it.toObject().value(QLatin1String("name")).toString())) && !qobject_cast<QMainWindow *>(parent))
+            throw ProtocolError{QStringLiteral("A dock widget can only be dropped on the main window.")};
+    }
     // Into a laid-out container a widget goes through moveWidget (the engine picks the cell); forcing a free geometry
     // into one makes the engine recurse until the stack overflows.
     if (qdesigner_internal::LayoutInfo::managedLayout(m_core, container))
@@ -117,6 +121,8 @@ QJsonObject Host::moveWidget(const QJsonObject &p)
         throw ProtocolError{QStringLiteral("form window does not support drops")};
     if (qobject_cast<QScrollArea *>(target) && static_cast<QScrollArea *>(target)->widget() && w->parentWidget() != target)
         throw ProtocolError{QStringLiteral("%1 already has content").arg(idOf(target))};
+    if (qobject_cast<QDockWidget *>(w) && !qobject_cast<QMainWindow *>(target))
+        throw ProtocolError{QStringLiteral("A dock widget can only be dropped on the main window.")};
     const QPoint global = fw->mapToGlobal(pos);
     auto *decoration = new QWidget;
     // Where the widget lands relative to the pointer: where the user grabbed it, else its centre.

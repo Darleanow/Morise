@@ -577,6 +577,10 @@ QJsonObject Host::action(const QJsonObject &p)
         QAction *a = m_core->formWindowManager()->action(d.id);
         if (!a || !a->isEnabled())
             throw ProtocolError{QStringLiteral("action not available for the current selection: ") + name};
+        // Dock widgets only live in a main window: pasted elsewhere the engine crashes (found by fuzz, seed 78).
+        if (name == QLatin1String("paste") && !qobject_cast<QMainWindow *>(fw->mainContainer())
+            && QGuiApplication::clipboard()->text().contains(QLatin1String("class=\"QDockWidget\"")))
+            throw ProtocolError{QStringLiteral("A dock widget can only be pasted into a main window form (QMainWindow).")};
         a->trigger();
         nameUnnamedWidgets(fw); // a layout made from a selection creates an unnamed layout widget
         return snapshot(fw);

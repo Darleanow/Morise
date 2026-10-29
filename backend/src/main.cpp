@@ -1,5 +1,11 @@
 #include "host.h"
 
+#include <csignal>
+#include <cstring>
+#include <execinfo.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 static void writeLine(const QJsonObject &o)
 {
     const QByteArray line = QJsonDocument(o).toJson(QJsonDocument::Compact) + '\n';
@@ -7,8 +13,33 @@ static void writeLine(const QJsonObject &o)
     std::fflush(stdout);
 }
 
+// A crash of the engine is reported to the file named by QDR_CRASH_LOG (if set): the call stack and the request that
+// was running. The process then dies as before, so the extension still sees the exit and restarts it.
+static char g_lastRequest[512];
+static int g_crashFd = -1;
+
+static void onCrash(int sig)
+{
+    if (g_crashFd >= 0) {
+        const char head[] = "crash, last request: ";
+        (void)!write(g_crashFd, head, sizeof head - 1);
+        (void)!write(g_crashFd, g_lastRequest, strnlen(g_lastRequest, sizeof g_lastRequest));
+        (void)!write(g_crashFd, "\n", 1);
+        void *frames[48];
+        const int n = backtrace(frames, 48);
+        backtrace_symbols_fd(frames, n, g_crashFd);
+    }
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
 int main(int argc, char **argv)
 {
+    if (const char *log = std::getenv("QDR_CRASH_LOG")) {
+        g_crashFd = open(log, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        signal(SIGSEGV, onCrash);
+        signal(SIGABRT, onCrash);
+    }
     qputenv("QT_QPA_PLATFORM", qgetenv("QT_QPA_PLATFORM").isEmpty() ? "offscreen" : qgetenv("QT_QPA_PLATFORM"));
     // Snapshot pixels must map 1:1 to widget coordinates regardless of the user's shell
     // (e.g. an exported QT_SCALE_FACTOR made grab() return a 1.75x image).
@@ -28,6 +59,7 @@ int main(int argc, char **argv)
         std::string line;
         while (std::getline(std::cin, line)) {
             QMetaObject::invokeMethod(&app, [&host, raw = QByteArray::fromStdString(line)] {
+                std::strncpy(g_lastRequest, raw.constData(), sizeof g_lastRequest - 1);
                 QJsonParseError pe;
                 const QJsonDocument doc = QJsonDocument::fromJson(raw, &pe);
                 if (!doc.isObject()) {

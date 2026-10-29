@@ -631,6 +631,17 @@ call("open", docId="rl1", xml=open(os.path.join(HERE, "..", "testdata", "toolbox
 call("open", docId="rl2", xml=open(os.path.join(HERE, "..", "testdata", "sample.ui"), encoding="utf-8").read())
 check("reparenting into a container that has a layout is refused, not a crash", "error" in call("reparent", docId="rl2", parent="SampleForm", items=[{"name": "okButton", "rect": [10, 10, 50, 20]}]) and "result" in call("snapshot", docId="rl2"))
 
+# dock widgets only live in a main window: copied into a plain form the engine crashed (found by fuzz, seed 78)
+dock = next((c["index"], w["index"]) for c in call("palette")["result"]["categories"] for w in c["widgets"] if w["name"] == "Dock Widget")
+call("open", docId="dk1", xml=open(os.path.join(HERE, "..", "testdata", "mainwindow.ui"), encoding="utf-8").read())
+rd = call("addWidget", docId="dk1", category=dock[0], index=dock[1], x=200, y=100)
+dname = next((o["name"] for o in rd.get("result", {}).get("objects", []) if o["class"].endswith("DockWidget")), None)
+check("a dock widget can be added to a main window", dname is not None, rd.get("error"))
+if dname:
+    call("select", docId="dk1", names=[dname]); call("action", docId="dk1", action="copy")
+    call("open", docId="dk2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())
+    check("pasting a dock widget into a plain form is refused, not a crash", "error" in call("action", docId="dk2", action="paste") and "result" in call("snapshot", docId="dk2"))
+
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
 check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))

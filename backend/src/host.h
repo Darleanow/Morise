@@ -61,6 +61,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QBuffer>
+#include <QClipboard>
 #include <QMetaMethod>
 #include <QRegularExpression>
 #include <QXmlStreamReader>
