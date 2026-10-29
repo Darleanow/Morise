@@ -23,6 +23,13 @@ Rules: no commit, no push, nothing deleted outside files created here. Every ste
 - Table/tree grid editor, items editor for combo/list, buddy editor, free widget into layout, drop sides.
 - Web refactor: canvas.ts split into view/tags/guides/arrows/layoutslot modules (1335 -> 930 lines for canvas.ts).
 
+- Also done: engine task menu in the context menu (Morph into...), palette and locale editors, tab and tool box page
+  headers (click to switch, double-click to rename), widgets dragged out of layouts, custom widget plugins
+  (qtDesignerRevamped.pluginPaths, tested with a demo plugin), sub menus, window parts guarded (central widget move froze
+  the engine: found by fuzz on a QMainWindow form, fixed).
+- Latest local numbers: protocol 197 checks, Node 98, e2e 0 failures x3, VS Code integration 8 ok, corpus-ui 60 forms
+  0 problems, fuzz seeds 171..178 0 problems.
+
 ## Findings / not done
 - Known engine crash (stack overflow in DesignerComponents recursion), found by fuzz seed 92, only with a long exact
   sequence: rich.ui + MDI Area + group box + a tab widget move, then moving the MDI area onto the group box.
