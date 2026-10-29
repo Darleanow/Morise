@@ -114,7 +114,7 @@ for rnd in range(rounds):
         for i in range(FUZZ // rounds):
             names = [o["name"] for o in snap["objects"]]
             free = [o for o in snap["objects"] if o["parent"] is not None and not o["laidOut"]]
-            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid", "pview", "pview", "pview", "pview", "menu", "menu", "task"])
+            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid", "pview", "pview", "pview", "pview", "menu", "menu", "task", "act", "act"])
             if k == "add":
                 c, w = rng.choice(entries); req = ("addWidget", dict(category=c, index=w, x=rng.randint(0, 400), y=rng.randint(0, 300)))
             elif k == "action":
@@ -159,6 +159,20 @@ for rnd in range(rounds):
                     req = ("removeMenuEntry", dict(menu=rng.choice(menus), index=rng.randint(0, 3)))
                 else:
                     req = ("removeMenuEntry", dict(menu=rng.choice(menus)))
+            elif k == "act":
+                acts = ["actionNew", "actionOpen", "actionSaveAs", "actionNew_2"]
+                targets = ["menuFile", "menuEdit", "menuRecent", "toolBar", "toolBar_2", "nope"]
+                op = rng.choice(["add", "add", "use", "use", "unuse", "sep", "del"])
+                if op == "add":
+                    req = ("addAction", dict(text=rng.choice(["New", "Open", "Save As"]), checkable=rng.random() < 0.3))
+                elif op == "use":
+                    req = ("useAction", dict(action=rng.choice(acts), target=rng.choice(targets)))
+                elif op == "unuse":
+                    req = ("useAction", dict(action=rng.choice(acts), target=rng.choice(targets), remove=True))
+                elif op == "sep":
+                    req = ("useAction", dict(target=rng.choice(targets), separator=True))
+                else:
+                    req = ("removeAction", dict(name=rng.choice(acts)))
             elif k == "task":
                 req = ("taskAction", dict(name=rng.choice(names), path=[rng.randint(0, 14), rng.randint(0, 4)]))
             elif k == "pview":

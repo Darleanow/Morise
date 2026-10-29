@@ -48,7 +48,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -70,6 +70,7 @@ async function check(label, fn) {
         case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
+        case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
         case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;
@@ -889,6 +890,8 @@ async function check(label, fn) {
   });
   await check('actions: the Form tab lists them, creates one, opens it in the inspector, removes it, and undo brings it back', async () => {
     await open('mainwindow.ui');
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Create Menu Bar' });
+    await client.request('addMenu', { docId, title: 'File' });
     await page.mouse.click(...(await at(60, 35))); await settle();
     await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
     const field = page.locator('.action-new input[type=text]');
@@ -896,6 +899,14 @@ async function check(label, fn) {
     const row = page.locator('.action-row', { hasText: 'Save As' });
     assert.equal(await row.count(), 1, 'the new action is listed');
     assert.ok((await row.textContent()).includes('unused'));
+    {
+      await page.locator('.action-row', { hasText: 'Save As' }).locator('button[aria-label^="Place"]').click();
+      await page.locator('.menu-item', { hasText: 'Add to' }).first().click(); await settle();
+      assert.ok((await page.locator('.action-row', { hasText: 'Save As' }).textContent()).includes('in menu'), 'the row says where the action is used');
+      await page.locator('.action-row', { hasText: 'Save As' }).locator('button[aria-label^="Place"]').click();
+      await page.locator('.menu-item', { hasText: 'Remove from' }).first().click(); await settle();
+      assert.ok((await page.locator('.action-row', { hasText: 'Save As' }).textContent()).includes('unused'), 'taken out again');
+    }
     await row.click(); await settle();
     assert.ok(await page.locator('#inspector [aria-label="text"], #inspector input').count() > 0, 'its properties open in the inspector');
     assert.equal(((await backendNow()).objects || []).length > 0, true);

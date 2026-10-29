@@ -1,6 +1,8 @@
+import type { ActionInfo } from '../protocol';
 import { $, button, el, icon } from './dom';
 import { byName } from './geometry';
 import { classGlyph } from './canvas';
+import { openMenu } from './menu';
 import { S, send } from './state';
 
 const root = $<HTMLDivElement>('form-settings');
@@ -78,6 +80,23 @@ function resourceList(info: NonNullable<typeof S.formInfo>): HTMLElement {
     return box;
 }
 
+/** A menu of the menus and tool bars an action can go in (those holding it offer to take it out). */
+function placeButton(a: ActionInfo, info: NonNullable<typeof S.formInfo>): HTMLElement {
+    const b = button(`Place ${a.name} in a menu or tool bar`, icon('layout-menubar'), () => {
+        const r = b.getBoundingClientRect();
+        const items = info.actionTargets.map((t) => {
+            const has = a.usedIn.includes(t.name);
+            return {
+                label: `${has ? 'Remove from' : 'Add to'} ${t.title || t.name}`,
+                icon: has ? 'close' : t.kind === 'menu' ? 'list-flat' : 'tools',
+                run: () => send({ type: 'useAction', target: t.name, action: a.name, ...(has ? { remove: true } : {}) }),
+            };
+        });
+        openMenu(r.left, r.bottom, items.length > 0 ? items : [{ label: 'No menu or tool bar in this form', disabled: true }]);
+    }, 'icon-btn');
+    return b;
+}
+
 /** The form's actions: a row per action (click to edit it in the inspector), and a field to create one. */
 function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
     const box = el('div', { className: 'action-list' });
@@ -85,6 +104,7 @@ function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
         const row = el('div', { className: 'action-row', role: 'button', tabIndex: 0, title: `Edit ${a.name} in the inspector` },
             icon(a.checkable ? 'check' : 'symbol-event'), el('span', { className: 'action-text' }, a.text || a.name),
             el('span', { className: 'dim action-meta' }, [a.shortcut, a.usedIn.length > 0 ? `in ${a.usedIn.join(', ')}` : 'unused'].filter(Boolean).join('  ·  ')),
+            placeButton(a, info),
             button(`Remove ${a.name}`, icon('trash'), () => send({ type: 'removeAction', name: a.name }), 'icon-btn'));
         const open = () => send({ type: 'inspect', name: a.name });
         row.addEventListener('click', (ev) => {

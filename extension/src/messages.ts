@@ -50,6 +50,9 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'addAction':
             return typeof m.text === 'string' && m.text.trim() !== '' && m.text.length < 200 && (m.shortcut === undefined || (typeof m.shortcut === 'string' && m.shortcut.length < 100))
                 ? { type: 'addAction', text: m.text, ...(m.checkable === true ? { checkable: true } : {}), ...(typeof m.shortcut === 'string' && m.shortcut !== '' ? { shortcut: m.shortcut } : {}) } : undefined;
+        case 'useAction':
+            return typeof m.target === 'string' && m.target.length > 0 && m.target.length < 200 && (m.separator === true || (typeof m.action === 'string' && m.action.length > 0 && m.action.length < 200))
+                ? { type: 'useAction', target: m.target, ...(m.separator === true ? { separator: true } : { action: m.action as string }), ...(m.remove === true ? { remove: true } : {}) } : undefined;
         case 'removeAction':
             return typeof m.name === 'string' && m.name.length > 0 && m.name.length < 200 ? { type: 'removeAction', name: m.name } : undefined;
         case 'removeMenuEntry':

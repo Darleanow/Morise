@@ -94,6 +94,11 @@ each, icons and other roles of unchanged items are kept). It uses the engine's o
 inspector (add menu, entry, separator, sub menu, remove). Resource files (`.qrc`) are added in the Form tab and their icons are
 offered by every icon editor; the form saves `<include location=...>` and `resource=` like Designer.
 
+**Actions.** The Form tab lists the form's actions with their shortcut and where they are used. You can create one (text,
+checkable), edit it in the inspector, put it into a menu or tool bar (or take it out), add a separator to a tool bar, and
+remove it. Creation and removal use the engine's own commands; placing uses a small undo command of ours because the engine's
+is not exported. Each step is one undo step and the saved `.ui` passes `uic`.
+
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
 groups, page operations. Entries that would open a dialog ("Change text...") are left out.

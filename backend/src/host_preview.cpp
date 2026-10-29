@@ -30,8 +30,15 @@ QPalette Host::darkPalette()
     return p;
 }
 
+void Host::closePopups()
+{
+    while (QWidget *pop = QApplication::activePopupWidget())
+        pop->close();
+}
+
 QJsonObject Host::preview(const QJsonObject &p)
 {
+    closePopups();
     QDesignerFormWindowInterface *fw = form(p);
     QByteArray xml = fw->contents().toUtf8();
     QBuffer buf(&xml);
@@ -94,8 +101,7 @@ QJsonObject Host::previewStop(const QJsonObject &p)
         return {};
     QWidget *root = it->root;
     m_previews.erase(it);
-    while (QWidget *pop = QApplication::activePopupWidget())
-        pop->close();
+    closePopups();
     delete root;
     return {};
 }

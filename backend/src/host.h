@@ -282,9 +282,14 @@ private:
     QJsonObject makeSubmenu(const QJsonObject &p);
     static QJsonValue menusOf(QObject *o);
     QJsonObject addMenuEntry(const QJsonObject &p);
+    /// Menus the design-time editors popped up must not stay the application's active popup: they would swallow the
+    /// events of a later preview.
+    static void closePopups();
     QJsonArray actionsOf(QDesignerFormWindowInterface *fw) const;
     QJsonObject addAction(const QJsonObject &p);
     QJsonObject removeAction(const QJsonObject &p);
+    QJsonObject useAction(const QJsonObject &p);
+    QJsonArray actionTargets(QDesignerFormWindowInterface *fw) const;
 
     /// Targets of an edit: `names` (multi-selection) or the single `name`.
     QObjectList targets(QDesignerFormWindowInterface *fw, const QJsonObject &p) const;

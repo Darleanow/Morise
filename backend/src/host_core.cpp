@@ -60,6 +60,7 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("makeSubmenu")) return makeSubmenu(p);
     if (method == QLatin1String("addAction")) return addAction(p);
     if (method == QLatin1String("removeAction")) return removeAction(p);
+    if (method == QLatin1String("useAction")) return useAction(p);
     if (method == QLatin1String("previewEvent")) return previewEvent(p);
     if (method == QLatin1String("previewStop")) return previewStop(p);
     if (method == QLatin1String("resources")) return resources(p);

@@ -120,7 +120,7 @@ QJsonObject Host::formInfo(const QJsonObject &p)
             {QLatin1String("includeHints"), stringsToJson(fw->includeHints())},
             {QLatin1String("resourceFiles"), stringsToJson(fw->resourceFiles())},
             {QLatin1String("resources"), resources(p).value(QLatin1String("files"))},
-            {QLatin1String("actions"), actionsOf(fw)}};
+            {QLatin1String("actions"), actionsOf(fw)}, {QLatin1String("actionTargets"), actionTargets(fw)}};
 }
 
 QJsonObject Host::setFormInfo(const QJsonObject &p)
@@ -218,6 +218,7 @@ QJsonObject Host::addMenu(const QJsonObject &p)
     QKeyEvent release(QEvent::KeyRelease, Qt::Key_Return, Qt::NoModifier);
     QCoreApplication::sendEvent(editor, &release);
     QCoreApplication::processEvents();
+    closePopups();
     if (bar->actions().size() <= before)
         throw ProtocolError{QStringLiteral("the menu could not be created")};
     return snapshot(fw);
@@ -578,6 +579,110 @@ QJsonObject Host::removeAction(const QJsonObject &p)
     cmd->init(target);
     fw->commandHistory()->push(cmd);
     fw->endCommand();
+    return snapshot(fw);
+}
+
+} // namespace qdr
+
+namespace qdr {
+
+namespace {
+
+/// Puts an existing action into a menu or tool bar, or takes it out: the engine's insertion command is not exported.
+class UseActionCommand : public QUndoCommand
+{
+public:
+    UseActionCommand(QWidget *target, QAction *action, QAction *before, bool insert)
+        : QUndoCommand(insert ? QStringLiteral("Add action") : QStringLiteral("Remove action")), m_target(target), m_action(action), m_before(before), m_insert(insert) {}
+    void redo() override { apply(m_insert); }
+    void undo() override { apply(!m_insert); }
+
+private:
+    void apply(bool insert)
+    {
+        if (!m_target || !m_action)
+            return;
+        if (insert) {
+            if (m_before)
+                m_target->insertAction(m_before, m_action);
+            else
+                m_target->addAction(m_action);
+        } else {
+            m_target->removeAction(m_action);
+        }
+        m_target->update();
+    }
+    QPointer<QWidget> m_target;
+    QPointer<QAction> m_action;
+    QPointer<QAction> m_before;
+    bool m_insert;
+};
+
+} // namespace
+
+/// The menus and tool bars an action can be placed in.
+QJsonArray Host::actionTargets(QDesignerFormWindowInterface *fw) const
+{
+    QJsonArray out;
+    for (QWidget *w : fw->mainContainer()->findChildren<QWidget *>()) {
+        const bool menu = qobject_cast<QMenu *>(w) != nullptr;
+        if ((!menu && !qobject_cast<QToolBar *>(w)) || w->objectName().isEmpty())
+            continue;
+        out.append(QJsonObject{{QLatin1String("name"), w->objectName()}, {QLatin1String("kind"), menu ? QLatin1String("menu") : QLatin1String("toolbar")},
+                               {QLatin1String("title"), menu ? static_cast<QMenu *>(w)->title() : w->windowTitle()}});
+    }
+    return out;
+}
+
+/// Places an existing action in a menu or tool bar (`action` + `target`), a new separator (`separator`), or takes
+/// the action out again (`remove`). One undo step each.
+QJsonObject Host::useAction(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    const QString targetName = p.value(QLatin1String("target")).toString();
+    QWidget *target = nullptr;
+    for (QWidget *w : fw->mainContainer()->findChildren<QWidget *>(targetName))
+        if (w->objectName() == targetName && (qobject_cast<QMenu *>(w) || qobject_cast<QToolBar *>(w)))
+            target = w;
+    if (!target)
+        throw ProtocolError{QStringLiteral("unknown menu or tool bar: ") + targetName};
+    const bool remove = p.value(QLatin1String("remove")).toBool();
+    const bool separator = p.value(QLatin1String("separator")).toBool();
+    QAction *before = nullptr;
+    for (QAction *a : target->actions())
+        if (isPlaceholder(a)) {
+            before = a; // menus keep their design-time "Type Here" entries last
+            break;
+        }
+    if (separator && !remove) {
+        fw->beginCommand(QStringLiteral("Add separator"));
+        auto *sep = new QAction(fw);
+        sep->setObjectName(QStringLiteral("separator"));
+        fw->ensureUniqueObjectName(sep);
+        sep->setSeparator(true);
+        auto *add = new qdesigner_internal::AddActionCommand(fw);
+        add->init(sep);
+        fw->commandHistory()->push(add);
+        fw->commandHistory()->push(new UseActionCommand(target, sep, before, true));
+        fw->endCommand();
+        return snapshot(fw);
+    }
+    const QString name = p.value(QLatin1String("action")).toString();
+    QAction *action = nullptr;
+    for (QAction *a : fw->mainContainer()->findChildren<QAction *>(name))
+        if (a->objectName() == name && !isPlaceholder(a) && !a->menu())
+            action = a;
+    if (!action)
+        throw ProtocolError{QStringLiteral("unknown action: ") + name};
+    if (remove ? !target->actions().contains(action) : target->actions().contains(action))
+        throw ProtocolError{remove ? QStringLiteral("the action is not there") : QStringLiteral("the action is already there")};
+    QAction *after = nullptr; // what follows it, to put it back in place on undo of a removal
+    if (remove) {
+        const QList<QAction *> list = target->actions();
+        const int at = list.indexOf(action);
+        after = at + 1 < list.size() ? list.at(at + 1) : nullptr;
+    }
+    fw->commandHistory()->push(new UseActionCommand(target, action, remove ? after : before, !remove));
     return snapshot(fw);
 }
 

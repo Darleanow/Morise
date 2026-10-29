@@ -564,12 +564,43 @@ check("a second action with the same text gets another name", call("addAction", 
 check("an invalid action name is refused", "error" in call("addAction", docId="sm1", text="x", name="9 bad"))
 check("an action has properties the inspector can edit", any(x["name"] == "text" for x in call("properties", docId="sm1", name="actionSaveAs")["result"]["properties"]))
 check("an unused action is saved and accepted by uic", (lambda x: "actionSaveAs" in x and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=x, capture_output=True, text=True).returncode == 0)(saved("sm1")))
+def used(n, form="sm1"):
+    return next(a for a in call("formInfo", docId=form)["result"]["actions"] if a["name"] == n)["usedIn"]
+check("menus are offered as places for an action", any(t["name"] == "menuFile" and t["kind"] == "menu" for t in call("formInfo", docId="sm1")["result"]["actionTargets"]))
+check("an existing action can be put in a menu", "error" not in call("useAction", docId="sm1", action="actionSaveAs", target="menuFile"))
+check("the action is then used by that menu", used("actionSaveAs") == ["menuFile"], used("actionSaveAs"))
+check("it is placed before the design-time placeholders, so the menu entries list it", any(e["text"] == "Save As" for e in call("properties", docId="sm1", name="menuBar")["result"]["menus"][0]["entries"]))
+check("putting it twice in the same menu is refused", "error" in call("useAction", docId="sm1", action="actionSaveAs", target="menuFile"))
+xml_use = saved("sm1")
+check("the placement is saved as an addaction and accepted by uic", '<addaction name="actionSaveAs"/>' in xml_use and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_use, capture_output=True, text=True).returncode == 0)
+call("undo", docId="sm1")
+check("placing an action is one undo step", used("actionSaveAs") == [])
+call("redo", docId="sm1")
+check("and redo puts it back", used("actionSaveAs") == ["menuFile"])
+check("an action can be taken out of a menu", "error" not in call("useAction", docId="sm1", action="actionSaveAs", target="menuFile", remove=True) and used("actionSaveAs") == [])
+check("taking out an action that is not there is refused", "error" in call("useAction", docId="sm1", action="actionSaveAs", target="menuFile", remove=True))
+call("taskAction", docId="sm1", name="MainWindow", text="Add Tool Bar")
+tb = [t for t in call("formInfo", docId="sm1")["result"]["actionTargets"] if t["kind"] == "toolbar"]
+check("a tool bar is offered once it exists", len(tb) == 1, tb)
+if tb:
+    check("an action goes into a tool bar", "error" not in call("useAction", docId="sm1", action="actionSaveAs", target=tb[0]["name"]) and used("actionSaveAs") == [tb[0]["name"]])
+    check("a separator can be added to a tool bar", "error" not in call("useAction", docId="sm1", target=tb[0]["name"], separator=True))
+    xml_tb = saved("sm1")
+    check("the tool bar and its actions are saved and accepted by uic", '<addaction name="actionSaveAs"/>' in xml_tb and '<addaction name="separator"/>' in xml_tb and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_tb, capture_output=True, text=True).returncode == 0)
+check("an unknown target is refused", "error" in call("useAction", docId="sm1", action="actionSaveAs", target="nope"))
 check("an action can be removed", "error" not in call("removeAction", docId="sm1", name="actionSaveAs_2"))
 check("the removed action is gone", all(a["name"] != "actionSaveAs_2" for a in call("formInfo", docId="sm1")["result"]["actions"]))
 call("undo", docId="sm1")
 check("removing an action is one undo step", any(a["name"] == "actionSaveAs_2" for a in call("formInfo", docId="sm1")["result"]["actions"]))
 check("an unknown action is refused", "error" in call("removeAction", docId="sm1", name="nope"))
 check("a menu cannot be removed as an action", "error" in call("removeAction", docId="sm1", name="menuFile"))
+
+# a menu created in one form must not leave a popup that swallows the next preview's clicks
+call("open", docId="pvm", xml=open(os.path.join(HERE, "..", "testdata", "interactive.ui"), encoding="utf-8").read())
+pf0 = call("preview", docId="pvm", style="Fusion", scale=1)["result"]["png"]
+call("previewEvent", docId="pvm", kind="press", x=20, y=20, button=0, mods=0)
+check("a preview opened after menus were edited still reacts to clicks", call("previewEvent", docId="pvm", kind="release", x=20, y=20, button=0, mods=0)["result"]["png"] != pf0)
+call("previewStop", docId="pvm")
 
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
