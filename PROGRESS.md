@@ -19,4 +19,9 @@ Rules: no commit, no push, nothing deleted outside files created here. Every ste
   engine's own menu bar editor driven by events, undoable, saved, accepted by uic.
 
 ## Findings / not done
-- (filled in as steps complete)
+- Known engine crash (stack overflow in DesignerComponents recursion), found by fuzz seed 92, only with a long exact
+  sequence: rich.ui + MDI Area + group box + a tab widget move, then moving the MDI area onto the group box.
+  Not reproducible with a shorter sequence (ddmin gave 7 operations). Not fixed; the page shows "engine down" and
+  restarts the backend if it happens.
+- Menus: sub menus and tool bar entries are not editable (engine commands are not exported, events only reach the menu bar
+  and its menus).
