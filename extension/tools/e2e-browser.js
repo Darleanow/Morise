@@ -49,7 +49,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -73,6 +73,7 @@ async function check(label, fn) {
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
         case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
         case 'saveImage': return;
+        case 'setCustomMethods': snap = await client.request('setCustomMethods', { ...d, slots: m.slots, signals: m.signals }); break;
         case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;
@@ -913,7 +914,7 @@ async function check(label, fn) {
     await client.request('addMenu', { docId, title: 'File' });
     await page.mouse.click(...(await at(60, 35))); await settle();
     await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
-    const field = page.locator('.action-new input[type=text]');
+    const field = page.locator('.action-new input[aria-label="Text of the new action"]');
     await field.fill('Save As'); await field.press('Enter'); await settle();
     await shot('e2e-actions');
     const row = page.locator('.action-row', { hasText: 'Save As' });
@@ -1027,6 +1028,20 @@ async function check(label, fn) {
     assert.equal(now.parent, 'FreeInLayout');
     await page.locator('button[title^="Undo ("]').click(); await settle();
     assert.equal((await obj('first')).laidOut, true);
+  });
+  await check('custom slots: added from the Form tab, offered to connections, removed', async () => {
+    await open('rich.ui');
+    await page.mouse.click(...(await at(300, 280))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const field = page.locator('.method-list input[aria-label="Signature of the new slot"]');
+    await field.fill('not valid'); await field.press('Enter');
+    assert.ok(await page.locator('.method-list .rename-error', { hasText: 'argument types' }).count(), 'a bad signature is explained');
+    await field.fill('save(bool)'); await field.press('Enter'); await settle();
+    assert.ok(await page.locator('.method-row', { hasText: 'save(bool)' }).count(), 'the slot is listed');
+    const d = await client.request('describe', { docId, name: (await backendNow()).objects[0].name });
+    assert.ok(d.slots.some((m) => m.signature === 'save(bool)'), 'the engine knows it');
+    await page.locator('button[aria-label="Remove save(bool)"]').click(); await settle();
+    assert.equal(await page.locator('.method-row', { hasText: 'save(bool)' }).count(), 0);
   });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');

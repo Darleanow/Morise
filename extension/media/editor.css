@@ -417,3 +417,7 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 
 .qa-hint-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qa-keys { flex: none; white-space: nowrap; }
+
+.method-list { display: flex; flex-direction: column; gap: 2px; margin: 4px 10px; }
+.method-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; }
+.method-row code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }

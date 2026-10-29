@@ -61,6 +61,8 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("addAction")) return addAction(p);
     if (method == QLatin1String("removeAction")) return removeAction(p);
     if (method == QLatin1String("useAction")) return useAction(p);
+    if (method == QLatin1String("customMethods")) return customMethods(p);
+    if (method == QLatin1String("setCustomMethods")) return setCustomMethods(p);
     if (method == QLatin1String("previewEvent")) return previewEvent(p);
     if (method == QLatin1String("previewStop")) return previewStop(p);
     if (method == QLatin1String("resources")) return resources(p);
@@ -437,6 +439,22 @@ QJsonObject Host::describe(const QJsonObject &p)
                       {QLatin1String("params"), params},
                       {QLatin1String("owner"), QString::fromLatin1(m.enclosingMetaObject()->className())}};
         (m.methodType() == QMetaMethod::Signal ? signalsArr : slotsArr).append(o);
+    }
+    // The form's own slots and signals (Designer's "Edit Signals/Slots"), offered like any other method.
+    auto *metaDb = qobject_cast<qdesigner_internal::MetaDataBase *>(m_core->metaDataBase());
+    if (auto *item = metaDb ? metaDb->metaDataBaseItem(w) : nullptr) {
+        auto fake = [&](const QStringList &list, QJsonArray &into) {
+            for (const QString &sig : list) {
+                const int open = sig.indexOf(QLatin1Char('('));
+                QJsonArray params;
+                for (const QString &t : sig.mid(open + 1, sig.size() - open - 2).split(QLatin1Char(','), Qt::SkipEmptyParts))
+                    params.append(QJsonObject{{QLatin1String("type"), t.trimmed()}, {QLatin1String("name"), QString()}});
+                into.append(QJsonObject{{QLatin1String("name"), sig.left(open)}, {QLatin1String("signature"), sig}, {QLatin1String("params"), params},
+                                        {QLatin1String("owner"), QStringLiteral("(form)")}, {QLatin1String("custom"), true}});
+            }
+        };
+        fake(item->fakeSignals(), signalsArr);
+        fake(item->fakeSlots(), slotsArr);
     }
     QJsonArray chain;
     for (const QMetaObject *c = mo; c; c = c->superClass())

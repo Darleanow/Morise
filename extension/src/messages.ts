@@ -55,6 +55,10 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'useAction':
             return typeof m.target === 'string' && m.target.length > 0 && m.target.length < 200 && (m.separator === true || (typeof m.action === 'string' && m.action.length > 0 && m.action.length < 200))
                 ? { type: 'useAction', target: m.target, ...(m.separator === true ? { separator: true } : { action: m.action as string }), ...(m.remove === true ? { remove: true } : {}) } : undefined;
+        case 'setCustomMethods': {
+            const list = (v: unknown) => Array.isArray(v) && v.length <= 200 && v.every((x) => typeof x === 'string' && x.length > 0 && x.length < 300);
+            return list(m.slots) && list(m.signals) ? { type: 'setCustomMethods', slots: m.slots as string[], signals: m.signals as string[] } : undefined;
+        }
         case 'removeAction':
             return typeof m.name === 'string' && m.name.length > 0 && m.name.length < 200 ? { type: 'removeAction', name: m.name } : undefined;
         case 'removeMenuEntry':

@@ -24,6 +24,7 @@
 #include <QtDesigner/private/abstractdialoggui_p.h>
 #include <QtDesigner/private/connectionedit_p.h>
 #include <QtDesigner/private/qdesigner_command_p.h>
+#include <QtDesigner/private/metadatabase_p.h>
 #include <QtDesigner/private/qdesigner_command2_p.h>
 #include <qdesigner_propertycommand_p.h>
 #include <QtDesigner/QDesignerWidgetDataBaseInterface>
@@ -289,6 +290,8 @@ private:
     QJsonObject addAction(const QJsonObject &p);
     QJsonObject removeAction(const QJsonObject &p);
     QJsonObject useAction(const QJsonObject &p);
+    QJsonObject customMethods(const QJsonObject &p);
+    QJsonObject setCustomMethods(const QJsonObject &p);
     QJsonArray actionTargets(QDesignerFormWindowInterface *fw) const;
 
     /// Targets of an edit: `names` (multi-selection) or the single `name`.

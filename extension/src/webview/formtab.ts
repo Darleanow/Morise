@@ -97,6 +97,42 @@ function placeButton(a: ActionInfo, info: NonNullable<typeof S.formInfo>): HTMLE
     return b;
 }
 
+/** One list of signatures with a field to add one; every change sends the whole pair of lists. */
+function methodList(label: string, list: string[], apply: (next: string[]) => void): HTMLElement {
+    const box = el('div', { className: 'method-list' });
+    for (const sig of list) {
+        box.append(el('div', { className: 'method-row' }, icon('symbol-method'), el('code', {}, sig),
+            button(`Remove ${sig}`, icon('trash'), () => apply(list.filter((x) => x !== sig)), 'icon-btn')));
+    }
+    const input = el('input', { type: 'text', placeholder: `New ${label}, e.g. save(bool)` });
+    input.setAttribute('aria-label', `Signature of the new ${label}`);
+    const error = el('div', { className: 'rename-error' });
+    const add = () => {
+        const v = input.value.trim().replace(/\s+/g, '');
+        if (v === '') {
+            return;
+        }
+        if (!/^[\w+_]+\(([\w+:]\*?,?)*\)$/.test(v)) {
+            error.textContent = 'Use a name followed by its argument types, e.g. save(bool).';
+            return;
+        }
+        if (list.includes(v)) {
+            error.textContent = `${v} already exists.`;
+            return;
+        }
+        error.textContent = '';
+        apply([...list, v]);
+        input.value = '';
+    };
+    input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+            add();
+        }
+    });
+    box.append(el('div', { className: 'action-new' }, input, button(`Add the ${label}`, icon('add'), add, 'icon-btn')), error);
+    return box;
+}
+
 /** The form's actions: a row per action (click to edit it in the inspector), and a field to create one. */
 function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
     const box = el('div', { className: 'action-list' });
@@ -166,6 +202,11 @@ export function renderFormTab(): void {
             textField('Include hints (one per line)', info.includeHints.join('\n'), (v) => apply({ includeHints: v.split('\n').map((l) => l.trim()).filter(Boolean) }), true)),
         el('div', { className: 'section-title' }, 'Resources', el('span', { className: 'dim count' }, String(info.resources.length))),
         resourceList(info),
+        el('div', { className: 'section-title' }, 'Custom slots', el('span', { className: 'dim count' }, String(info.customSlots.length))),
+        methodList('slot', info.customSlots, (next) => send({ type: 'setCustomMethods', slots: next, signals: info.customSignals })),
+        el('div', { className: 'section-title' }, 'Custom signals', el('span', { className: 'dim count' }, String(info.customSignals.length))),
+        methodList('signal', info.customSignals, (next) => send({ type: 'setCustomMethods', slots: info.customSlots, signals: next })),
+        el('p', { className: 'note' }, 'Slots and signals of the form itself, offered in the connection dialog and saved in the .ui.'),
         el('div', { className: 'section-title' }, 'Actions', el('span', { className: 'dim count' }, String(info.actions.length))),
         actionList(info),
         el('div', { className: 'section-title' }, 'Keyboard focus order', el('span', { className: 'dim count' }, String(S.tabOrder?.length ?? 0))),

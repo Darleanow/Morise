@@ -77,6 +77,15 @@ QJsonObject Host::connectWidgets(const QJsonObject &p)
                 }
             }
         }
+        // A container (the form above all) is crowded with children: aim at a spot of its own, or the drop would
+        // land on one of them.
+        const bool container = w == fw->mainContainer() || m_core->widgetDataBase()->isContainer(w);
+        if (container) {
+            for (int y = r.top(); y <= r.bottom(); y += 8)
+                for (int x = r.left(); x <= r.right(); x += 8)
+                    if (!w->childAt(x, y))
+                        candidates.prepend(QPoint(x, y));
+        }
         for (const QPoint &c : std::as_const(candidates)) {
             if (!r.contains(c))
                 continue;

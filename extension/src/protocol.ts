@@ -107,6 +107,9 @@ export interface FormInfo {
     resources: ResourceFile[];
     /** The form's actions (menu entries, tool bar buttons), for the action editor. */
     actions: ActionInfo[];
+    /** The form's own slots and signals (Designer's "Edit Signals/Slots"), as signatures like save(bool). */
+    customSlots: string[];
+    customSignals: string[];
     /** The menus and tool bars an action can be placed in. */
     actionTargets: ActionTarget[];
 }
@@ -233,6 +236,7 @@ export interface BackendMethods {
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     addAction: { params: { docId: string; text: string; name?: string; checkable?: boolean; shortcut?: string }; result: Snapshot };
     useAction: { params: { docId: string; target: string; action?: string; separator?: boolean; remove?: boolean }; result: Snapshot };
+    setCustomMethods: { params: { docId: string; name?: string; slots: string[]; signals: string[] }; result: Snapshot };
     removeAction: { params: { docId: string; name: string }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
     taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
@@ -300,6 +304,7 @@ export type WebviewToHost =
     | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
     | { type: 'addAction'; text: string; checkable?: boolean; shortcut?: string }
     | { type: 'removeAction'; name: string }
+    | { type: 'setCustomMethods'; slots: string[]; signals: string[] }
     | { type: 'useAction'; target: string; action?: string; separator?: boolean; remove?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }
     | { type: 'taskAction'; name: string; text?: string; path?: number[] }
