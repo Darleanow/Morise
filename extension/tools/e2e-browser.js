@@ -27,7 +27,7 @@ async function check(label, fn) {
   const client = new BackendClient({ executable: path.join(ROOT, 'backend/build/designer_backend') });
   await client.start();
   const browser = await chromium.launch({ executablePath: process.env.CHROME });
-  const ctx = await browser.newContext({ viewport: { width: 1400, height: 800 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: { width: Number(process.env.VW || 1400), height: Number(process.env.VH || 800) }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(e.message));

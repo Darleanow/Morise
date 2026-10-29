@@ -106,6 +106,26 @@ export function buildToolbar(): void {
     right.dataset.panel = 'right';
     toolbar.append(right);
     syncPanelButtons();
+    watchOverflow();
+}
+
+/** A narrow editor cannot show every button: the wheel scrolls the bar sideways and a fade shows there is more. */
+function watchOverflow(): void {
+    const mark = () => {
+        toolbar.classList.toggle('more-right', toolbar.scrollLeft + toolbar.clientWidth < toolbar.scrollWidth - 2);
+        toolbar.classList.toggle('more-left', toolbar.scrollLeft > 2);
+    };
+    toolbar.addEventListener('scroll', mark, { passive: true });
+    toolbar.addEventListener('wheel', (ev) => {
+        if (toolbar.scrollWidth > toolbar.clientWidth && Math.abs(ev.deltaY) > Math.abs(ev.deltaX)) {
+            toolbar.scrollLeft += ev.deltaY;
+            ev.preventDefault();
+        }
+    }, { passive: false });
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(mark).observe(toolbar);
+    }
+    mark();
 }
 
 function syncPanelButtons(): void {

@@ -429,3 +429,7 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .thumb-cell { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 2px; background: var(--vscode-input-background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--vscode-foreground); }
 .thumb-cell:hover { border-color: var(--vscode-focusBorder); }
 .thumb-cell img { max-width: 32px; max-height: 32px; image-rendering: auto; }
+
+#toolbar.more-right { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+#toolbar.more-left { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+#toolbar.more-left.more-right { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
