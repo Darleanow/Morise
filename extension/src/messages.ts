@@ -47,6 +47,11 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'addMenuEntry':
             return typeof m.menu === 'string' && (m.separator === true || (typeof m.text === 'string' && m.text.trim() !== '' && m.text.length < 200))
                 ? { type: 'addMenuEntry', menu: m.menu, ...(m.separator === true ? { separator: true } : { text: m.text as string }) } : undefined;
+        case 'addAction':
+            return typeof m.text === 'string' && m.text.trim() !== '' && m.text.length < 200 && (m.shortcut === undefined || (typeof m.shortcut === 'string' && m.shortcut.length < 100))
+                ? { type: 'addAction', text: m.text, ...(m.checkable === true ? { checkable: true } : {}), ...(typeof m.shortcut === 'string' && m.shortcut !== '' ? { shortcut: m.shortcut } : {}) } : undefined;
+        case 'removeAction':
+            return typeof m.name === 'string' && m.name.length > 0 && m.name.length < 200 ? { type: 'removeAction', name: m.name } : undefined;
         case 'removeMenuEntry':
             return typeof m.menu === 'string' && (m.index === undefined || Number.isInteger(m.index)) ? { type: 'removeMenuEntry', menu: m.menu, ...(m.index !== undefined ? { index: m.index as number } : {}) } : undefined;
         case 'taskAction':

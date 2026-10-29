@@ -282,6 +282,9 @@ private:
     QJsonObject makeSubmenu(const QJsonObject &p);
     static QJsonValue menusOf(QObject *o);
     QJsonObject addMenuEntry(const QJsonObject &p);
+    QJsonArray actionsOf(QDesignerFormWindowInterface *fw) const;
+    QJsonObject addAction(const QJsonObject &p);
+    QJsonObject removeAction(const QJsonObject &p);
 
     /// Targets of an edit: `names` (multi-selection) or the single `name`.
     QObjectList targets(QDesignerFormWindowInterface *fw, const QJsonObject &p) const;

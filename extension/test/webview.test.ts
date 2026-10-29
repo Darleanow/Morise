@@ -932,7 +932,7 @@ describe('webview page', () => {
 
         it('form settings are edited field by field; the tab order is numbered on the form and reorderable', () => {
             $$('.tab').find((t) => t.textContent?.includes('Form'))?.click();
-            post({ snapshot: base(), formInfo: { grid: [10, 10], layoutDefault: [null, null], author: 'Enzo', comment: '', exportMacro: '', pixmapFunction: '', includeHints: [], resourceFiles: [], resources: [] }, tabOrder: ['tabs', 'go'] });
+            post({ snapshot: base(), formInfo: { grid: [10, 10], layoutDefault: [null, null], author: 'Enzo', comment: '', exportMacro: '', pixmapFunction: '', includeHints: [], resourceFiles: [], resources: [], actions: [] }, tabOrder: ['tabs', 'go'] });
             sent.length = 0;
             const gx = $('input[aria-label="Grid X"]') as HTMLInputElement;
             gx.value = '5'; gx.dispatchEvent(new dom.window.Event('change'));

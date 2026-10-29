@@ -397,3 +397,12 @@ table.grid input { width: 100%; min-width: 70px; box-sizing: border-box; }
 .palette-role.changed { font-weight: 600; }
 .locale-editor { display: flex; gap: 4px; }
 .locale-editor select { flex: 1; min-width: 0; }
+
+.action-list { display: flex; flex-direction: column; gap: 2px; margin: 4px 10px; }
+.action-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
+.action-row:hover, .action-row:focus-visible { background: var(--vscode-list-hoverBackground); outline: none; }
+.action-row:focus-visible { outline: 1px solid var(--vscode-focusBorder); }
+.action-text { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.action-meta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.action-new { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.action-new input[type=text] { flex: 1; min-width: 0; }

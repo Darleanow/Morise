@@ -78,6 +78,46 @@ function resourceList(info: NonNullable<typeof S.formInfo>): HTMLElement {
     return box;
 }
 
+/** The form's actions: a row per action (click to edit it in the inspector), and a field to create one. */
+function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
+    const box = el('div', { className: 'action-list' });
+    for (const a of info.actions) {
+        const row = el('div', { className: 'action-row', role: 'button', tabIndex: 0, title: `Edit ${a.name} in the inspector` },
+            icon(a.checkable ? 'check' : 'symbol-event'), el('span', { className: 'action-text' }, a.text || a.name),
+            el('span', { className: 'dim action-meta' }, [a.shortcut, a.usedIn.length > 0 ? `in ${a.usedIn.join(', ')}` : 'unused'].filter(Boolean).join('  ·  ')),
+            button(`Remove ${a.name}`, icon('trash'), () => send({ type: 'removeAction', name: a.name }), 'icon-btn'));
+        const open = () => send({ type: 'inspect', name: a.name });
+        row.addEventListener('click', (ev) => {
+            if (!(ev.target as HTMLElement).closest('button')) {
+                open();
+            }
+        });
+        row.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+                open();
+            }
+        });
+        box.append(row);
+    }
+    const text = el('input', { type: 'text', placeholder: 'New action text, e.g. Save As…' });
+    text.setAttribute('aria-label', 'Text of the new action');
+    const checkable = el('input', { type: 'checkbox' });
+    const create = () => {
+        if (text.value.trim() !== '') {
+            send({ type: 'addAction', text: text.value.trim(), ...(checkable.checked ? { checkable: true } : {}) });
+            text.value = '';
+        }
+    };
+    text.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+            create();
+        }
+    });
+    box.append(el('div', { className: 'action-new' }, text, el('label', { className: 'dim' }, checkable, ' checkable'), button('Add the action', icon('add'), create, 'icon-btn')),
+        el('p', { className: 'note' }, 'Actions are what menu entries and tool bar buttons trigger. Click one to edit its text, icon and shortcut.'));
+    return box;
+}
+
 /** Form-wide settings: grid, layout defaults, metadata, and the keyboard focus order. */
 export function renderFormTab(): void {
     const info = S.formInfo;
@@ -106,6 +146,8 @@ export function renderFormTab(): void {
             textField('Include hints (one per line)', info.includeHints.join('\n'), (v) => apply({ includeHints: v.split('\n').map((l) => l.trim()).filter(Boolean) }), true)),
         el('div', { className: 'section-title' }, 'Resources', el('span', { className: 'dim count' }, String(info.resources.length))),
         resourceList(info),
+        el('div', { className: 'section-title' }, 'Actions', el('span', { className: 'dim count' }, String(info.actions.length))),
+        actionList(info),
         el('div', { className: 'section-title' }, 'Keyboard focus order', el('span', { className: 'dim count' }, String(S.tabOrder?.length ?? 0))),
         el('p', { className: 'note' }, 'The order Tab moves through the widgets, numbered on the form. Drag a row, or use the arrows.'));
     frag.append(S.tabOrder && S.tabOrder.length > 0 ? tabOrderList(S.tabOrder) : el('div', { className: 'hint' }, 'No widget takes keyboard focus.'));

@@ -48,7 +48,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -69,6 +69,8 @@ async function check(label, fn) {
         case 'makeSubmenu': snap = await client.request('makeSubmenu', { ...d, menu: m.menu, index: m.index }); break;
         case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
+        case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
+        case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;
         case 'setContents': snap = await client.request('setContents', { ...d, name: m.name, contents: m.contents }); break;
@@ -884,6 +886,24 @@ async function check(label, fn) {
     await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();
     const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
     assert.ok(String(icon.value).includes('save.png'), String(icon.value));
+  });
+  await check('actions: the Form tab lists them, creates one, opens it in the inspector, removes it, and undo brings it back', async () => {
+    await open('mainwindow.ui');
+    await page.mouse.click(...(await at(60, 35))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const field = page.locator('.action-new input[type=text]');
+    await field.fill('Save As'); await field.press('Enter'); await settle();
+    const row = page.locator('.action-row', { hasText: 'Save As' });
+    assert.equal(await row.count(), 1, 'the new action is listed');
+    assert.ok((await row.textContent()).includes('unused'));
+    await row.click(); await settle();
+    assert.ok(await page.locator('#inspector [aria-label="text"], #inspector input').count() > 0, 'its properties open in the inspector');
+    assert.equal(((await backendNow()).objects || []).length > 0, true);
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    await page.locator('.action-row', { hasText: 'Save As' }).locator('button[aria-label^="Remove"]').click(); await settle();
+    assert.equal(await page.locator('.action-row', { hasText: 'Save As' }).count(), 0, 'removed');
+    await page.locator('button[title^="Undo ("]').click(); await settle();
+    assert.equal(await page.locator('.action-row', { hasText: 'Save As' }).count(), 1, 'undo restores it');
   });
   await check('preview: the form is live, a click checks a box, typing fills a field, a combo opens and selects', async () => {
     await open('interactive.ui');

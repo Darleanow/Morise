@@ -119,7 +119,8 @@ QJsonObject Host::formInfo(const QJsonObject &p)
             {QLatin1String("exportMacro"), fw->exportMacro()}, {QLatin1String("pixmapFunction"), fw->pixmapFunction()},
             {QLatin1String("includeHints"), stringsToJson(fw->includeHints())},
             {QLatin1String("resourceFiles"), stringsToJson(fw->resourceFiles())},
-            {QLatin1String("resources"), resources(p).value(QLatin1String("files"))}};
+            {QLatin1String("resources"), resources(p).value(QLatin1String("files"))},
+            {QLatin1String("actions"), actionsOf(fw)}};
 }
 
 QJsonObject Host::setFormInfo(const QJsonObject &p)
@@ -482,6 +483,101 @@ QJsonObject Host::makeSubmenu(const QJsonObject &p)
     QCoreApplication::processEvents();
     if (!real.at(index)->menu())
         throw ProtocolError{QStringLiteral("the sub menu could not be created")};
+    return snapshot(fw);
+}
+
+} // namespace qdr
+
+namespace qdr {
+
+/// The form's own actions (menu entries and tool bar buttons), without the design-time placeholders and the
+/// actions that only open a menu: those belong to the menus editor.
+QJsonArray Host::actionsOf(QDesignerFormWindowInterface *fw) const
+{
+    QJsonArray out;
+    const QList<QWidget *> widgets = fw->mainContainer()->findChildren<QWidget *>();
+    for (QAction *a : fw->mainContainer()->findChildren<QAction *>()) {
+        if (isPlaceholder(a) || a->menu() || a->objectName().isEmpty())
+            continue;
+        QJsonArray usedIn;
+        for (QWidget *w : widgets)
+            if (w->actions().contains(a) && !idOf(w).isEmpty())
+                usedIn.append(idOf(w));
+        // The engine keeps the shortcut in its property sheet, not on the QAction.
+        QString shortcut = a->shortcut().toString();
+        if (auto *sheet = qt_extension<QDesignerPropertySheetExtension *>(m_core->extensionManager(), a)) {
+            const int index = sheet->indexOf(QStringLiteral("shortcut"));
+            if (index >= 0)
+                shortcut = qvariant_cast<qdesigner_internal::PropertySheetKeySequenceValue>(sheet->property(index)).value().toString();
+        }
+        out.append(QJsonObject{{QLatin1String("name"), a->objectName()}, {QLatin1String("text"), a->text()},
+                               {QLatin1String("separator"), a->isSeparator()}, {QLatin1String("checkable"), a->isCheckable()},
+                               {QLatin1String("shortcut"), shortcut}, {QLatin1String("hasIcon"), !a->icon().isNull()},
+                               {QLatin1String("usedIn"), usedIn}});
+    }
+    return out;
+}
+
+/// Creates an action the way the engine's action editor does, as one undo step.
+QJsonObject Host::addAction(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    const QString text = p.value(QLatin1String("text")).toString().trimmed();
+    if (text.isEmpty())
+        throw ProtocolError{QStringLiteral("an action needs a text")};
+    QString name = p.value(QLatin1String("name")).toString().trimmed();
+    if (name.isEmpty()) {
+        // Same naming as Designer: "action" followed by the text as an identifier.
+        QString id;
+        for (const QChar c : text)
+            if (c.isLetterOrNumber())
+                id += id.isEmpty() ? c.toUpper() : c;
+        name = QStringLiteral("action") + (id.isEmpty() ? QStringLiteral("New") : id);
+    }
+    static const QRegularExpression ident(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
+    if (!ident.match(name).hasMatch())
+        throw ProtocolError{QStringLiteral("not a valid object name: ") + name};
+    auto *action = new QAction(fw);
+    action->setObjectName(name);
+    fw->ensureUniqueObjectName(action);
+    action->setText(text);
+    auto *sheet = qt_extension<QDesignerPropertySheetExtension *>(m_core->extensionManager(), action);
+    auto initial = [&](const QString &prop, const QVariant &value) {
+        const int index = sheet->indexOf(prop);
+        if (index >= 0) {
+            sheet->setProperty(index, value);
+            sheet->setChanged(index, true);
+        }
+    };
+    if (p.value(QLatin1String("checkable")).toBool())
+        initial(QStringLiteral("checkable"), true);
+    const QString shortcut = p.value(QLatin1String("shortcut")).toString();
+    if (!shortcut.isEmpty())
+        initial(QStringLiteral("shortcut"), QVariant::fromValue(qdesigner_internal::PropertySheetKeySequenceValue(QKeySequence(shortcut))));
+    auto *cmd = new qdesigner_internal::AddActionCommand(fw);
+    cmd->init(action);
+    fw->commandHistory()->push(cmd);
+    QJsonObject out = snapshot(fw);
+    out.insert(QLatin1String("created"), action->objectName());
+    return out;
+}
+
+/// Deletes an action from the form and from every menu and tool bar that uses it (one undo step).
+QJsonObject Host::removeAction(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    const QString name = p.value(QLatin1String("name")).toString();
+    QAction *target = nullptr;
+    for (QAction *a : fw->mainContainer()->findChildren<QAction *>(name))
+        if (a->objectName() == name && !isPlaceholder(a) && !a->menu())
+            target = a;
+    if (!target)
+        throw ProtocolError{QStringLiteral("unknown action: ") + name};
+    fw->beginCommand(QStringLiteral("Remove action %1").arg(name));
+    auto *cmd = new qdesigner_internal::RemoveActionCommand(fw);
+    cmd->init(target);
+    fw->commandHistory()->push(cmd);
+    fw->endCommand();
     return snapshot(fw);
 }
 

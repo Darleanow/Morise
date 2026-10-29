@@ -553,6 +553,24 @@ check("a separator cannot become a sub menu", "error" in call("makeSubmenu", doc
 xml_sm = saved("sm1")
 check("sub menus are saved and accepted by uic", "menuRecent" in xml_sm and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_sm, capture_output=True, text=True).returncode == 0)
 
+# action editor: create, list, edit through the inspector, remove, undo
+acts0 = call("formInfo", docId="sm1")["result"]["actions"]
+check("the form actions list holds the menu entries but not the menus themselves", {a["text"] for a in acts0} >= {"first.txt"} and not any(a["name"] == "menuFile" for a in acts0), acts0)
+r = call("addAction", docId="sm1", text="Save As", checkable=True, shortcut="Ctrl+Shift+S")
+check("an action is created with a unique engine-style name", r.get("result", {}).get("created") == "actionSaveAs", r)
+a1 = next((a for a in call("formInfo", docId="sm1")["result"]["actions"] if a["name"] == "actionSaveAs"), None)
+check("the new action is checkable and has its shortcut", a1 and a1["checkable"] and a1["shortcut"] == "Ctrl+Shift+S" and a1["usedIn"] == [], a1)
+check("a second action with the same text gets another name", call("addAction", docId="sm1", text="Save As")["result"]["created"] == "actionSaveAs_2")
+check("an invalid action name is refused", "error" in call("addAction", docId="sm1", text="x", name="9 bad"))
+check("an action has properties the inspector can edit", any(x["name"] == "text" for x in call("properties", docId="sm1", name="actionSaveAs")["result"]["properties"]))
+check("an unused action is saved and accepted by uic", (lambda x: "actionSaveAs" in x and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=x, capture_output=True, text=True).returncode == 0)(saved("sm1")))
+check("an action can be removed", "error" not in call("removeAction", docId="sm1", name="actionSaveAs_2"))
+check("the removed action is gone", all(a["name"] != "actionSaveAs_2" for a in call("formInfo", docId="sm1")["result"]["actions"]))
+call("undo", docId="sm1")
+check("removing an action is one undo step", any(a["name"] == "actionSaveAs_2" for a in call("formInfo", docId="sm1")["result"]["actions"]))
+check("an unknown action is refused", "error" in call("removeAction", docId="sm1", name="nope"))
+check("a menu cannot be removed as an action", "error" in call("removeAction", docId="sm1", name="menuFile"))
+
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
 check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))

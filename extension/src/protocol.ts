@@ -105,7 +105,11 @@ export interface FormInfo {
     resourceFiles: string[];
     /** The resource files with what they contain, to choose icons from. */
     resources: ResourceFile[];
+    /** The form's actions (menu entries, tool bar buttons), for the action editor. */
+    actions: ActionInfo[];
 }
+
+export interface ActionInfo { name: string; text: string; separator: boolean; checkable: boolean; shortcut: string; hasIcon: boolean; usedIn: string[] }
 
 export interface ResourceFile { path: string; exists: boolean; prefixes: { prefix: string; files: string[] }[] }
 
@@ -223,6 +227,8 @@ export interface BackendMethods {
     makeSubmenu: { params: { docId: string; menu: string; index: number }; result: Snapshot };
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
+    addAction: { params: { docId: string; text: string; name?: string; checkable?: boolean; shortcut?: string }; result: Snapshot };
+    removeAction: { params: { docId: string; name: string }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
     taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
     setContents: { params: { docId: string; name: string; contents: GridContents }; result: Snapshot };
@@ -286,6 +292,8 @@ export type WebviewToHost =
     | { type: 'makeSubmenu'; menu: string; index: number }
     | { type: 'addMenu'; title: string }
     | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
+    | { type: 'addAction'; text: string; checkable?: boolean; shortcut?: string }
+    | { type: 'removeAction'; name: string }
     | { type: 'removeMenuEntry'; menu: string; index?: number }
     | { type: 'taskAction'; name: string; text?: string; path?: number[] }
     | { type: 'setContents'; name: string; contents: GridContents }
