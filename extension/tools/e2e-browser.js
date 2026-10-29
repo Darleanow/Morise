@@ -1058,6 +1058,25 @@ async function check(label, fn) {
     assert.match(await page.locator('.style-status').textContent(), /Valid/);
     await page.keyboard.press('Escape');
   });
+  await check('keyboard: Delete, arrows and shortcuts typed in a field never act on the form', async () => {
+    await open('rich.ui');
+    const go = await obj('go');
+    await page.mouse.click(...(await at(go.x + 10, go.y + 8))); await settle();
+    const n = (await backendNow()).objects.length;
+    const before = JSON.stringify(await obj('go'));
+    for (const field of ['#inspector input[placeholder^="Filter"]', '#palette-filter, #left input[type=search], #left input[type=text]']) {
+      const f = page.locator(field).first();
+      if (!(await f.count())) continue;
+      await f.click();
+      await page.keyboard.type('abc');
+      await page.keyboard.press('Delete'); await page.keyboard.press('Backspace');
+      await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Control+d');
+      await settle();
+    }
+    assert.equal((await backendNow()).objects.length, n, 'nothing was deleted or duplicated');
+    assert.equal(JSON.stringify(await obj('go')), before, 'nothing moved');
+  });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');
     const go = await obj('go');
