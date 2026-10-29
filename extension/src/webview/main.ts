@@ -14,7 +14,7 @@ import { closeMenu, menuOpen, objectMenu, openMenu } from './menu';
 import { initOutline, refreshOutlineHover, renderOutline } from './outline';
 import { initPalette, learnIcons, renderPalette } from './palette';
 import { anyPopupOpen } from './popup';
-import { onPreview, openPreview, refreshPreviewSoon } from './preview';
+import { onPreview, onPreviewFrame, openPreview, refreshPreviewSoon } from './preview';
 import { closeQuickAdd, openQuickAdd, quickAddOpen } from './quickadd';
 import { closeRename, openRename, renameOpen } from './rename';
 import { initSplitters } from './splitter';
@@ -247,6 +247,9 @@ window.addEventListener('message', (ev: MessageEvent<HostToWebview>) => {
     switch (msg.type) {
         case 'state':
             apply(msg);
+            break;
+        case 'previewFrame':
+            onPreviewFrame(msg.result);
             break;
         case 'preview':
             onPreview(msg.result, msg.style, msg.dark);

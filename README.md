@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (167 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (172 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 97 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -119,7 +119,8 @@ add, delete; undoable). Promote a widget to a custom class (and demote) from the
 keyboard focus order (numbered on the form; drag rows or use the arrows).
 
 **Preview.** Ctrl+R or the toolbar button shows the form as the application will draw it (no grid, no design-time
-widgets) in any installed Qt style, light or dark. It is a static render.
+widgets) in any installed Qt style, light or dark. It is live: click, type, drag sliders, scroll, Tab through the focus
+chain, open combo boxes (their list is drawn over the form). Hover effects and animations are not forwarded.
 
 **Documents.** VS Code undo/redo, dirty state, atomic save, hot-exit backup, external change reload, close.
 Rendering is done by Qt at `devicePixelRatio * zoom`, so text is crisp on HiDPI screens and at any zoom.
@@ -159,7 +160,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Connections** are created by driving the engine's own signal/slot editor with synthesised mouse events and
   answering its connect dialog from the page's choice; this relies on Designer's internal widget names
   (`signalList`, `slotList`) and is pinned to Qt 6.11.3.
-- **Preview** is a static image, not an interactive window.
+- **Preview** forwards mouse, wheel and keyboard to a form the backend keeps alive offscreen and sends back pictures. Hover states, caret blink, tooltips, drag and drop and menus opened by the application are not reproduced.
 - **Round trip fidelity:** on the 84 `.ui` files of qttools, all load and all saved files are accepted by `uic`;
   44 produce identical `uic` output, 40 differ. 8 of the 40 were inspected and are normalisations
   (flag order, `NoButton`, spacer names, layout-computed geometry); the other 32 were **not** inspected.

@@ -63,6 +63,18 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return typeof m.name === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y) ? { type: 'moveWidget', name: m.name, x: m.x as number, y: m.y as number, ...side(m) } : undefined;
         case 'reparent':
             return typeof m.parent === 'string' && Array.isArray(m.items) && m.items.length <= 1000 && m.items.every(isItem) ? { type: 'reparent', parent: m.parent, items: m.items as { name: string; rect: number[] }[] } : undefined;
+        case 'previewStop':
+            return { type: 'previewStop' };
+        case 'previewEvent': {
+            const kinds = ['press', 'release', 'dblclick', 'move', 'wheel', 'keydown', 'keyup'];
+            const num = (v: unknown) => v === undefined || (typeof v === 'number' && Number.isFinite(v));
+            if (typeof m.kind !== 'string' || !kinds.includes(m.kind) || !num(m.x) || !num(m.y) || !num(m.button) || !num(m.mods) || !num(m.dx) || !num(m.dy)
+                || (m.key !== undefined && (typeof m.key !== 'string' || m.key.length > 20))) {
+                return undefined;
+            }
+            return { type: 'previewEvent', kind: m.kind as never, x: m.x as number | undefined, y: m.y as number | undefined, button: m.button as number | undefined,
+                mods: m.mods as number | undefined, dx: m.dx as number | undefined, dy: m.dy as number | undefined, key: m.key as string | undefined };
+        }
         case 'preview':
             return typeof m.style === 'string' && m.style.length <= 60 && typeof m.dark === 'boolean' && Number.isFinite(m.scale) ? { type: 'preview', style: m.style, dark: m.dark, scale: Math.min(4, Math.max(1, m.scale as number)) } : undefined;
         case 'pageOp':

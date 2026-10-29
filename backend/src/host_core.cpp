@@ -57,6 +57,8 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("setItems")) return setItems(p);
     if (method == QLatin1String("setContents")) return setContents(p);
     if (method == QLatin1String("addMenu")) return addMenu(p);
+    if (method == QLatin1String("previewEvent")) return previewEvent(p);
+    if (method == QLatin1String("previewStop")) return previewStop(p);
     if (method == QLatin1String("resources")) return resources(p);
     if (method == QLatin1String("addResource")) return changeResource(p, true);
     if (method == QLatin1String("removeResource")) return changeResource(p, false);
@@ -226,6 +228,7 @@ QJsonObject Host::close(const QJsonObject &p)
         return {};
     QDesignerFormWindowInterface *fw = it.value();
     endGesture(fw);
+    previewStop(p);
     m_forms.erase(it);
     m_scales.remove(fw);
     fw->clearSelection(false);

@@ -90,6 +90,8 @@ async function check(label, fn) {
         case 'history': { const h = await client.request('history', d); await post({ type: 'history', items: h.items, index: h.index }); return; }
         case 'want': wants = { tabOrder: m.tabOrder, formInfo: m.formInfo }; break;
         case 'describe': await post({ type: 'describeResult', name: m.name, result: await client.request('describe', { ...d, name: m.name }).catch(() => null) }); return;
+        case 'previewStop': await client.request('previewStop', { docId }); return;
+        case 'previewEvent': { const { type: _t, ...input } = m; await post({ type: 'previewFrame', result: await client.request('previewEvent', { docId, ...input }) }); return; }
         case 'preview': await post({ type: 'preview', result: await client.request('preview', { ...d, style: m.style, dark: m.dark, scale: m.scale }), style: m.style, dark: m.dark }); return;
         case 'ready': break;
         default: return;
@@ -876,6 +878,31 @@ async function check(label, fn) {
     await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();
     const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
     assert.ok(String(icon.value).includes('save.png'), String(icon.value));
+  });
+  await check('preview: the form is live, a click checks a box, typing fills a field, a combo opens and selects', async () => {
+    await open('interactive.ui');
+    await page.keyboard.press('Control+r'); await page.waitForSelector('.popup.preview .preview-img');
+    const img = page.locator('.preview-img');
+    await page.waitForFunction(() => document.querySelector('.preview-img')?.getAttribute('src')?.startsWith('data:image/png'));
+    const src = () => img.getAttribute('src');
+    const settleFrame = async (before) => { await page.waitForFunction((b) => document.querySelector('.preview-img').getAttribute('src') !== b, before, { timeout: 4000 }); await page.waitForTimeout(80); };
+    const box = await img.boundingBox();
+    const k = box.width / 300;
+    let before = await src();
+    await page.mouse.click(box.x + 20 * k, box.y + 20 * k); await settleFrame(before);
+    before = await src();
+    await page.mouse.click(box.x + 60 * k, box.y + 57 * k);
+    await page.keyboard.type('Qt');
+    await settleFrame(before);
+    before = await src();
+    await page.mouse.click(box.x + 60 * k, box.y + 97 * k); await settleFrame(before);
+    await shot('e2e-preview-live');
+    await page.waitForTimeout(600);
+    before = await src();
+    await page.mouse.click(box.x + 60 * k, box.y + 125 * k); await settleFrame(before);
+    await shot('e2e-preview-live2');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('.popup.preview').count(), 0);
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

@@ -475,6 +475,23 @@ check("a resource file can be removed", call("formInfo", docId="rs1")["result"][
 call("undo", docId="rs1")
 check("removing a resource file is undoable", len(call("formInfo", docId="rs1")["result"]["resources"]) == 1)
 
+# live preview: the form built as the application builds it reacts to the mouse and keyboard
+call("open", docId="lv1", xml=open(os.path.join(HERE, "..", "testdata", "interactive.ui"), encoding="utf-8").read())
+f0 = call("preview", docId="lv1", style="Fusion", scale=1)["result"]["png"]
+pv = lambda **k: call("previewEvent", docId="lv1", **k)["result"]["png"]
+pv(kind="press", x=20, y=20, button=0, mods=0)
+f1 = pv(kind="release", x=20, y=20, button=0, mods=0)
+check("a click in the preview checks the box", f1 != f0)
+pv(kind="press", x=60, y=57, button=0, mods=0); pv(kind="release", x=60, y=57, button=0, mods=0)
+for ch in "Qt":
+    pv(kind="keydown", key=ch, mods=0)
+    f2 = pv(kind="keyup", key=ch, mods=0)
+check("typing in the preview fills the line edit", f2 != f1)
+pv(kind="press", x=60, y=97, button=0, mods=0); f3 = pv(kind="release", x=60, y=97, button=0, mods=0)
+check("a combo box opens its list over the preview", f3 != f2)
+check("the preview is stopped on request", "error" not in call("previewStop", docId="lv1") and "error" in call("previewEvent", docId="lv1", kind="move", x=1, y=1))
+check("backend still alive after the preview", "result" in call("snapshot", docId="lv1"))
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

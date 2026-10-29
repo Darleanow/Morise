@@ -69,7 +69,9 @@
 #include <QKeySequence>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QEnterEvent>
 #include <QPointer>
+#include <QWheelEvent>
 #include <QUndoCommand>
 #include <QXmlStreamReader>
 #include <QDockWidget>
@@ -81,7 +83,9 @@
 #include <QScrollArea>
 #include <QMenu>
 #include <QLayout>
+#include <QEnterEvent>
 #include <QPointer>
+#include <QWheelEvent>
 #include <QSet>
 #include <QPluginLoader>
 #include <QUndoStack>
@@ -298,6 +302,9 @@ private:
 
     /// The form as the application will show it (no grid, no design-time widgets), in a chosen style.
     QJsonObject preview(const QJsonObject &p);
+    QJsonObject previewEvent(const QJsonObject &p);
+    QJsonObject previewStop(const QJsonObject &p);
+    QJsonObject previewFrame(const QString &docId, const QSize &size) const;
 
     // ---- container pages and the engine's own task menu -----------------------------------------
 
@@ -359,6 +366,16 @@ private:
     QHash<QString, QDesignerFormWindowInterface *> m_forms;
     QHash<QDesignerFormWindowInterface *, qreal> m_scales;
     QSet<QDesignerFormWindowInterface *> m_gestures;
+
+    /// The form as the application builds it, kept alive so the page can click, type and scroll in it.
+    struct PreviewSession {
+        QPointer<QWidget> root;
+        QPointer<QWidget> pressed;
+        QPointer<QWidget> focus;
+        QPointer<QWidget> hover;
+        qreal scale = 1;
+    };
+    QHash<QString, PreviewSession> m_previews;
 };
 
 } // namespace qdr

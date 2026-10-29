@@ -431,6 +431,15 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 this.post(doc, panel, { type: 'describeResult', name: msg.name, result });
                 return;
             }
+            case 'previewStop':
+                await client.request('previewStop', { docId: doc.docId }).catch(() => undefined);
+                return;
+            case 'previewEvent': {
+                const { type: _t, ...input } = msg;
+                const result = await client.request('previewEvent', { docId: doc.docId, ...input });
+                this.post(doc, panel, { type: 'previewFrame', result });
+                return;
+            }
             case 'preview': {
                 const result = await client.request('preview', { docId: doc.docId, style: msg.style, dark: msg.dark, scale: msg.scale });
                 this.post(doc, panel, { type: 'preview', result, style: msg.style, dark: msg.dark });

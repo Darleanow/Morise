@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Interactive</class>
+ <widget class="QWidget" name="Interactive">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>300</width><height>200</height></rect></property>
+  <widget class="QCheckBox" name="check">
+   <property name="geometry"><rect><x>10</x><y>10</y><width>120</width><height>22</height></rect></property>
+   <property name="text"><string>Check me</string></property>
+  </widget>
+  <widget class="QLineEdit" name="edit">
+   <property name="geometry"><rect><x>10</x><y>45</y><width>200</width><height>24</height></rect></property>
+  </widget>
+  <widget class="QComboBox" name="combo">
+   <property name="geometry"><rect><x>10</x><y>85</y><width>140</width><height>24</height></rect></property>
+   <item><property name="text"><string>Alpha</string></property></item>
+   <item><property name="text"><string>Beta</string></property></item>
+   <item><property name="text"><string>Gamma</string></property></item>
+  </widget>
+  <widget class="QSlider" name="slider">
+   <property name="geometry"><rect><x>10</x><y>130</y><width>200</width><height>22</height></rect></property>
+   <property name="orientation"><enum>Qt::Horizontal</enum></property>
+  </widget>
+  <widget class="QPushButton" name="button">
+   <property name="geometry"><rect><x>10</x><y>165</y><width>100</width><height>26</height></rect></property>
+   <property name="text"><string>Push</string></property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -102,7 +102,21 @@ export interface PreviewResult {
     png: string;
     width: number;
     height: number;
-    styles: string[];
+    /** Only in the answer to opening the preview. */
+    styles?: string[];
+}
+
+/** One mouse, wheel or key event of the page for the live preview. Coordinates are form pixels. */
+export interface PreviewInput {
+    kind: 'press' | 'release' | 'dblclick' | 'move' | 'wheel' | 'keydown' | 'keyup';
+    x?: number;
+    y?: number;
+    /** 0 left, 1 middle, 2 right. */
+    button?: number;
+    mods?: number;
+    dx?: number;
+    dy?: number;
+    key?: string;
 }
 
 export interface Snapshot {
@@ -198,6 +212,8 @@ export interface BackendMethods {
     setItems: { params: { docId: string; name: string; items: string[] }; result: Snapshot };
     moveWidget: { params: { docId: string; name: string; x: number; y: number; side?: Side }; result: Snapshot };
     reparent: { params: { docId: string; parent: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
+    previewEvent: { params: { docId: string } & PreviewInput; result: PreviewResult };
+    previewStop: { params: { docId: string }; result: Record<string, never> };
     preview: { params: { docId: string; style?: string; dark?: boolean; scale?: number }; result: PreviewResult };
     containerInfo: { params: { docId: string; name: string }; result: ContainerInfo };
     setCurrentPage: { params: { docId: string; name: string; index: number }; result: Snapshot };
@@ -259,6 +275,8 @@ export type WebviewToHost =
     | { type: 'moveWidget'; name: string; x: number; y: number; side?: Side }
     | { type: 'reparent'; parent: string; items: { name: string; rect: number[] }[] }
     | { type: 'preview'; style: string; dark: boolean; scale: number }
+    | ({ type: 'previewEvent' } & PreviewInput)
+    | { type: 'previewStop' }
     | { type: 'pageOp'; name: string; op: 'add' | 'addAfter' | 'remove' }
     | { type: 'setCurrentPage'; name: string; index: number }
     | { type: 'setTabOrder'; order: string[] }
@@ -292,6 +310,7 @@ export type WebviewToHost =
 export type HostToWebview =
     | { type: 'state'; snapshot: Snapshot; properties: PropertiesResult | null; propertiesFor: string | null; palette: PaletteCategory[]; fonts: string[]; notices: string[]; code: DescribeResult | null; connections: ConnectionInfo[]; container: ContainerInfo | null; tabOrder?: string[]; formInfo?: FormInfo }
     | { type: 'preview'; result: PreviewResult; style: string; dark: boolean }
+    | { type: 'previewFrame'; result: PreviewResult }
     | { type: 'describeResult'; name: string; result: DescribeResult | null }
     | { type: 'history'; items: string[]; index: number }
     | { type: 'error'; message: string }

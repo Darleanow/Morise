@@ -114,7 +114,7 @@ for rnd in range(rounds):
         for i in range(FUZZ // rounds):
             names = [o["name"] for o in snap["objects"]]
             free = [o for o in snap["objects"] if o["parent"] is not None and not o["laidOut"]]
-            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid"])
+            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid", "pview", "pview", "pview", "pview"])
             if k == "add":
                 c, w = rng.choice(entries); req = ("addWidget", dict(category=c, index=w, x=rng.randint(0, 400), y=rng.randint(0, 300)))
             elif k == "action":
@@ -138,6 +138,15 @@ for rnd in range(rounds):
                 req = ("setContents", dict(name=rng.choice(names), contents=rng.choice([
                     dict(columns=cols, rows=["r"] * rng.randint(0, 3), cells=[["x"] * len(cols)] * rng.randint(0, 3)),
                     dict(columns=cols, items=[dict(cells=["i"] * len(cols), children=[dict(cells=["c"], children=[])])] * rng.randint(0, 2))])))
+            elif k == "pview":
+                if rng.random() < 0.08:
+                    req = ("preview", dict(style=rng.choice(["Fusion", "", "Windows"]), scale=1))
+                elif rng.random() < 0.04:
+                    req = ("previewStop", {})
+                else:
+                    kind = rng.choice(["press", "release", "move", "move", "wheel", "keydown", "keyup", "dblclick"])
+                    req = ("previewEvent", dict(kind=kind, x=rng.randint(0, 420), y=rng.randint(0, 300), button=rng.randint(0, 2), mods=rng.choice([0, 0, 0x02000000, 0x04000000]),
+                           dx=rng.randint(-120, 120), dy=rng.randint(-120, 120), key=rng.choice(["a", "Enter", "Tab", "Backspace", "ArrowDown", "Escape", " ", "Home", "Delete", "Z"])))
             elif k == "items" and names:
                 req = ("setItems", dict(name=rng.choice(names), items=rng.sample(["a", "b", "c", "", "d e"], rng.randint(0, 4))))
             elif k == "move" and len(names) > 2:
