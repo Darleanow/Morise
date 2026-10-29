@@ -1,3 +1,4 @@
+import { TEMPLATES, classNameFor, templateXml } from './templates';
 import { randomBytes, randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -149,7 +150,13 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         const diskText = await this.readFile(uri);
         doc.diskText = diskText;
         const restoredFromBackup = openContext.backupId !== undefined;
-        const text = restoredFromBackup ? await this.readFile(vscode.Uri.parse(openContext.backupId as string)) : diskText;
+        let text = restoredFromBackup ? await this.readFile(vscode.Uri.parse(openContext.backupId as string)) : diskText;
+        // A brand new, empty .ui (File > New File): offer Designer's templates instead of failing to parse nothing.
+        const fromTemplate = text.trim() === '';
+        if (fromTemplate) {
+            const pick = await vscode.window.showQuickPick(TEMPLATES.map((t) => ({ label: t.label, description: t.base, detail: t.detail, id: t.id })), { title: `New form for ${path.basename(uri.fsPath)}`, placeHolder: 'Choose a template (Escape for an empty widget)' });
+            text = templateXml(pick?.id ?? 'widget', classNameFor(path.basename(uri.fsPath)));
+        }
         try {
             await this.openInBackend(doc, text);
         } catch (e) {
@@ -164,9 +171,10 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         this.documents.add(doc);
         doc.disposables.push({ dispose: () => this.documents.delete(doc) });
         this.watchExternalChanges(doc);
-        if (restoredFromBackup) {
+        if (restoredFromBackup || fromTemplate) {
             // Content differs from disk; make VS Code show it as modified (no undo entry).
-            queueMicrotask(() => this.changeEmitter.fire({ document: doc }));
+            // A template is announced a little later: VS Code only listens to an editor once its opening has returned.
+            setTimeout(() => this.changeEmitter.fire({ document: doc }), fromTemplate ? 300 : 0);
         }
         doc.disposables.push({ dispose: () => { void this.closeInBackend(doc); } });
         return doc;

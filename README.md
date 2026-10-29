@@ -104,7 +104,7 @@ they are offered in the connection dialog, saved in the `.ui` (`<slots>`) and on
 form itself works even when its children cover it. **Style sheets** are validated live in the larger editor with Qt's own CSS
 parser. **Save as image** (command palette) writes the runtime render as a PNG.
 
-**New forms.** `Qt Designer: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer.
+**New forms.** `Qt Designer: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer. A brand new empty `.ui` file (File > New File) offers the same templates when it is opened.
 
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
