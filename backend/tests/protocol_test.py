@@ -631,6 +631,15 @@ check("removing an action is one undo step", any(a["name"] == "actionSaveAs_2" f
 check("an unknown action is refused", "error" in call("removeAction", docId="sm1", name="nope"))
 check("a menu cannot be removed as an action", "error" in call("removeAction", docId="sm1", name="menuFile"))
 
+# hover states reach the preview: moving over a button redraws it, leaving restores it
+call("open", docId="hv", xml=xml, path=os.path.abspath(SAMPLE))
+_ok = {o["name"]: o for o in call("snapshot", docId="hv")["result"]["objects"]}["okButton"]
+_h0 = call("preview", docId="hv", style="Fusion", scale=1)["result"]["png"]
+_h1 = call("previewEvent", docId="hv", kind="move", x=_ok["x"] + _ok["w"] // 2, y=_ok["y"] + _ok["h"] // 2, button=0, mods=0)["result"]["png"]
+check("moving over a button changes the preview (hover)", _h1 != _h0)
+check("leaving the button restores the preview", call("previewEvent", docId="hv", kind="move", x=1, y=1, button=0, mods=0)["result"]["png"] == _h0)
+call("previewStop", docId="hv")
+
 # a menu created in one form must not leave a popup that swallows the next preview's clicks
 call("open", docId="pvm", xml=open(os.path.join(HERE, "..", "testdata", "interactive.ui"), encoding="utf-8").read())
 pf0 = call("preview", docId="pvm", style="Fusion", scale=1)["result"]["png"]
