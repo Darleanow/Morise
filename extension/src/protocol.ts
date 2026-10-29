@@ -156,6 +156,10 @@ export type GridContents =
     | { kind: 'tree'; columns: string[]; items: TreeItem[] };
 export interface TreeItem { cells: string[]; children: TreeItem[] }
 
+/** One entry of a menu: an action, a separator or a sub menu. */
+export interface MenuEntry { name: string; text: string; separator: boolean; menu?: string; entries?: MenuEntry[] }
+export interface MenuInfo { name: string; title: string; entries: MenuEntry[] }
+
 export interface PropertiesResult {
     class: string;
     /** The object is a layout (not a widget). */
@@ -164,6 +168,8 @@ export interface PropertiesResult {
     items?: string[] | null;
     /** Contents of a table or tree widget, null for other widgets. */
     contents?: GridContents | null;
+    /** Menus of a menu bar, null for other objects. */
+    menus?: MenuInfo[] | null;
     properties: PropertyInfo[];
 }
 
@@ -175,6 +181,9 @@ export interface BackendMethods {
     view: { params: { docId: string; scale: number }; result: Snapshot };
     gesture: { params: { docId: string; phase: 'begin' | 'end'; label?: string }; result: Snapshot };
     setGeometries: { params: { docId: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
+    addMenu: { params: { docId: string; title: string }; result: Snapshot };
+    addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
+    removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
     taskAction: { params: { docId: string; name: string; text: string }; result: Snapshot };
     setContents: { params: { docId: string; name: string; contents: GridContents }; result: Snapshot };
     setItems: { params: { docId: string; name: string; items: string[] }; result: Snapshot };
@@ -230,6 +239,9 @@ export type WebviewToHost =
     | { type: 'cancelGesture' }
     | { type: 'setGeometries'; items: { name: string; rect: number[] }[] }
     /** Move widgets into another container; rects are in form pixels. */
+    | { type: 'addMenu'; title: string }
+    | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
+    | { type: 'removeMenuEntry'; menu: string; index?: number }
     | { type: 'taskAction'; name: string; text: string }
     | { type: 'setContents'; name: string; contents: GridContents }
     | { type: 'setItems'; name: string; items: string[] }

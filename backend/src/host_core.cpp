@@ -56,6 +56,9 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("moveWidget")) return moveWidget(p);
     if (method == QLatin1String("setItems")) return setItems(p);
     if (method == QLatin1String("setContents")) return setContents(p);
+    if (method == QLatin1String("addMenu")) return addMenu(p);
+    if (method == QLatin1String("removeMenuEntry")) return removeMenuEntry(p);
+    if (method == QLatin1String("addMenuEntry")) return addMenuEntry(p);
     if (method == QLatin1String("preview")) return preview(p);
     if (method == QLatin1String("taskActions")) return taskActions(p);
     if (method == QLatin1String("taskAction")) return taskAction(p);
@@ -130,6 +133,11 @@ QObject *Host::objectByName(QDesignerFormWindowInterface *fw, const QString &nam
     for (QLayout *l : fw->mainContainer()->findChildren<QLayout *>(name)) {
         if (l->objectName() == name)
             return l;
+    }
+    // Actions (menu entries, tool bar buttons) have their own property sheet.
+    for (QAction *a : fw->mainContainer()->findChildren<QAction *>(name)) {
+        if (a->objectName() == name)
+            return a;
     }
     return nullptr;
 }

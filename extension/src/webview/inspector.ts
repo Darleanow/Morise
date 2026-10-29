@@ -1,8 +1,8 @@
-import type { ConnectionInfo, MethodInfo, PropertyInfo } from '../protocol';
+import type { ConnectionInfo, MenuEntry, MenuInfo, MethodInfo, PropertyInfo } from '../protocol';
 import { $, button, dims, el, icon } from './dom';
 import { classGlyph, renderOverlay } from './canvas';
 import { openConnectDialog } from './connectdialog';
-import { openAddDynamicProperty, openTextEditor } from './dialogs';
+import { openAddDynamicProperty, openPrompt, openTextEditor } from './dialogs';
 import { openGridEditor } from './gridedit';
 import { editorFor, isBlock, type EditorContext } from './editors';
 import { renderFormTab } from './formtab';
@@ -50,7 +50,12 @@ function renderHeader(): void {
         return;
     }
     if (!o) {
-        headEl.replaceChildren(el('div', { className: 'head-empty' }, 'Nothing selected'));
+        // An object that is not a widget of the form, such as the action behind a menu entry.
+        headEl.replaceChildren(
+            icon('symbol-event'),
+            el('div', { className: 'head-text' }, el('b', { title: target.name }, target.name), el('span', { className: 'dim' }, S.properties?.class ?? 'Object')),
+            el('span', { className: 'spacer' }),
+            button('Back to the selected widget', icon('close'), () => send({ type: 'inspect', name: null }), 'icon-btn'));
         return;
     }
     const count = S.snapshot.selection.length;
@@ -204,6 +209,33 @@ function flatCount(items: { children: unknown[] }[]): number {
     return items.reduce((n, i) => n + 1 + flatCount(i.children as { children: unknown[] }[]), 0);
 }
 
+/** The menus of a menu bar: add, remove and open the entries (their action opens in the inspector). */
+function menusEditor(menus: MenuInfo[]): HTMLElement {
+    const box = el('div', { className: 'items-editor menus-editor' });
+    const entryRow = (menu: string, e: MenuEntry, index: number, depth: number): HTMLElement[] => {
+        const label = e.separator ? el('span', { className: 'dim' }, '— separator —') : el('button', { type: 'button', className: 'link-btn', title: `Edit the properties of ${e.name}` }, e.text || e.name);
+        if (!e.separator) {
+            label.addEventListener('click', () => send({ type: 'inspect', name: e.name }));
+        }
+        const row = el('div', { className: 'item-row', style: undefined }, label, el('span', { className: 'spacer' }), depth === 0
+            ? button('Remove entry', icon('trash'), () => send({ type: 'removeMenuEntry', menu, index }), 'icon-btn') : '');
+        row.style.paddingLeft = `${depth * 14}px`;
+        return [row, ...(e.entries ?? []).flatMap((c, i) => entryRow(e.menu ?? menu, c, i, depth + 1))];
+    };
+    for (const m of menus) {
+        box.append(el('div', { className: 'menu-head' }, icon('menu'), el('b', {}, m.title || m.name),
+            el('span', { className: 'spacer' }),
+            button('Add an entry', icon('add'), () => openPrompt('Add a menu entry', m.title || m.name, 'Text', 'New action', (text) => send({ type: 'addMenuEntry', menu: m.name, text })), 'icon-btn'),
+            button('Add a separator', icon('horizontal-rule'), () => send({ type: 'addMenuEntry', menu: m.name, separator: true }), 'icon-btn'),
+            button('Remove the menu', icon('trash'), () => send({ type: 'removeMenuEntry', menu: m.name }), 'icon-btn')));
+        m.entries.forEach((e, i) => box.append(...entryRow(m.name, e, i, 0)));
+    }
+    const add = el('button', { type: 'button', className: 'add-dynamic' }, icon('add'), 'Add a menu');
+    add.addEventListener('click', () => openPrompt('Add a menu', 'Menu bar', 'Title', 'New menu', (title) => send({ type: 'addMenu', title })));
+    box.append(add);
+    return box;
+}
+
 export function renderProperties(): void {
     const q = filterEl.value.trim().toLowerCase();
     const props = S.properties;
@@ -224,6 +256,9 @@ export function renderProperties(): void {
     const frag = document.createDocumentFragment();
     if (Array.isArray(props.items) && !q && !prefs.changedOnly) {
         frag.append(el('div', { className: 'group static' }, icon('list-unordered'), 'Items', el('span', { className: 'dim count' }, String(props.items.length))), itemsEditor(props.items));
+    }
+    if (Array.isArray(props.menus) && !q && !prefs.changedOnly) {
+        frag.append(el('div', { className: 'group static' }, icon('menu'), 'Menus', el('span', { className: 'dim count' }, String(props.menus.length))), menusEditor(props.menus));
     }
     if (props.contents && !q && !prefs.changedOnly) {
         const c = props.contents;

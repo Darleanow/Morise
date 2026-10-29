@@ -384,3 +384,8 @@ table.grid input { width: 100%; min-width: 70px; box-sizing: border-box; }
 .grid-head { display: flex; gap: 2px; align-items: center; font-weight: 600; }
 .grid-row-actions { white-space: nowrap; }
 .grid-actions { display: flex; gap: 8px; padding-top: 10px; }
+
+.menu-head { display: flex; align-items: center; gap: 4px; padding: 6px 0 2px; }
+.link-btn { background: none; border: 0; color: var(--vscode-textLink-foreground); cursor: pointer; padding: 2px 4px; text-align: left; font: inherit; }
+.link-btn:hover { text-decoration: underline; }
+.menus-editor .item-row { min-height: 24px; }

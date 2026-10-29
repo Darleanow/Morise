@@ -48,7 +48,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -64,6 +64,9 @@ async function check(label, fn) {
         case 'action': snap = await client.request('action', { ...d, action: m.action }); break;
         case 'gesture': snap = await client.request('gesture', { ...d, phase: m.phase, label: m.label }); break;
         case 'setGeometries': snap = await client.request('setGeometries', { ...d, items: m.items }); break;
+        case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
+        case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
+        case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text }); break;
         case 'setContents': snap = await client.request('setContents', { ...d, name: m.name, contents: m.contents }); break;
         case 'setItems': snap = await client.request('setItems', { ...d, name: m.name, items: m.items }); break;
@@ -825,6 +828,23 @@ async function check(label, fn) {
     await page.locator('.tree-row', { hasText: 'statusBar' }).click(); await settle();
     assert.ok(await page.locator('#inspector').getByText('statusBar').count(), 'the inspector shows the status bar');
     await shot('e2e-mainwindow');
+  });
+  await check('menus: the menu bar editor adds a menu and an entry from the inspector', async () => {
+    await open('mainwindow.ui');
+    await page.mouse.click(...(await at(200, 200)), { button: 'right' });
+    await page.locator('.menu-item', { hasText: 'Window parts' }).hover();
+    await page.locator('.menu-item', { hasText: 'Create the menu bar' }).click(); await settle();
+    await page.locator('.tree-row', { hasText: 'menuBar' }).click(); await settle();
+    await page.locator('.menus-editor button', { hasText: 'Add a menu' }).click(); await page.waitForSelector('.popup');
+    await page.keyboard.type('File'); await page.keyboard.press('Enter'); await settle();
+    await page.locator('.menus-editor button[title="Add an entry"]').click(); await page.waitForSelector('.popup');
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Open'); await page.keyboard.press('Enter'); await settle();
+    const menus = (await client.request('properties', { docId, name: 'menuBar' })).menus;
+    assert.equal(menus[0].title, 'File');
+    assert.deepEqual(menus[0].entries.map((e) => e.text), ['Open']);
+    await page.locator('.menus-editor .link-btn', { hasText: 'Open' }).click(); await settle();
+    assert.ok(await page.locator('#inspector').getByText('actionOpen').count(), 'the action opens in the inspector');
+    await shot('e2e-menus');
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

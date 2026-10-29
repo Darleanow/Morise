@@ -98,3 +98,26 @@ export function openPromote(names: string[], baseClass: string): void {
     });
     cls.focus();
 }
+
+/** A small box asking for one line of text. */
+export function openPrompt(title: string, subtitle: string, label: string, initial: string, onOk: (value: string) => void): void {
+    const input = el('input', { type: 'text', value: initial, className: 'wide' });
+    input.setAttribute('aria-label', label);
+    const apply = () => {
+        const v = input.value.trim();
+        if (v === '') {
+            return;
+        }
+        popup.close();
+        onOk(v);
+    };
+    const popup = openPopup([header(title, subtitle), el('div', { className: 'form-grid' }, el('label', {}, label), input), footer(el('span', { className: 'spacer' }), secondaryButton('Cancel', () => popup.close()), primaryButton('Add', apply))], 'small');
+    input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+            ev.preventDefault();
+            apply();
+        }
+    });
+    input.focus();
+    input.select();
+}

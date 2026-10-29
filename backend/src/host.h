@@ -30,6 +30,8 @@
 #include <QtDesigner/private/formwindowbase_p.h>
 #include <QtDesigner/private/iconloader_p.h>
 #include <QtDesigner/private/layoutinfo_p.h>
+#include <QtDesigner/private/qdesigner_menu_p.h>
+#include <QtDesigner/private/qdesigner_menubar_p.h>
 #include <QtDesigner/private/qdesigner_dnditem_p.h>
 #include <QtDesigner/private/qdesigner_utils_p.h>
 #include <QtDesigner/private/qdesigner_widgetbox_p.h>
@@ -65,6 +67,7 @@
 #include <QJsonObject>
 #include <QKeySequence>
 #include <QComboBox>
+#include <QLineEdit>
 #include <QDockWidget>
 #include <QListWidget>
 #include <QMainWindow>
@@ -254,6 +257,10 @@ private:
     static qdesigner_internal::TreeWidgetContents::ItemContents treeItemFrom(const QJsonObject &o, int columns, const qdesigner_internal::TreeWidgetContents::ItemContents *old);
 
     QJsonObject setContents(const QJsonObject &p);
+    QJsonObject addMenu(const QJsonObject &p);
+    QJsonObject removeMenuEntry(const QJsonObject &p);
+    static QJsonValue menusOf(QObject *o);
+    QJsonObject addMenuEntry(const QJsonObject &p);
 
     /// Targets of an edit: `names` (multi-selection) or the single `name`.
     QObjectList targets(QDesignerFormWindowInterface *fw, const QJsonObject &p) const;

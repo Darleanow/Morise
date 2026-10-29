@@ -271,6 +271,7 @@ QJsonObject Host::properties(const QJsonObject &p)
             {QLatin1String("isLayout"), qobject_cast<QLayout *>(o) != nullptr},
             {QLatin1String("items"), itemTexts(o)},
             {QLatin1String("contents"), gridContents(o)},
+            {QLatin1String("menus"), menusOf(o)},
             {QLatin1String("properties"), props}};
 }
 

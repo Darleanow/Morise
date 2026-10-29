@@ -12,7 +12,11 @@ Rules: no commit, no push, nothing deleted outside files created here. Every ste
 6. Final report here.
 
 ## Done
-- (filled in as steps complete)
+- Verified: grid editor (table/tree), main window parts, taskAction by caption. Protocol 153+ checks, fuzz, Node, e2e x3, VS Code integration.
+- Local commits created (no push, no co-author line).
+- Backend refactor: backend_main.cpp (2000 lines) split into host.h + host_*.cpp + dialogs.cpp + main.cpp. Same tests green.
+- Menu bar editing (QMainWindow): add menu, add entry, add separator, remove entry/menu, action properties; all through the
+  engine's own menu bar editor driven by events, undoable, saved, accepted by uic.
 
 ## Findings / not done
 - (filled in as steps complete)

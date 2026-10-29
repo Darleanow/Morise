@@ -34,6 +34,13 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return { type: 'cancelGesture' };
         case 'setGeometries':
             return Array.isArray(m.items) && m.items.length <= 1000 && m.items.every(isItem) ? { type: 'setGeometries', items: m.items as { name: string; rect: number[] }[] } : undefined;
+        case 'addMenu':
+            return typeof m.title === 'string' && m.title.trim() !== '' && m.title.length < 200 ? { type: 'addMenu', title: m.title } : undefined;
+        case 'addMenuEntry':
+            return typeof m.menu === 'string' && (m.separator === true || (typeof m.text === 'string' && m.text.trim() !== '' && m.text.length < 200))
+                ? { type: 'addMenuEntry', menu: m.menu, ...(m.separator === true ? { separator: true } : { text: m.text as string }) } : undefined;
+        case 'removeMenuEntry':
+            return typeof m.menu === 'string' && (m.index === undefined || Number.isInteger(m.index)) ? { type: 'removeMenuEntry', menu: m.menu, ...(m.index !== undefined ? { index: m.index as number } : {}) } : undefined;
         case 'taskAction':
             return typeof m.name === 'string' && typeof m.text === 'string' && m.text.length > 0 && m.text.length < 80 ? { type: 'taskAction', name: m.name, text: m.text } : undefined;
         case 'setContents': {

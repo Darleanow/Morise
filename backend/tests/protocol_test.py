@@ -430,6 +430,29 @@ check("main window parts have properties", all(len(call("properties", docId="mw1
 check("clicking the central widget selects the form", call("hitTest", docId="mw1", x=200, y=150)["result"]["name"] == "MainWindow")
 check("clicking the tool bar finds the tool bar", call("hitTest", docId="mw1", x=10, y=mwo["toolBar"]["y"] + 5)["result"]["name"] == "toolBar")
 
+# menus: created with the engine's own menu bar editor (driven by events), listed, edited and removed
+call("open", docId="mn1", xml=open(os.path.join(HERE, "..", "testdata", "mainwindow.ui"), encoding="utf-8").read())
+call("taskAction", docId="mn1", name="MainWindow", text="Create Menu Bar")
+check("a menu is added to the menu bar", "error" not in call("addMenu", docId="mn1", title="File"))
+for t in ("New", "Open"):
+    call("addMenuEntry", docId="mn1", menu="menuFile", text=t)
+call("addMenuEntry", docId="mn1", menu="menuFile", separator=True)
+call("addMenuEntry", docId="mn1", menu="menuFile", text="Quit")
+menus = lambda: call("properties", docId="mn1", name="menuBar")["result"]["menus"]
+ents = [(e["text"], e["separator"]) for e in menus()[0]["entries"]]
+check("entries and separators are listed in order", ents == [("New", False), ("Open", False), ("", True), ("Quit", False)], ents)
+call("removeMenuEntry", docId="mn1", menu="menuFile", index=1)
+check("an entry can be removed", [e["text"] for e in menus()[0]["entries"] if not e["separator"]] == ["New", "Quit"])
+call("addMenu", docId="mn1", title="Edit")
+call("removeMenuEntry", docId="mn1", menu="menuEdit")
+check("a whole menu can be removed", [m["name"] for m in menus()] == ["menuFile"])
+call("undo", docId="mn1")
+check("removing a menu is undoable", [m["name"] for m in menus()] == ["menuFile", "menuEdit"])
+check("an action has its own property sheet", any(q["name"] == "text" for q in call("properties", docId="mn1", name="actionNew")["result"]["properties"]))
+call("setProperty", docId="mn1", name="actionNew", property="shortcut", value="Ctrl+N")
+xml_mn = saved("mn1")
+check("menus and actions are saved and accepted by uic", "actionNew" in xml_mn and "Ctrl+N" in xml_mn and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_mn, capture_output=True, text=True).returncode == 0)
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())
