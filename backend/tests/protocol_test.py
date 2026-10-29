@@ -537,6 +537,26 @@ fo = next(o for o in r["result"]["objects"] if o["name"] == "first")
 check("a widget dragged out of a layout onto the free form becomes a free widget there, under the grab point", not fo["laidOut"] and fo["parent"] == "FreeInLayout" and abs(fo["x"] - 50) <= 10 and abs(fo["y"] - 145) <= 10, fo)
 check("leaving the layout is one undo step", (call("undo", docId="out1"), next(o for o in call("snapshot", docId="out1")["result"]["objects"] if o["name"] == "first")["laidOut"])[1])
 
+# sub menus: an entry becomes a menu that takes entries of its own
+call("open", docId="sm1", xml=open(os.path.join(HERE, "..", "testdata", "mainwindow.ui"), encoding="utf-8").read())
+call("taskAction", docId="sm1", name="MainWindow", text="Create Menu Bar")
+call("addMenu", docId="sm1", title="File")
+call("addMenuEntry", docId="sm1", menu="menuFile", text="Recent")
+check("an entry can become a sub menu", "error" not in call("makeSubmenu", docId="sm1", menu="menuFile", index=0))
+mm = call("properties", docId="sm1", name="menuBar")["result"]["menus"]
+subname = mm[0]["entries"][0].get("menu")
+check("the sub menu is listed under its entry", subname == "menuRecent", mm)
+call("addMenuEntry", docId="sm1", menu=subname, text="first.txt")
+mm = call("properties", docId="sm1", name="menuBar")["result"]["menus"]
+check("entries can be added to the sub menu", [e["text"] for e in mm[0]["entries"][0]["entries"]] == ["first.txt"], mm)
+check("a separator cannot become a sub menu", "error" in call("makeSubmenu", docId="sm1", menu="menuFile", index=5))
+xml_sm = saved("sm1")
+check("sub menus are saved and accepted by uic", "menuRecent" in xml_sm and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_sm, capture_output=True, text=True).returncode == 0)
+
+check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
+check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
+check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

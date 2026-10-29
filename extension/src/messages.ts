@@ -40,6 +40,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return { type: 'pickResource' };
         case 'removeResource':
             return typeof m.path === 'string' && m.path.length > 0 && m.path.length < 1000 ? { type: 'removeResource', path: m.path } : undefined;
+        case 'makeSubmenu':
+            return typeof m.menu === 'string' && Number.isInteger(m.index) && (m.index as number) >= 0 ? { type: 'makeSubmenu', menu: m.menu, index: m.index as number } : undefined;
         case 'addMenu':
             return typeof m.title === 'string' && m.title.trim() !== '' && m.title.length < 200 ? { type: 'addMenu', title: m.title } : undefined;
         case 'addMenuEntry':

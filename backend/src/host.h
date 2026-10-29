@@ -177,6 +177,8 @@ private:
     /// A widget the page lists: the managed ones, plus the parts of a main window Designer shows in its object
     /// inspector without managing them (menu bar, tool bars, status bar, central widget).
     bool listed(QDesignerFormWindowInterface *fw, QWidget *w) const;
+    /// The menu bar, tool bars, status bar and central widget of a main window: listed, never moved or resized.
+    bool isWindowPart(QDesignerFormWindowInterface *fw, QWidget *w) const;
 
     QWidget *widgetByName(QDesignerFormWindowInterface *fw, const QString &name) const;
 
@@ -277,6 +279,7 @@ private:
     QJsonObject resources(const QJsonObject &p);
     QJsonObject changeResource(const QJsonObject &p, bool add);
     QJsonObject removeMenuEntry(const QJsonObject &p);
+    QJsonObject makeSubmenu(const QJsonObject &p);
     static QJsonValue menusOf(QObject *o);
     QJsonObject addMenuEntry(const QJsonObject &p);
 

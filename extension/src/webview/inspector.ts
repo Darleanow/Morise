@@ -231,8 +231,15 @@ function menusEditor(menus: MenuInfo[]): HTMLElement {
         if (!e.separator) {
             label.addEventListener('click', () => send({ type: 'inspect', name: e.name }));
         }
-        const row = el('div', { className: 'item-row', style: undefined }, label, el('span', { className: 'spacer' }), depth === 0
-            ? button('Remove entry', icon('trash'), () => send({ type: 'removeMenuEntry', menu, index }), 'icon-btn') : '');
+        const tools: HTMLElement[] = [];
+        if (!e.separator && e.menu) {
+            const sub = e.menu;
+            tools.push(button('Add an entry to this sub menu', icon('add'), () => openPrompt('Add a menu entry', e.text || sub, 'Text', 'New action', (text) => send({ type: 'addMenuEntry', menu: sub, text })), 'icon-btn'));
+        } else if (!e.separator) {
+            tools.push(button('Turn this entry into a sub menu', icon('chevron-right'), () => send({ type: 'makeSubmenu', menu, index }), 'icon-btn'));
+        }
+        tools.push(button('Remove entry', icon('trash'), () => send({ type: 'removeMenuEntry', menu, index }), 'icon-btn'));
+        const row = el('div', { className: 'item-row' }, label, el('span', { className: 'spacer' }), ...tools);
         row.style.paddingLeft = `${depth * 14}px`;
         return [row, ...(e.entries ?? []).flatMap((c, i) => entryRow(e.menu ?? menu, c, i, depth + 1))];
     };

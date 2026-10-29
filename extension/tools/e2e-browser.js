@@ -48,7 +48,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -66,6 +66,7 @@ async function check(label, fn) {
         case 'setGeometries': snap = await client.request('setGeometries', { ...d, items: m.items }); break;
         case 'pickResource': snap = await client.request('addResource', { ...d, path: process.env.E2E_QRC }); break;
         case 'removeResource': snap = await client.request('removeResource', { ...d, path: m.path }); break;
+        case 'makeSubmenu': snap = await client.request('makeSubmenu', { ...d, menu: m.menu, index: m.index }); break;
         case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
@@ -846,6 +847,11 @@ async function check(label, fn) {
     const menus = (await client.request('properties', { docId, name: 'menuBar' })).menus;
     assert.equal(menus[0].title, 'File');
     assert.deepEqual(menus[0].entries.map((e) => e.text), ['Open']);
+    await page.locator('.menus-editor button[title="Turn this entry into a sub menu"]').click(); await settle();
+    await page.locator('.menus-editor button[title="Add an entry to this sub menu"]').click(); await page.waitForSelector('.popup');
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Inner'); await page.keyboard.press('Enter'); await settle();
+    const withSub = (await client.request('properties', { docId, name: 'menuBar' })).menus;
+    assert.deepEqual(withSub[0].entries[0].entries.map((e) => e.text), ['Inner']);
     await page.locator('.menus-editor .link-btn', { hasText: 'Open' }).click(); await settle();
     assert.ok(await page.locator('#inspector').getByText('actionOpen').count(), 'the action opens in the inspector');
     await shot('e2e-menus');

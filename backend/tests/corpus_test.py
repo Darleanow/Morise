@@ -97,7 +97,7 @@ for kind, items in refused_by_kind.items():
 
 # ------------------------------------------------------------------ random operations
 rng = random.Random(SEED)
-seeds = [os.path.join(ROOT, "backend/testdata", n) for n in ("rich.ui", "free.ui", "sample.ui")]
+seeds = [os.path.join(ROOT, "backend/testdata", n) for n in ("rich.ui", "free.ui", "sample.ui", "mainwindow.ui", "tabs.ui", "toolbox.ui", "interactive.ui", "freeinlayout.ui")]
 fuzz_docs = 0
 ops_done = 0
 palette = be.call("palette")["result"]["categories"]
@@ -114,7 +114,7 @@ for rnd in range(rounds):
         for i in range(FUZZ // rounds):
             names = [o["name"] for o in snap["objects"]]
             free = [o for o in snap["objects"] if o["parent"] is not None and not o["laidOut"]]
-            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid", "pview", "pview", "pview", "pview"])
+            k = rng.choice(["add", "action", "geom", "select", "undo", "redo", "prop", "reparent", "connect", "gesture", "page", "dup", "form", "move", "move", "items", "grid", "pview", "pview", "pview", "pview", "menu", "menu", "task"])
             if k == "add":
                 c, w = rng.choice(entries); req = ("addWidget", dict(category=c, index=w, x=rng.randint(0, 400), y=rng.randint(0, 300)))
             elif k == "action":
@@ -138,6 +138,29 @@ for rnd in range(rounds):
                 req = ("setContents", dict(name=rng.choice(names), contents=rng.choice([
                     dict(columns=cols, rows=["r"] * rng.randint(0, 3), cells=[["x"] * len(cols)] * rng.randint(0, 3)),
                     dict(columns=cols, items=[dict(cells=["i"] * len(cols), children=[dict(cells=["c"], children=[])])] * rng.randint(0, 2))])))
+            elif k == "menu":
+                op = rng.choice(["bar", "menu", "entry", "entry", "sep", "sub", "remove", "removemenu", "tool", "status"])
+                menus = ["menuFile", "menuEdit", "menuRecent", "menuHelp"]
+                if op == "bar":
+                    req = ("taskAction", dict(name=names[0], text="Create Menu Bar"))
+                elif op == "tool":
+                    req = ("taskAction", dict(name=names[0], text="Add Tool Bar"))
+                elif op == "status":
+                    req = ("taskAction", dict(name=names[0], text=rng.choice(["Create Status Bar", "Remove Status Bar"])))
+                elif op == "menu":
+                    req = ("addMenu", dict(title=rng.choice(["File", "Edit", "Recent", "Help"])))
+                elif op == "entry":
+                    req = ("addMenuEntry", dict(menu=rng.choice(menus), text=rng.choice(["New", "Open", "Quit", "a b", "x"])))
+                elif op == "sep":
+                    req = ("addMenuEntry", dict(menu=rng.choice(menus), separator=True))
+                elif op == "sub":
+                    req = ("makeSubmenu", dict(menu=rng.choice(menus), index=rng.randint(0, 3)))
+                elif op == "remove":
+                    req = ("removeMenuEntry", dict(menu=rng.choice(menus), index=rng.randint(0, 3)))
+                else:
+                    req = ("removeMenuEntry", dict(menu=rng.choice(menus)))
+            elif k == "task":
+                req = ("taskAction", dict(name=rng.choice(names), path=[rng.randint(0, 14), rng.randint(0, 4)]))
             elif k == "pview":
                 if rng.random() < 0.08:
                     req = ("preview", dict(style=rng.choice(["Fusion", "", "Windows"]), scale=1))

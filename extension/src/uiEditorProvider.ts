@@ -356,6 +356,9 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             case 'setGeometries':
                 doc.snapshot = await client.request('setGeometries', { docId: doc.docId, items: msg.items });
                 break;
+            case 'makeSubmenu':
+                doc.snapshot = await client.request('makeSubmenu', { docId: doc.docId, menu: msg.menu, index: msg.index });
+                break;
             case 'addMenu':
                 doc.snapshot = await client.request('addMenu', { docId: doc.docId, title: msg.title });
                 break;

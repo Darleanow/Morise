@@ -558,7 +558,7 @@ viewport.addEventListener('pointerdown', (ev) => {
         gesture = { ...common, kind: 'move', targets, primary, delta: { dx: 0, dy: 0 }, moved: false, sent: false, drop: undefined };
         return;
     }
-    if (hit && hit.laidOut && hit.parent !== null && !additive && S.mode === 'select') {
+    if (hit && hit.laidOut && !hit.part && hit.parent !== null && !additive && S.mode === 'select') {
         gesture = { ...common, kind: 'relayout', from: hit, moved: false, slot: undefined };
         return;
     }

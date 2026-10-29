@@ -456,3 +456,33 @@ QJsonObject Host::changeResource(const QJsonObject &p, bool add)
 }
 
 } // namespace qdr
+
+namespace qdr {
+
+/// Turns an entry of a menu into a sub menu (the engine's own "create sub menu" step), so entries can be added to it.
+QJsonObject Host::makeSubmenu(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    const QString menuName = p.value(QLatin1String("menu")).toString();
+    auto *menu = fw->mainContainer()->findChild<QDesignerMenu *>(menuName);
+    if (!menu)
+        throw ProtocolError{QStringLiteral("unknown menu: ") + menuName};
+    const int index = p.value(QLatin1String("index")).toInt(-1);
+    QList<QAction *> real;
+    for (QAction *a : menu->actions())
+        if (!isPlaceholder(a))
+            real << a;
+    if (index < 0 || index >= real.size() || real.at(index)->isSeparator() || real.at(index)->menu())
+        throw ProtocolError{QStringLiteral("this entry cannot become a sub menu")};
+    m_core->formWindowManager()->setActiveFormWindow(fw);
+    menu->show();
+    QCoreApplication::processEvents();
+    struct Close { QDesignerMenu *m; ~Close() { m->closeMenuChain(); m->hide(); } } close{menu};
+    menu->createRealMenuAction(real.at(index));
+    QCoreApplication::processEvents();
+    if (!real.at(index)->menu())
+        throw ProtocolError{QStringLiteral("the sub menu could not be created")};
+    return snapshot(fw);
+}
+
+} // namespace qdr

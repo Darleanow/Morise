@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (189 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (197 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 98 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -91,7 +91,7 @@ each, icons and other roles of unchanged items are kept). It uses the engine's o
 
 **Tables, trees, menus, resources.** Table and tree widgets get a grid editor (headers, rows, cells, nested items). On a
 `QMainWindow` form the context menu creates the menu bar, tool bars and status bar; menus are edited from the menu bar's
-inspector (add menu, entry, separator, remove). Resource files (`.qrc`) are added in the Form tab and their icons are
+inspector (add menu, entry, separator, sub menu, remove). Resource files (`.qrc`) are added in the Form tab and their icons are
 offered by every icon editor; the form saves `<include location=...>` and `resource=` like Designer.
 
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
@@ -165,7 +165,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, rulers.
+- **Not implemented yet:** tool bar entries (the engine's commands for them are not exported), the action editor, rulers.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
   through the same `SetPropertyCommand` Designer itself uses for resizing.

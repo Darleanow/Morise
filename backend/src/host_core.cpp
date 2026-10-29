@@ -57,6 +57,7 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("setItems")) return setItems(p);
     if (method == QLatin1String("setContents")) return setContents(p);
     if (method == QLatin1String("addMenu")) return addMenu(p);
+    if (method == QLatin1String("makeSubmenu")) return makeSubmenu(p);
     if (method == QLatin1String("previewEvent")) return previewEvent(p);
     if (method == QLatin1String("previewStop")) return previewStop(p);
     if (method == QLatin1String("resources")) return resources(p);
@@ -116,6 +117,11 @@ bool Host::listed(QDesignerFormWindowInterface *fw, QWidget *w) const
         return true;
     const auto *mw = qobject_cast<QMainWindow *>(fw->mainContainer());
     return mw && mw->centralWidget() == w;
+}
+
+bool Host::isWindowPart(QDesignerFormWindowInterface *fw, QWidget *w) const
+{
+    return w != fw->mainContainer() && !fw->isManaged(w) && listed(fw, w);
 }
 
 QWidget *Host::widgetByName(QDesignerFormWindowInterface *fw, const QString &name) const
@@ -273,7 +279,8 @@ QJsonObject Host::snapshot(QDesignerFormWindowInterface *fw)
             {QLatin1String("class"), QString::fromUtf8(w->metaObject()->className())},
             {QLatin1String("parent"), (w == root || !parent) ? QJsonValue() : QJsonValue(idOf(parent))},
             {QLatin1String("gx"), origin.x()}, {QLatin1String("gy"), origin.y()},
-            {QLatin1String("laidOut"), w != root && qdesigner_internal::LayoutInfo::isWidgetLaidout(m_core, w)},
+            {QLatin1String("laidOut"), w != root && (isWindowPart(fw, w) || qdesigner_internal::LayoutInfo::isWidgetLaidout(m_core, w))},
+            {QLatin1String("part"), isWindowPart(fw, w)},
             {QLatin1String("x"), tl.x()}, {QLatin1String("y"), tl.y()},
             {QLatin1String("w"), w->width()}, {QLatin1String("h"), w->height()}});
     };

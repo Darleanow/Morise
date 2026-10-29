@@ -9,7 +9,7 @@ QJsonObject Host::setGeometries(const QJsonObject &p)
         const QJsonObject o = it.toObject();
         QWidget *w = widgetByName(fw, o.value(QLatin1String("name")).toString());
         const QJsonArray r = o.value(QLatin1String("rect")).toArray();
-        if (!w || r.size() != 4)
+        if (!w || r.size() != 4 || isWindowPart(fw, w))
             throw ProtocolError{QStringLiteral("bad geometry item")};
         fw->cursor()->setWidgetProperty(w, QStringLiteral("geometry"), QRect(r[0].toInt(), r[1].toInt(), r[2].toInt(), r[3].toInt()));
     }
@@ -32,7 +32,7 @@ QJsonObject Host::reparent(const QJsonObject &p)
             const QJsonObject o = it.toObject();
             QWidget *w = widgetByName(fw, o.value(QLatin1String("name")).toString());
             const QJsonArray r = o.value(QLatin1String("rect")).toArray();
-            if (!w || r.size() != 4 || w == fw->mainContainer())
+            if (!w || r.size() != 4 || w == fw->mainContainer() || isWindowPart(fw, w))
                 throw ProtocolError{QStringLiteral("bad item")};
             if (container == w || w->isAncestorOf(container))
                 throw ProtocolError{QStringLiteral("a widget cannot be moved into itself")};
@@ -98,6 +98,8 @@ QJsonObject Host::moveWidget(const QJsonObject &p)
     QWidget *w = widgetByName(fw, p.value(QLatin1String("name")).toString());
     if (!w || w == fw->mainContainer())
         throw ProtocolError{QStringLiteral("unknown widget")};
+    if (isWindowPart(fw, w))
+        throw ProtocolError{QStringLiteral("a part of the main window cannot be moved")};
     const QPoint pos(qRound(p.value(QLatin1String("x")).toDouble()), qRound(p.value(QLatin1String("y")).toDouble()));
     QWidget *target = fw->childAt(pos);
     while (target && (target == w || w->isAncestorOf(target) || !fw->isManaged(target)))

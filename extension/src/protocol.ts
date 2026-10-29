@@ -14,6 +14,8 @@ export interface SceneObject {
     gy: number;
     /** Managed by a layout: moving/resizing by geometry is meaningless. */
     laidOut: boolean;
+    /** The menu bar, a tool bar, the status bar or the central widget of a main window: never moved or resized. */
+    part?: boolean;
     x: number;
     y: number;
     w: number;
@@ -218,6 +220,7 @@ export interface BackendMethods {
     setGeometries: { params: { docId: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
     addResource: { params: { docId: string; path: string }; result: Snapshot };
     removeResource: { params: { docId: string; path: string }; result: Snapshot };
+    makeSubmenu: { params: { docId: string; menu: string; index: number }; result: Snapshot };
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
@@ -280,6 +283,7 @@ export type WebviewToHost =
     /** Move widgets into another container; rects are in form pixels. */
     | { type: 'pickResource' }
     | { type: 'removeResource'; path: string }
+    | { type: 'makeSubmenu'; menu: string; index: number }
     | { type: 'addMenu'; title: string }
     | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }
