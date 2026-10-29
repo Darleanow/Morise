@@ -1,6 +1,7 @@
 # Overnight progress log
 
-Rules: no commit, no push, nothing deleted outside files created here. Every step is verified before the next one.
+Rules: local commits only (conventional commits, no co-author), never a push, nothing deleted outside files created here. Every step is verified before the next one.
+The test numbers below were true at the time of writing; the commands that produce them are in README.md (Tests).
 
 ## Plan (in order)
 1. Verify what is written but not yet fully tested: table/tree grid editor, main window parts, taskAction by caption.
