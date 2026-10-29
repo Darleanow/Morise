@@ -435,3 +435,17 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 #toolbar.more-left.more-right { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
 
 .icon-btn.on { color: var(--vscode-textLink-foreground); }
+
+/* ---- rulers ---- */
+.ruler { position: absolute; pointer-events: none; font: 9px var(--vscode-font-family, sans-serif); color: var(--vscode-descriptionForeground); background: var(--vscode-editorWidget-background, rgba(128,128,128,.12)); }
+.ruler-top { left: 0; top: -19px; height: 18px; }
+.ruler-left { top: 0; left: -19px; width: 18px; }
+.ruler svg { display: block; overflow: visible; }
+.ruler line { stroke: var(--vscode-descriptionForeground); stroke-width: 1; opacity: .7; }
+.ruler text { fill: currentColor; stroke: none; }
+.ruler-mark { position: absolute; background: var(--vscode-focusBorder, #007fd4); }
+.ruler-top .ruler-mark { top: 0; bottom: 0; width: 1px; }
+.ruler-left .ruler-mark { left: 0; right: 0; height: 1px; }
+#viewport.with-rulers { padding: 60px 48px 48px 58px; }
+.ruler { background: color-mix(in srgb, var(--vscode-editor-background) 70%, var(--vscode-foreground)); color: var(--vscode-foreground); }
+.ruler line { opacity: .55; }

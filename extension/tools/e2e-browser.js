@@ -1089,6 +1089,22 @@ async function check(label, fn) {
     assert.match(xml, /<string notr="true"[^>]*extracomment="Confirm button"[^>]*>OK<\/string>/);
     assert.ok(await page.locator('button[title^="Translation of text (not translated)"]').count(), 'the button shows it differs from the default');
   });
+  await check('rulers: the command shows them, zoom rescales them, and the pointer marker follows the mouse', async () => {
+    await open('rich.ui');
+    await page.keyboard.press('>');
+    await page.keyboard.type('rulers');
+    await page.keyboard.press('Enter'); await settle();
+    assert.equal(await page.locator('.ruler-top svg line').count() > 5, true, 'ticks drawn');
+    const form = await page.locator('#form').boundingBox();
+    await page.mouse.move(form.x + 40, form.y + 30); await settle();
+    const mark = await page.locator('.ruler-top .ruler-mark').evaluate((n) => parseFloat(n.style.left));
+    assert.ok(mark > 10, 'marker moved to ' + mark);
+    if (shots) await page.screenshot({ path: `${shots}/rulers.png` });
+    await page.keyboard.press('>');
+    await page.keyboard.type('rulers');
+    await page.keyboard.press('Enter'); await settle();
+    assert.equal(await page.locator('.ruler').count(), 0);
+  });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');
     const go = await obj('go');

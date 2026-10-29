@@ -8,6 +8,7 @@ import { editableText, editText } from './inplace';
 import { setTab } from './inspector';
 import { openPreview } from './preview';
 import { openRename } from './rename';
+import { renderRulers } from './rulers';
 import { byName, primarySelection } from './geometry';
 import { togglePanel } from './splitter';
 import { prefs, S, savePrefs, send } from './state';
@@ -61,6 +62,7 @@ export function buildCommands(): Command[] {
         { id: 'zoom-fit', label: 'Zoom to fit the form', icon: 'screen-full', shortcut: 'Ctrl+0', run: fitZoom },
         { id: 'zoom-100', label: 'Zoom to 100%', icon: 'search', shortcut: 'Ctrl+1', run: () => setZoom(1) },
         { id: 'layouts', label: prefs.showLayouts ? 'Hide layout outlines' : 'Show layout outlines', icon: 'layout', run: () => { prefs.showLayouts = !prefs.showLayouts; savePrefs(); document.dispatchEvent(new CustomEvent('qtd-redraw')); } },
+        { id: 'rulers', label: prefs.rulers ? 'Hide the rulers' : 'Show rulers in form pixels', icon: 'symbol-ruler', run: () => { prefs.rulers = !prefs.rulers; savePrefs(); renderRulers(); } },
         { id: 'snap', label: prefs.snapToWidgets ? 'Stop snapping to neighbouring widgets' : 'Snap to neighbouring widgets', icon: 'magnet', run: () => { prefs.snapToWidgets = !prefs.snapToWidgets; savePrefs(); } },
         { id: 'sidebar-left', label: 'Toggle the widgets and outline sidebar', icon: 'layout-sidebar-left', run: () => togglePanel('left') },
         { id: 'sidebar-right', label: 'Toggle the inspector', icon: 'layout-sidebar-right', run: () => togglePanel('right') },

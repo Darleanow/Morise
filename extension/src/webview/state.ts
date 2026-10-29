@@ -24,12 +24,13 @@ export interface Prefs {
     rightTab: RightTab;
     changedOnly: boolean;
     snapToWidgets: boolean;
+    rulers: boolean;
     recent: { category: number; index: number }[];
 }
 
 export const DEFAULT_PREFS: Prefs = {
     zoom: 1, showLayouts: true, leftW: 240, rightW: 330, paletteH: 300, leftOpen: true, rightOpen: true,
-    rightTab: 'properties', changedOnly: false, snapToWidgets: true, recent: [],
+    rightTab: 'properties', changedOnly: false, snapToWidgets: true, rulers: false, recent: [],
 };
 
 export const prefs: Prefs = { ...DEFAULT_PREFS };

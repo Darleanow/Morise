@@ -1,6 +1,6 @@
 import { el, icon } from './dom';
 import { isContainer, type Rect } from './geometry';
-import { classIcons, S } from './state';
+import { classIcons, prefs, S } from './state';
 import { zoom } from './view';
 
 /** Tag rectangles already placed in the current pass (screen px), used to avoid overlaps. */
@@ -20,7 +20,7 @@ export function overlaps(a: Rect, b: Rect): boolean {
  */
 export function attach(node: HTMLElement, r: Rect, width: number, height = 22, mode: 'tag' | 'pill' | 'form' = 'tag'): HTMLElement {
     const z = zoom();
-    const margin = -height - 6; // the workspace around the form, above its top edge
+    const margin = -height - 6 - (prefs.rulers ? 20 : 0); // the workspace around the form, above its top edge (and its ruler)
     if (mode === 'form') {
         // The form itself has no room above it inside the form: sit in the workspace margin, never over the widgets.
         const left = Math.max(0, r.x * z);

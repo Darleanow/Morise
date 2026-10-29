@@ -20,6 +20,7 @@ import { onStyleSheetCheck } from './dialogs';
 import { closeQuickAdd, openQuickAdd, quickAddOpen } from './quickadd';
 import { closeRename, openRename, renameOpen } from './rename';
 import { initSplitters } from './splitter';
+import { renderRulers } from './rulers';
 import { renderStatus, renderZoomBar } from './statusbar';
 import { prefs, S, send } from './state';
 import { toast } from './toast';
@@ -232,6 +233,7 @@ function apply(msg: Extract<HostToWebview, { type: 'state' }>): void {
     }
 
     renderCanvas();
+    renderRulers();
     renderOutline();
     renderStatus();
     updateToolbar();
@@ -308,10 +310,12 @@ initInspector();
 buildToolbar();
 renderZoomBar();
 onZoomChange(() => {
+    renderRulers();
     renderStatus();
     renderZoomBar();
 });
 setZoom(prefs.zoom);
+renderRulers();
 setMode('select');
 renderInspector();
 send({ type: 'ready' });

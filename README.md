@@ -51,7 +51,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 | `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (250 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
-| `cd extension && npm test` | 106 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm test` | 107 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
 | `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
 
 ## What the editor does today
@@ -179,7 +179,8 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** tool bar entries (the engine's commands for them are not exported), the action editor, rulers.
+- **Not implemented yet:** dragging an action onto a tool bar and reordering its entries (the engine's commands for them are not exported; actions are placed from the Form tab instead), action groups (`QActionGroup`), menus in the outline.
+- **Rulers** (command `> rulers`) show form pixels along the top and left edges; they are not draggable guides.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
   through the same `SetPropertyCommand` Designer itself uses for resizing.
@@ -189,9 +190,15 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
   answering its connect dialog from the page's choice; this relies on Designer's internal widget names
   (`signalList`, `slotList`) and is pinned to Qt 6.11.3.
 - **Preview** forwards mouse, wheel and keyboard to a form the backend keeps alive offscreen and sends back pictures. Hover states, caret blink, tooltips, drag and drop and menus opened by the application are not reproduced.
-- **Round trip fidelity:** on the 84 `.ui` files of qttools, all load and all saved files are accepted by `uic`;
-  44 produce identical `uic` output, 40 differ. 8 of the 40 were inspected and are normalisations
-  (flag order, `NoButton`, spacer names, layout-computed geometry); the other 32 were **not** inspected.
+- **Round trip fidelity:** on the 84 `.ui` files of qttools, all load and all saved files are accepted by `uic`.
+  Without any edit, 28 give the same `uic` output (the 44 counted earlier used a looser comparison) and 56 differ.
+  The differing lines of all 56 were grouped by pattern, not read file by file: spacer variable names
+  (`spacerItem` becomes `spacer`/`verticalSpacer`), layout names that were empty, geometry of widgets a layout positions,
+  the form size grown to its layout's minimum, the order of `setMinimum`/`setMaximum`, a dropped `NoButton` flag,
+  `QIcon` built with `addFile` instead of the shortcut constructor, an added `AlignBaseline` flag, and a
+  tool box page without a label saved with an empty one. A bogus `height` property on a form (a `lupdate` test file)
+  is kept as a dynamic property. None of these was found to change what the form shows, but that was judged from the diff
+  text, not by running the generated code.
   Designer rewrites the XML from the widget tree, and `ui4` rejects unknown elements, so unknown XML is not preserved.
 - **Scroll areas and dock widgets** hold one widget: dropping a second one on them is refused with a message (the
   engine would free the first one without telling the rest of the editor, which crashed the backend; found by fuzzing).
@@ -205,10 +212,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
   the engine with a message.
 - **Teardown:** closing a document is done properly (50 open/edit/close cycles, 192 kB RSS growth). Destroying
   `QApplication`/`FormEditor` at process exit still segfaults, so the backend exits with `_Exit` on stdin EOF.
-- **Not verified:** the Webview inside a real VS Code window (the extension host side is tested in real VS Code; the
-  page is exercised in Chromium with simulated theme variables, and in jsdom),
-  custom widget plugins,
-  hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
+- **Not verified:** hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
 - **Packaging:** the backend binary has an absolute RUNPATH to `~/Qt`; it is not relocatable.
 - **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
   VS Code theme variables are used.

@@ -1094,6 +1094,25 @@ describe('webview page', () => {
             assert.equal($('.quickadd'), null);
         });
 
+        it('the rulers command shows a ruler along each edge in form pixels, and hides them again', () => {
+            post({ snapshot: tree() });
+            assert.equal($('.ruler'), null);
+            for (const wanted of ['Show rulers', 'Hide the rulers']) {
+                key('>');
+                const input = $('.qa-input') as HTMLInputElement;
+                input.value = '>rulers'; input.dispatchEvent(new dom.window.Event('input'));
+                assert.match($('.qa-item.active .qa-name')?.textContent ?? '', new RegExp(wanted));
+                key('Enter', {}, input);
+                if (wanted === 'Show rulers') {
+                    assert.ok($('.ruler-top'), 'top ruler');
+                    assert.ok($('.ruler-left'), 'left ruler');
+                    assert.ok(($('.ruler-top svg')?.querySelectorAll('line').length ?? 0) > 5, 'ticks');
+                    assert.ok($$('.ruler-top text').some((t) => t.textContent === '0'), 'labelled from 0');
+                }
+            }
+            assert.equal($('.ruler'), null);
+        });
+
         it('commands cover alignment, zoom, tabs and help, found by keywords', () => {
             post({ snapshot: tree() });
             key('>');
