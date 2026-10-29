@@ -10,7 +10,9 @@ const { BackendClient } = require(path.join(EXT, 'out/src/backendClient.js'));
 const { pageBody } = require(path.join(EXT, 'out/src/pageBody.js'));
 const { chromium } = require('playwright-core');
 
-const THEME = '--vscode-editor-background:#1f1f1f;--vscode-foreground:#cccccc;--vscode-font-family:system-ui,sans-serif;--vscode-font-size:13px;--vscode-sideBar-background:#181818;--vscode-input-background:#313131;--vscode-input-foreground:#ccc;--vscode-focusBorder:#0078d4;--vscode-list-hoverBackground:#2a2d2e;--vscode-list-activeSelectionBackground:#04395e;--vscode-badge-background:#616161;--vscode-badge-foreground:#fff;--vscode-button-background:#0078d4;--vscode-button-foreground:#fff;--vscode-editorWidget-background:#202020;--vscode-toolbar-hoverBackground:#383a3d;';
+const DARK_THEME = '--vscode-editor-background:#1f1f1f;--vscode-foreground:#cccccc;--vscode-font-family:system-ui,sans-serif;--vscode-font-size:13px;--vscode-sideBar-background:#181818;--vscode-input-background:#313131;--vscode-input-foreground:#ccc;--vscode-focusBorder:#0078d4;--vscode-list-hoverBackground:#2a2d2e;--vscode-list-activeSelectionBackground:#04395e;--vscode-badge-background:#616161;--vscode-badge-foreground:#fff;--vscode-button-background:#0078d4;--vscode-button-foreground:#fff;--vscode-editorWidget-background:#202020;--vscode-toolbar-hoverBackground:#383a3d;';
+const LIGHT_THEME = '--vscode-editor-background:#ffffff;--vscode-foreground:#3b3b3b;--vscode-font-family:system-ui,sans-serif;--vscode-font-size:13px;--vscode-sideBar-background:#f8f8f8;--vscode-input-background:#ffffff;--vscode-input-foreground:#3b3b3b;--vscode-input-border:#cecece;--vscode-focusBorder:#005fb8;--vscode-list-hoverBackground:#f2f2f2;--vscode-list-activeSelectionBackground:#e4e6f1;--vscode-badge-background:#cccccc;--vscode-badge-foreground:#3b3b3b;--vscode-button-background:#005fb8;--vscode-button-foreground:#ffffff;--vscode-editorWidget-background:#f8f8f8;--vscode-toolbar-hoverBackground:#b8b8b8;';
+const THEME = process.env.LIGHT ? LIGHT_THEME : DARK_THEME;
 const shots = process.env.SHOTS_DIR;
 let failures = 0;
 const results = [];
