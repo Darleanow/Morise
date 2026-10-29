@@ -915,6 +915,7 @@ async function check(label, fn) {
     await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
     const field = page.locator('.action-new input[type=text]');
     await field.fill('Save As'); await field.press('Enter'); await settle();
+    await shot('e2e-actions');
     const row = page.locator('.action-row', { hasText: 'Save As' });
     assert.equal(await row.count(), 1, 'the new action is listed');
     assert.ok((await row.textContent()).includes('unused'));
@@ -1026,6 +1027,62 @@ async function check(label, fn) {
     assert.equal(now.parent, 'FreeInLayout');
     await page.locator('button[title^="Undo ("]').click(); await settle();
     assert.equal((await obj('first')).laidOut, true);
+  });
+  await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
+    await open('rich.ui');
+    const go = await obj('go');
+    await page.mouse.click(...(await at(go.x + 10, go.y + 8))); await settle();
+    const dead = [];
+    const n = await page.locator('#toolbar button:not([disabled])').count();
+    for (let i = 0; i < n; i++) {
+      const btn = page.locator('#toolbar button:not([disabled])').nth(i);
+      const label = (await btn.getAttribute('title')) || (await btn.getAttribute('aria-label')) || String(i);
+      if (/Delete|Cut|Undo|Redo|Paste/i.test(label) || !(await btn.isVisible())) continue; // some buttons are hidden on purpose in a narrow toolbar
+      const before = await page.evaluate(() => document.body.innerHTML.length + '|' + document.querySelectorAll('.popup,.menu').length + '|' + (window.__sentCount || 0));
+      const sentBefore = sent.length;
+      await btn.click().catch(() => {});
+      await page.waitForTimeout(250);
+      const after = await page.evaluate(() => document.body.innerHTML.length + '|' + document.querySelectorAll('.popup,.menu').length);
+      const reacted = before.split('|').slice(0, 2).join('|') !== after || sent.length > sentBefore || (await btn.getAttribute('aria-pressed')) !== null;
+      if (!reacted) dead.push(label);
+      await page.keyboard.press('Escape'); await page.mouse.click(10, 10).catch(() => {}); await settle();
+      await page.mouse.click(...(await at(go.x + 10, go.y + 8))); await settle();
+    }
+    assert.deepEqual(dead, [], 'buttons that did nothing: ' + dead.join(', '));
+  });
+  await check('mouse sweep: the pill buttons and every top-level context menu entry react to a real click', async () => {
+    await open('rich.ui');
+    const go = await obj('go');
+    const pt = await at(go.x + 10, go.y + 8);
+    const dead = [];
+    const react = async (label, act) => {
+      const sentBefore = sent.length;
+      const before = await page.evaluate(() => document.querySelectorAll('.popup,.inplace').length + '/' + document.querySelectorAll('[aria-pressed=true]').length + '/' + document.body.className);
+      await act(); await page.waitForTimeout(250);
+      const after = await page.evaluate(() => document.querySelectorAll('.popup,.inplace').length + '/' + document.querySelectorAll('[aria-pressed=true]').length + '/' + document.body.className);
+      if (sent.length === sentBefore && after === before) dead.push(label);
+      await page.keyboard.press('Escape'); await settle();
+    };
+    await page.mouse.click(...pt); await settle();
+    const pill = page.locator('.pill button');
+    const count = await pill.count();
+    for (let i = 0; i < count; i++) {
+      const b = page.locator('.pill button').nth(i);
+      const label = 'pill:' + ((await b.getAttribute('title')) || (await b.getAttribute('aria-label')) || i);
+      if (/Delete|Remove|More actions/i.test(label)) continue; // More opens a menu, tested above
+      await react(label, () => b.click());
+      await page.mouse.click(...pt); await settle();
+    }
+    await page.mouse.click(...pt, { button: 'right' }); await page.waitForSelector('.menu');
+    const items = await page.locator('.menu > .menu-item:not(.disabled)').evaluateAll((els) => els.filter((e) => !e.querySelector('.codicon-chevron-right')).map((e) => e.textContent));
+    await page.keyboard.press('Escape');
+    for (const text of items) {
+      if (/Delete|Cut|Undo|Redo|Paste|Break|Layout/i.test(text) ) continue;
+      await page.mouse.click(...pt); await settle();
+      await page.mouse.click(...pt, { button: 'right' }); await page.waitForSelector('.menu');
+      await react('menu:' + text.trim(), () => page.locator('.menu > .menu-item', { hasText: text.trim() }).first().click());
+    }
+    assert.deepEqual(dead, [], 'did nothing: ' + dead.join(' | '));
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

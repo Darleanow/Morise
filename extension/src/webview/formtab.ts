@@ -119,7 +119,7 @@ function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
         });
         box.append(row);
     }
-    const text = el('input', { type: 'text', placeholder: 'New action text, e.g. Save As…' });
+    const text = el('input', { type: 'text', placeholder: 'New action text…' });
     text.setAttribute('aria-label', 'Text of the new action');
     const checkable = el('input', { type: 'checkbox' });
     const create = () => {
