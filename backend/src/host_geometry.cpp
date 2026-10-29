@@ -25,6 +25,10 @@ QJsonObject Host::reparent(const QJsonObject &p)
     QWidget *container = m_core->widgetFactory()->containerOfWidget(parent);
     if (!container || !m_core->widgetDataBase()->isContainer(parent))
         throw ProtocolError{QStringLiteral("the target is not a container")};
+    // Into a laid-out container a widget goes through moveWidget (the engine picks the cell); forcing a free geometry
+    // into one makes the engine recurse until the stack overflows.
+    if (qdesigner_internal::LayoutInfo::managedLayout(m_core, container))
+        throw ProtocolError{QStringLiteral("%1 has a layout: drop into it instead").arg(idOf(parent))};
     const QPoint origin = container->mapTo(fw, QPoint(0, 0));
     fw->beginCommand(QStringLiteral("Move into %1").arg(idOf(parent)));
     try {

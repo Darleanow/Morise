@@ -626,6 +626,11 @@ ss = lambda t: call("checkStyleSheet", text=t)["result"]["valid"]
 check("style sheets are checked like Designer does: full sheets and bare declarations are valid", ss("QPushButton { color: red; }") and ss("color: red; background: blue;") and ss(""))
 check("a broken style sheet is reported", not ss("QPushButton { color: red;") and not ss("}{ nonsense"))
 
+# a free geometry forced into a laid-out container used to overflow the engine's stack (found by fuzz, seed 63)
+call("open", docId="rl1", xml=open(os.path.join(HERE, "..", "testdata", "toolbox.ui"), encoding="utf-8").read())
+call("open", docId="rl2", xml=open(os.path.join(HERE, "..", "testdata", "sample.ui"), encoding="utf-8").read())
+check("reparenting into a container that has a layout is refused, not a crash", "error" in call("reparent", docId="rl2", parent="SampleForm", items=[{"name": "okButton", "rect": [10, 10, 50, 20]}]) and "result" in call("snapshot", docId="rl2"))
+
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
 check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))
