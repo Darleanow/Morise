@@ -1,0 +1,179 @@
+# Qt Designer Revamped
+
+Edit Qt `.ui` files in a VS Code tab, driven by the **real Qt Designer form engine**
+(`libQt6Designer` + `libQt6DesignerComponents`), not a re-implementation.
+
+Personal project. Source audited: qttools tag `6.11.3` (`vendor/qttools`). Built against Qt 6.11.3.
+
+## Architecture (option C: native backend around existing Designer components)
+
+```
+VS Code extension host (TypeScript)  <-- stdio, JSON lines -->  designer_backend (C++, QApplication offscreen)
+  CustomEditorProvider                                            QDesignerFormEditorInterface
+  document lifecycle, save, undo, backup                          QDesignerFormWindowInterface (real FormWindow)
+        ^ postMessage                                             QUndoStack, property sheets, QDesignerResource
+        v
+Webview (TypeScript, HTML, CSS with --vscode-* variables)
+  image of the form + object tree + property inspector
+```
+
+- The Qt widgets are **rendered by Qt** (`QWidget::grab()` on the real `FormWindow`, grid and selection
+  handles included) and shown as a PNG. A Qt widget cannot be placed in the DOM; the image is the
+  mechanism, its limits are listed below.
+- Every edit goes through Designer's own commands (`QDesignerFormWindowCursorInterface::setWidgetProperty`),
+  so Designer's undo stack is authoritative. VS Code undo/redo call `undo`/`redo` on it.
+- Saving uses `QDesignerFormWindowInterface::contents()` (Designer's `QDesignerResource`), written to a
+  temp file and renamed over the target.
+
+## Build and run
+
+```bash
+# Qt 6.11.3 (done with aqtinstall into ~/Qt)
+export PATH=$HOME/Qt/6.11.3/gcc_64/bin:$PATH
+cd backend && cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH=$HOME/Qt/6.11.3/gcc_64 && cmake --build build
+cd ../extension && npm install && npm run build
+```
+
+Or skip all of that: open this repository's root folder in VS Code and press **F5**. The launch configurations
+build the backend (configure and compile with CMake) and the extension first, then start the Extension
+Development Host with a sample form already open. Pick the configuration in the Run and Debug dropdown
+(`free.ui` for free-form editing, `sample.ui` for a layout, or an empty window). Ctrl+Shift+B runs the same build.
+The backend path defaults to `../backend/build/designer_backend`; override with `qtDesignerRevamped.backendPath`.
+
+## Tests
+
+| Command | What it covers |
+|---|---|
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (141 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
+| `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
+| `cd extension && npm test` | 97 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
+
+## What the editor does today
+
+**Layout.** Widgets palette and Outline on the left, canvas in the middle, inspector on the right, status bar at
+the bottom. The columns are real splitters (drag, double-click to reset, arrow keys); both sidebars collapse;
+sizes and the active tab are remembered.
+
+**Selecting.** Click, Shift/Ctrl-click, or drag a band over empty space (Shift adds). Ctrl+A selects all.
+A floating bar on the selection offers only the actions that are currently possible.
+
+**Moving, resizing, aligning.**
+- Drag to move (several selected widgets move together); 8 handles resize; the form itself resizes from its right
+  and bottom edges with the layouts reflowing live. Snapping goes to Designer's grid *and* to neighbouring widgets'
+  edges and centres, with red guides; Alt bypasses both; Esc cancels. A drag is one undo step.
+- Dropping widgets on another container reparents them (keeping their place on screen).
+- **Align** (left, centres, right, top, bottom), **Distribute** horizontally/vertically and **Same width/height/size**,
+  from the toolbar, the context menu or the floating bar: one undo step each. One widget aligns to its parent,
+  several to the bounds of the selection; sizes follow the first selected widget.
+- Arrow keys nudge (Shift resizes) one or several widgets.
+
+**Keyboard.** `?` opens the shortcut sheet, `>` in the quick add box switches to command mode (every action by name),
+Ctrl+Up/Down walks the widget hierarchy, Space or middle mouse pans, Ctrl+0 / Ctrl+1 / Ctrl+plus / Ctrl+minus fit,
+reset and zoom. Deleting or cutting shows a toast with Undo; the history chevron next to Undo jumps several steps.
+
+**Layouts.** Dragging a widget that a layout owns shows an insertion line and a tag ("Insert before X"); releasing moves it
+there through the engine's own same-form move (one undo step). New widgets, from the palette, `/` or double-click, land at
+the pointed cell; with `/` they go right after the selected widget.
+
+**Alignment and buddies.** Alignment is two rows of buttons: a click sets, a second click on the active button clears
+that axis, and its reset button is always there. A label's `buddy` is picked from the widgets of the form.
+A free widget dropped on a layout-managed container joins its layout.
+
+**Items.** Combo boxes and list widgets get an Items editor in the inspector (edit, add, remove, reorder; one undo step
+each, icons and other roles of unchanged items are kept). It uses the engine's own `ChangeListContentsCommand`.
+
+**Adding.** Palette with Designer's icons, search and a Recent group (drag, double-click or Enter), `/` for a quick
+search, double-click on empty space to add right there, Ctrl+D to duplicate.
+
+**Editing text.** Double-click or Enter edits the widget's text in place; F2 renames the object (valid C++
+identifier checked).
+
+**Properties.** Typed editors for: strings (with a larger editor for style sheets and long text), numbers, booleans,
+enums, **alignment as buttons**, other flags as a checklist, **size policy**, **font**, **icons and pixmaps** (file
+picker, thumbnail), string lists, key sequences, colours, dates, URLs, rectangles/sizes/points. "Modified only"
+filter, reset buttons, dynamic properties (add/remove). With several widgets selected an edit applies to all of
+them as one undo step. **Layouts have their own property sheet** (margins, spacing, size constraint, stretch):
+click a layout in the outline.
+
+**Signals and slots.** Press **F4** (connect mode) and drag from one widget to another: pick the signal and a
+*compatible* slot in a dialog like Designer's, and the connection is created by the engine's own signal/slot
+editor (undoable, saved in the `.ui`). Existing connections are drawn as arrows and listed in the Connections tab,
+where they can be created, selected, deleted, or searched for in the workspace. The Code tab gives ready-to-paste
+`connect()` calls, slot declarations and `ui->name` accessors with the right declaring classes.
+
+**Containers.** Tab widgets, stacked widgets and tool boxes: page controls on the floating bar (previous/next,
+add, delete; undoable). Promote a widget to a custom class (and demote) from the context menu.
+
+**Form tab.** Grid size, layout default margin/spacing, author, comment, export macro, include hints, and the
+keyboard focus order (numbered on the form; drag rows or use the arrows).
+
+**Preview.** Ctrl+R or the toolbar button shows the form as the application will draw it (no grid, no design-time
+widgets) in any installed Qt style, light or dark. It is a static render.
+
+**Documents.** VS Code undo/redo, dirty state, atomic save, hot-exit backup, external change reload, close.
+Rendering is done by Qt at `devicePixelRatio * zoom`, so text is crisp on HiDPI screens and at any zoom.
+
+## Source layout
+
+```
+backend/src/backend_main.cpp        the Qt host around the Designer engine (JSON lines on stdio)
+extension/src/                      extension host: provider, backend client, protocol types, message validation
+extension/src/webview/*.ts          the page, one module per concern, bundled by esbuild into media/webview/main.js
+  canvas.ts  gestures, overlay, handles, zoom       inspector.ts  properties / code / connections
+  palette.ts outline.ts toolbar.ts statusbar.ts     menu.ts quickadd.ts rename.ts splitter.ts
+  actions.ts geometry.ts state.ts hooks.ts dom.ts   main.ts  wiring and keyboard
+extension/tools/e2e-browser.js      real-browser end-to-end test (see below)
+```
+
+## Visual check and browser end-to-end test
+
+`extension/tools/e2e-browser.js` runs the real webview bundle in Chromium against the real backend, with a small
+stand-in for the extension host, and drives it with real mouse and keyboard input: it resizes the form and
+widgets, checks that layouts reflow, that a drag is one undo step, that Escape cancels, the context menu, rename,
+quick add, palette drag and drop, splitters and zoom, rubber-band selection, group moves, alignment, reparenting, in-place editing, property editors, connect mode, tab pages, preview, tab order, promotion, layout properties, duplicate, dynamic properties and undo/redo, measures, command mode, help sheet, delete toast, history menu (see the file for the exact count). Set `SHOTS_DIR` to also save screenshots.
+It needs `playwright-core` and a Chromium installed outside the project, for example in a scratch folder:
+`npm i playwright-core && npx playwright-core install chromium`, then
+`NODE_PATH=<scratch>/node_modules CHROME=<chromium> node extension/tools/e2e-browser.js`.
+Theme variables are simulated approximations of VS Code's, so this checks behaviour and legibility, not exact colours.
+
+## Known limits (verified or observed, not guesses)
+
+- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), tree and table widget item editors, menus, toolbars and the action
+  editor for `QMainWindow` forms, the resource (`.qrc`) browser (icons are chosen as files), palette
+  editing, rulers, custom widget plugins.
+- **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
+  widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
+  through the same `SetPropertyCommand` Designer itself uses for resizing.
+- **Property editors:** palettes and a few exotic types are shown read-only. String edits keep Designer's
+  translatable/comment metadata. Icons are stored as the path you chose (Designer saves it relative to the `.ui`).
+- **Connections** are created by driving the engine's own signal/slot editor with synthesised mouse events and
+  answering its connect dialog from the page's choice; this relies on Designer's internal widget names
+  (`signalList`, `slotList`) and is pinned to Qt 6.11.3.
+- **Preview** is a static image, not an interactive window.
+- **Round trip fidelity:** on the 84 `.ui` files of qttools, all load and all saved files are accepted by `uic`;
+  44 produce identical `uic` output, 40 differ. 8 of the 40 were inspected and are normalisations
+  (flag order, `NoButton`, spacer names, layout-computed geometry); the other 32 were **not** inspected.
+  Designer rewrites the XML from the widget tree, and `ui4` rejects unknown elements, so unknown XML is not preserved.
+- **Scroll areas and dock widgets** hold one widget: dropping a second one on them is refused with a message (the
+  engine would free the first one without telling the rest of the editor, which crashed the backend; found by fuzzing).
+  Connections whose endpoint vanished that way are detected and refused instead of dereferenced.
+- **Reparenting** is refused for containers that already have a layout (Designer would insert into the layout).
+- **Clipboard:** copy/paste uses the offscreen Qt clipboard inside the backend process: it works between documents
+  but not with other applications.
+- **Host quirks found:** the host must resize the `FormWindow` to the form size or the saved geometry changes;
+  static form-editor plugins must be initialised or `<connections>` are dropped; a shell-exported
+  `QT_SCALE_FACTOR` scales snapshots (the backend neutralises it); a paste into a laid-out container is refused by
+  the engine with a message.
+- **Teardown:** closing a document is done properly (50 open/edit/close cycles, 192 kB RSS growth). Destroying
+  `QApplication`/`FormEditor` at process exit still segfaults, so the backend exits with `_Exit` on stdin EOF.
+- **Not verified:** the Webview inside a real VS Code window (the extension host side is tested in real VS Code; the
+  page is exercised in Chromium with simulated theme variables, and in jsdom),
+  custom widget plugins,
+  hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
+- **Packaging:** the backend binary has an absolute RUNPATH to `~/Qt`; it is not relocatable.
+- **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
+  VS Code theme variables are used.
+- **Licenses:** `lib/` is LGPL-3/GPL; `components/` is GPL-3 with Qt exception. Linking them makes the backend
+  binary GPL-3 if distributed.
