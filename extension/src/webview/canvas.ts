@@ -1,192 +1,18 @@
 import type { SceneObject } from '../protocol';
 import * as actions from './actions';
 import { ALIGNMENTS, alignable, canAlign, runAlignment } from './align';
-import { $, button, dims, el, icon } from './dom';
+import { connectionArrows, SVG, tabOrderBadges } from './arrows';
+import { button, dims, el, icon } from './dom';
 import { byName, canResize, containerAt, contains, isContainer, isFree, layoutsOf, objectAt, rootObject, selectedObject, snap, type Rect } from './geometry';
+import { guideNodes, measureNodes, snapToSiblings } from './guides';
 import { hooks } from './hooks';
+import { descendantOf, layoutSlot, type LayoutSlot } from './layoutslot';
 import { classIcons, prefs, S, savePrefs, send } from './state';
+import { attach, classGlyph, placedTags, resetTags, tag } from './tags';
+import { box, form, geomLabel, ghost, hint, overlay, placed, stage, toImage, viewport, zoom, fitZoom, layoutStage, onZoomChange, requestScale, resetRender, setZoom, stepZoom } from './view';
 
-const form = $<HTMLImageElement>('form');
-const box = $<HTMLDivElement>('box');
-const stage = $<HTMLDivElement>('stage');
-const viewport = $<HTMLDivElement>('viewport');
-const overlay = $<HTMLDivElement>('overlay');
-const ghost = $<HTMLDivElement>('ghost');
-const geomLabel = $('geom');
-const hint = $('hint');
-
-// ---- zoom and pixel density ------------------------------------------------------------
-
-const ZOOMS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
-let pendingScale = 0;
-let scaleTimer: number | undefined;
-const zoomListeners: (() => void)[] = [];
-
-export function onZoomChange(fn: () => void): void {
-    zoomListeners.push(fn);
-}
-
-/** Ask the engine for a render at devicePixelRatio * zoom, so text stays crisp at any zoom or screen density. */
-export function requestScale(): void {
-    const scale = Math.min(4, Math.max(1, Math.round(window.devicePixelRatio * prefs.zoom * 100) / 100));
-    if (scale === pendingScale) {
-        return;
-    }
-    pendingScale = scale;
-    send({ type: 'view', scale });
-}
-
-export function setZoom(next: number): void {
-    autoFit = false;
-    prefs.zoom = Math.min(4, Math.max(0.25, Math.round(next * 100) / 100));
-    savePrefs();
-    layoutStage();
-    renderOverlay();
-    for (const fn of zoomListeners) {
-        fn();
-    }
-    window.clearTimeout(scaleTimer);
-    scaleTimer = window.setTimeout(requestScale, 120);
-}
-
-export function stepZoom(direction: 1 | -1): void {
-    const z = prefs.zoom;
-    if (direction > 0) {
-        setZoom(ZOOMS.find((v) => v > z + 0.001) ?? z);
-    } else {
-        setZoom([...ZOOMS].reverse().find((v) => v < z - 0.001) ?? z);
-    }
-}
-
-/** While true the form follows the window: resizing a panel or the editor refits it. Any manual zoom clears it. */
-let autoFit = false;
-
-export function fitZoom(): void {
-    const s = S.snapshot;
-    if (s) {
-        setZoom(Math.min((viewport.clientWidth - 96) / s.width, (viewport.clientHeight - 96) / s.height, 4));
-        autoFit = true;
-    }
-}
-
-if (typeof ResizeObserver === 'function') {
-    let frame = 0;
-    new ResizeObserver(() => {
-        if (autoFit && !frame) {
-            frame = requestAnimationFrame(() => {
-                frame = 0;
-                if (autoFit) {
-                    fitZoom();
-                }
-            });
-        }
-    }).observe(viewport);
-}
-
-export function resetRender(): void {
-    pendingScale = 0;
-    requestScale();
-}
-
-function zoom(): number {
-    return prefs.zoom;
-}
-
-function layoutStage(): void {
-    const s = S.snapshot;
-    if (!s) {
-        return;
-    }
-    const w = s.width * zoom();
-    const h = s.height * zoom();
-    box.style.width = `${w}px`;
-    box.style.height = `${h}px`;
-    form.style.width = `${w}px`;
-    form.style.height = `${h}px`;
-}
-
-// ---- coordinates and placement ---------------------------------------------------------
-
-/** Pointer position in snapshot (logical) pixels; may lie outside the form. */
-export function toImage(ev: { clientX: number; clientY: number }): { x: number; y: number } | null {
-    const r = form.getBoundingClientRect();
-    if (!S.snapshot || r.width === 0 || r.height === 0) {
-        return null;
-    }
-    return { x: Math.round(((ev.clientX - r.left) / r.width) * S.snapshot.width), y: Math.round(((ev.clientY - r.top) / r.height) * S.snapshot.height) };
-}
-
-function placed(node: HTMLElement, r: Rect): HTMLElement {
-    const z = zoom();
-    Object.assign(node.style, { left: `${r.x * z}px`, top: `${r.y * z}px`, width: `${r.w * z}px`, height: `${r.h * z}px` });
-    return node;
-}
-
-/** Tag rectangles already placed in the current pass (screen px), used to avoid overlaps. */
-let placedTags: Rect[] = [];
-
-function overlaps(a: Rect, b: Rect): boolean {
-    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-}
-
-/**
- * Positions a floating label next to a rectangle. Tries above, then inside the top edge (for big
- * rectangles), then below, and takes the first spot that does not collide with an earlier label.
- */
-function attach(node: HTMLElement, r: Rect, width: number, height = 22, mode: 'tag' | 'pill' | 'form' = 'tag'): HTMLElement {
-    const z = zoom();
-    const margin = -height - 6; // the workspace around the form, above its top edge
-    if (mode === 'form') {
-        // The form itself has no room above it inside the form: sit in the workspace margin, never over the widgets.
-        const left = Math.max(0, r.x * z);
-        placedTags.push({ x: left, y: margin, w: width, h: height });
-        node.style.left = `${left}px`;
-        node.style.top = `${margin}px`;
-        return node;
-    }
-    const big = r.h * z > 70 && r.w * z > 140;
-    const above = r.y * z - height - 4;
-    const inside = r.y * z + 4;
-    const below = (r.y + r.h) * z + 4;
-    // A floating bar must not hide the widget's own header: next to the top edge it goes into the margin instead.
-    const candidates = mode === 'pill'
-        ? [above, ...(r.y * z < 70 ? [margin] : []), below, margin, inside]
-        : big ? [above, inside, below] : [above, below, inside, below + height + 2];
-    let top = candidates[0] as number;
-    const left = Math.max(0, r.x * z);
-    // The floating bar also keeps off the other widgets: it must never block a click on a neighbour.
-    const sel = new Set(S.snapshot?.selection ?? []);
-    const obstacles: Rect[] = mode === 'pill'
-        ? (S.snapshot?.objects ?? []).filter((o) => o.parent !== null && !sel.has(o.name) && !isContainer(o)).map((o) => ({ x: o.x * z, y: o.y * z, w: o.w * z, h: o.h * z }))
-        : [];
-    const free = (c: number) => !placedTags.some((o) => overlaps({ x: left, y: c, w: width, h: height }, o)) && !obstacles.some((o) => overlaps({ x: left, y: c, w: width, h: height }, o));
-    const ok = (c: number) => c >= 0 || (mode === 'pill' && c === margin);
-    const pick = candidates.find((c) => ok(c) && free(c)) ?? candidates.find((c) => ok(c) && !placedTags.some((o) => overlaps({ x: left, y: c, w: width, h: height }, o)));
-    if (pick !== undefined) {
-        top = pick;
-    }
-    top = mode === 'pill' && top === margin ? margin : Math.max(0, top);
-    placedTags.push({ x: left, y: top, w: width, h: height });
-    node.style.left = `${left}px`;
-    node.style.top = `${top}px`;
-    return node;
-}
-
-function tag(r: Rect, className: string, ...content: (Node | string)[]): HTMLElement {
-    const t = el('div', { className: `tag ${className}` }, ...content);
-    const len = content.reduce<number>((n, c) => n + (typeof c === 'string' ? c.length : (c.textContent?.length ?? 2)), 0);
-    return attach(t, r, len * 6.5 + 22, 18);
-}
-
-export function classGlyph(o: { class: string; parent?: string | null }): HTMLElement {
-    const src = classIcons.get(o.class);
-    if (src) {
-        const img = el('img', { className: 'wicon', src, alt: '' });
-        img.draggable = false;
-        return img;
-    }
-    return icon(o.parent === null ? 'window' : 'symbol-field');
-}
+// Re-exported: the rest of the page imports the stage helpers from here.
+export { classGlyph, fitZoom, onZoomChange, requestScale, resetRender, setZoom, stepZoom, toImage };
 
 // ---- overlay indicators ----------------------------------------------------------------
 
@@ -301,79 +127,11 @@ function bounds(names: string[]): Rect | undefined {
     return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
 }
 
-const SVG = 'http://www.w3.org/2000/svg';
 
-/** Signal/slot connections as arrows between the widgets, like Designer's connection mode. */
-function connectionArrows(): SVGElement | null {
-    const s = S.snapshot;
-    if (!s || !(S.mode === 'connect' || prefs.rightTab === 'connections') || S.connections.length === 0) {
-        return null;
-    }
-    const z = zoom();
-    const svg = document.createElementNS(SVG, 'svg');
-    svg.setAttribute('class', 'arrows');
-    svg.setAttribute('width', String(s.width * z));
-    svg.setAttribute('height', String(s.height * z));
-    const marker = document.createElementNS(SVG, 'defs');
-    marker.innerHTML = '';
-    const mk = document.createElementNS(SVG, 'marker');
-    mk.setAttribute('id', 'arrow'); mk.setAttribute('viewBox', '0 0 10 10'); mk.setAttribute('refX', '9'); mk.setAttribute('refY', '5');
-    mk.setAttribute('markerWidth', '7'); mk.setAttribute('markerHeight', '7'); mk.setAttribute('orient', 'auto-start-reverse');
-    const head = document.createElementNS(SVG, 'path');
-    head.setAttribute('d', 'M0,0 L10,5 L0,10 z');
-    head.setAttribute('class', 'arrow-head');
-    mk.append(head);
-    marker.append(mk);
-    svg.append(marker);
-    const selected = new Set(s.selection);
-    S.connections.forEach((c, i) => {
-        const a = byName(c.sender), b = byName(c.receiver);
-        if (!a || !b) {
-            return;
-        }
-        const involved = selected.has(c.sender) || selected.has(c.receiver);
-        const ax = (a.x + a.w / 2) * z, ay = (a.y + a.h / 2) * z;
-        const bx = (b.x + b.w / 2) * z, by = (b.y + b.h / 2) * z;
-        const path = document.createElementNS(SVG, 'path');
-        const lift = 18 + (i % 4) * 8;
-        const mx = (ax + bx) / 2, my = (ay + by) / 2 - lift;
-        path.setAttribute('d', c.sender === c.receiver ? `M${ax},${ay} c ${-24},${-34} ${24},${-34} 0,0` : `M${ax},${ay} Q${mx},${my} ${bx},${by}`);
-        path.setAttribute('class', `arrow${involved ? ' involved' : ''}`);
-        path.setAttribute('marker-end', 'url(#arrow)');
-        svg.append(path);
-        const dot = document.createElementNS(SVG, 'circle');
-        dot.setAttribute('cx', String(ax)); dot.setAttribute('cy', String(ay)); dot.setAttribute('r', '3');
-        dot.setAttribute('class', 'arrow-dot');
-        svg.append(dot);
-        const text = document.createElementNS(SVG, 'text');
-        text.setAttribute('x', String(mx)); text.setAttribute('y', String(my / 2 + (ay + by) / 4 - 2));
-        text.setAttribute('class', `arrow-label${involved ? ' involved' : ''}`);
-        text.setAttribute('text-anchor', 'middle');
-        text.textContent = `${c.signal} → ${c.slot}`;
-        svg.append(text);
-    });
-    return svg;
-}
 
-/** Numbers on the widgets in keyboard focus order (shown while the Form tab is open). */
-function tabOrderBadges(frag: DocumentFragment): void {
-    if (!S.tabOrder || prefs.rightTab !== 'form') {
-        return;
-    }
-    S.tabOrder.forEach((name, i) => {
-        const o = byName(name);
-        if (!o) {
-            return;
-        }
-        const b = el('div', { className: 'badge-num' }, String(i + 1));
-        b.style.left = `${o.x * zoom() - 6}px`;
-        b.style.top = `${o.y * zoom() - 6}px`;
-        frag.append(b);
-    });
-}
 
 export function renderOverlay(): void {
-    placedTags = [];
+    resetTags();
     const s = S.snapshot;
     if (!s) {
         overlay.replaceChildren();
@@ -439,6 +197,9 @@ export function renderOverlay(): void {
     overlay.replaceChildren(frag);
 }
 
+// The overlay follows the zoom first; later listeners (the status bar, the inspector) see it already redrawn.
+onZoomChange(renderOverlay);
+
 // ---- panning: Space+drag or the middle button ---------------------------------------------
 
 let spaceDown = false;
@@ -464,66 +225,9 @@ type Gesture =
     | (Common & { kind: 'relayout'; from: SceneObject; moved: boolean; slot: LayoutSlot | undefined })
     | (Common & { kind: 'connect'; from: SceneObject; to: SceneObject | undefined; moved: boolean; point: { x: number; y: number } });
 
-/** Where a widget dragged inside a layout would land: next to a sibling, on a given side. */
-interface LayoutSlot {
-    parent: string;
-    sibling: SceneObject;
-    before: boolean;
-    axis: 'v' | 'h' | 'cell';
-    /** Point (form pixels) to hand to the engine so it picks the same cell. */
-    point: { x: number; y: number };
-    /** Indicator rectangle (form pixels). */
-    line: Rect;
-    noop: boolean;
-}
 
-function layoutSlot(from: SceneObject, p: { x: number; y: number }): LayoutSlot | undefined {
-    const objs = S.snapshot?.objects ?? [];
-    const names = new Set([from.name]);
-    const over = objs.filter((o) => contains(o, p.x, p.y) && !descendantOf(o, names)).sort((a, b) => a.w * a.h - b.w * b.h)[0];
-    let parent: string | undefined;
-    if (over?.laidOut) {
-        parent = over.parent ?? undefined;
-    } else if (over && layoutsOf(over.name).some((l) => !l.parent)) {
-        parent = over.name;
-    }
-    if (!parent) {
-        return undefined;
-    }
-    const layout = layoutsOf(parent).find((l) => !l.parent);
-    const sibs = objs.filter((o) => o.parent === parent && o.laidOut && o.name !== from.name);
-    if (!layout || sibs.length === 0) {
-        return undefined;
-    }
-    const dist = (o: SceneObject) => {
-        const dx = Math.max(o.x - p.x, 0, p.x - (o.x + o.w)), dy = Math.max(o.y - p.y, 0, p.y - (o.y + o.h));
-        return Math.hypot(dx, dy);
-    };
-    const sibling = sibs.find((o) => contains(o, p.x, p.y)) ?? [...sibs].sort((a, b) => dist(a) - dist(b))[0] as SceneObject;
-    const kind = layout.kind;
-    const axis: LayoutSlot['axis'] = /VBox/.test(kind) ? 'v' : /HBox/.test(kind) ? 'h' : 'cell';
-    if (axis === 'cell') {
-        return { parent, sibling, before: true, axis, point: { x: Math.round(sibling.x + sibling.w / 2), y: Math.round(sibling.y + sibling.h / 2) }, line: sibling, noop: false };
-    }
-    const vertical = axis === 'v';
-    const mid = vertical ? sibling.y + sibling.h / 2 : sibling.x + sibling.w / 2;
-    const before = (vertical ? p.y : p.x) < mid;
-    const T = 3;
-    const line: Rect = vertical
-        ? { x: layout.x, y: (before ? sibling.y : sibling.y + sibling.h) - T / 2, w: layout.w, h: T }
-        : { x: (before ? sibling.x : sibling.x + sibling.w) - T / 2, y: layout.y, w: T, h: layout.h };
-    const point = vertical
-        ? { x: Math.round(sibling.x + sibling.w / 2), y: Math.round(sibling.y + sibling.h * (before ? 0.25 : 0.75)) }
-        : { x: Math.round(sibling.x + sibling.w * (before ? 0.25 : 0.75)), y: Math.round(sibling.y + sibling.h / 2) };
-    // Dropping where the widget already is changes nothing: its neighbour in that direction is the one we aim at.
-    const order = [...sibs, from].sort((a, b) => (vertical ? a.y - b.y : a.x - b.x));
-    const at = order.indexOf(from);
-    const target = order.indexOf(sibling) + (before ? 0 : 1);
-    return { parent, sibling, before, axis, point, line, noop: from.parent === parent && (target === at || target === at + 1) };
-}
 
 const DRAG_THRESHOLD = 4;
-const SNAP_PX = 5;
 let gesture: Gesture | null = null;
 let inFlight = false;
 let queued: (() => void) | null = null;
@@ -532,14 +236,6 @@ export function gestureActive(): boolean {
     return gesture !== null && gesture.kind !== 'pending' && gesture.moved;
 }
 
-function descendantOf(o: SceneObject, names: Set<string>): boolean {
-    for (let p: SceneObject | undefined = byName(o.parent); p; p = byName(p.parent)) {
-        if (names.has(p.name)) {
-            return true;
-        }
-    }
-    return names.has(o.name);
-}
 
 /** The container a drag would drop into, when it is not the current parent. Layout-managed containers are refused. */
 function dropTargetFor(g: Extract<Gesture, { kind: 'move' }>, p: { x: number; y: number }): SceneObject | undefined {
@@ -556,40 +252,6 @@ function dropTargetFor(g: Extract<Gesture, { kind: 'move' }>, p: { x: number; y:
     return best;
 }
 
-/** Aligns the moving edges to the edges and centres of sibling widgets that are close enough. */
-function snapToSiblings(r: Rect, exclude: Set<string>, parent: string | null, edges: { l: boolean; r: boolean; t: boolean; b: boolean; move: boolean }): Rect {
-    if (!prefs.snapToWidgets) {
-        return r;
-    }
-    const thr = SNAP_PX / zoom();
-    const sibs = (S.snapshot?.objects ?? []).filter((o) => o.parent === parent && o.parent !== null && !exclude.has(o.name));
-    let { x, y, w, h } = r;
-    const near = (v: number, cands: number[]): number | undefined => {
-        let best: number | undefined;
-        for (const c of cands) {
-            if (Math.abs(c - v) <= thr && (best === undefined || Math.abs(c - v) < Math.abs(best - v))) {
-                best = c;
-            }
-        }
-        return best;
-    };
-    const xs = sibs.flatMap((o) => [o.x, o.x + o.w / 2, o.x + o.w]);
-    const ys = sibs.flatMap((o) => [o.y, o.y + o.h / 2, o.y + o.h]);
-    if (edges.move) {
-        const dxs = [near(x, xs), near(x + w / 2, xs), near(x + w, xs)].map((c, i) => (c === undefined ? undefined : c - (x + (w / 2) * i)));
-        const dys = [near(y, ys), near(y + h / 2, ys), near(y + h, ys)].map((c, i) => (c === undefined ? undefined : c - (y + (h / 2) * i)));
-        const bx = dxs.filter((d): d is number => d !== undefined).sort((a, b) => Math.abs(a) - Math.abs(b))[0];
-        const by = dys.filter((d): d is number => d !== undefined).sort((a, b) => Math.abs(a) - Math.abs(b))[0];
-        if (bx !== undefined) x += bx;
-        if (by !== undefined) y += by;
-        return { x, y, w, h };
-    }
-    if (edges.l) { const c = near(x, xs); if (c !== undefined) { w += x - c; x = c; } }
-    if (edges.r) { const c = near(x + w, xs); if (c !== undefined) w = c - x; }
-    if (edges.t) { const c = near(y, ys); if (c !== undefined) { h += y - c; y = c; } }
-    if (edges.b) { const c = near(y + h, ys); if (c !== undefined) h = c - y; }
-    return { x, y, w, h };
-}
 
 /**
  * Deltas come from screen pixels, never from image coordinates: while the form grows it is re-centred in
@@ -682,80 +344,13 @@ function pushFrame(g: Extract<Gesture, { kind: 'move' | 'resize' }>): void {
     }
 }
 
-/** Alignment guides: lines where an edge or centre of the moved rectangle meets a sibling's. */
-function guidesFor(r: Rect, exclude: Set<string>, parent: string | null): Rect[] {
-    const out: Rect[] = [];
-    const xs = [r.x, r.x + r.w / 2, r.x + r.w];
-    const ys = [r.y, r.y + r.h / 2, r.y + r.h];
-    for (const o of S.snapshot?.objects ?? []) {
-        if (exclude.has(o.name) || o.parent === null || o.parent !== parent) {
-            continue;
-        }
-        const oxs = [o.x, o.x + o.w / 2, o.x + o.w];
-        const oys = [o.y, o.y + o.h / 2, o.y + o.h];
-        for (const x of xs) {
-            if (oxs.some((v) => Math.abs(v - x) < 0.5)) {
-                const top = Math.min(r.y, o.y), bottom = Math.max(r.y + r.h, o.y + o.h);
-                out.push({ x, y: top, w: 0, h: bottom - top });
-            }
-        }
-        for (const y of ys) {
-            if (oys.some((v) => Math.abs(v - y) < 0.5)) {
-                const left = Math.min(r.x, o.x), right = Math.max(r.x + r.w, o.x + o.w);
-                out.push({ x: left, y, w: right - left, h: 0 });
-            }
-        }
-    }
-    return out;
-}
 
-/** Distances to the nearest neighbours (or the parent's edge) on each side, like a measuring tape. */
-function measureNodes(r: Rect, exclude: Set<string>, parent: string | null): HTMLElement[] {
-    const s = S.snapshot;
-    const par = byName(parent);
-    if (!s || !par) {
-        return [];
-    }
-    const z = zoom();
-    const sibs = s.objects.filter((o) => o.parent === parent && !exclude.has(o.name));
-    const overlapY = (o: Rect) => o.y < r.y + r.h && r.y < o.y + o.h;
-    const overlapX = (o: Rect) => o.x < r.x + r.w && r.x < o.x + o.w;
-    const nodes: HTMLElement[] = [];
-    const line = (x1: number, y1: number, x2: number, y2: number, gap: number) => {
-        if (gap <= 0) {
-            return;
-        }
-        const horizontal = y1 === y2;
-        const l = placed(el('div', { className: `ov measure ${horizontal ? 'h' : 'v'}` }), {
-            x: Math.min(x1, x2), y: Math.min(y1, y2), w: horizontal ? Math.abs(x2 - x1) : 1 / z, h: horizontal ? 1 / z : Math.abs(y2 - y1),
-        });
-        nodes.push(l);
-        const t = el('div', { className: 'tag measure' }, String(Math.round(gap)));
-        t.style.left = `${((x1 + x2) / 2) * z - 10}px`;
-        t.style.top = `${((y1 + y2) / 2) * z - 9}px`;
-        nodes.push(t);
-    };
-    const my = r.y + r.h / 2, mx = r.x + r.w / 2;
-    const left = Math.max(par.x, ...sibs.filter((o) => overlapY(o) && o.x + o.w <= r.x).map((o) => o.x + o.w));
-    const right = Math.min(par.x + par.w, ...sibs.filter((o) => overlapY(o) && o.x >= r.x + r.w).map((o) => o.x));
-    const top = Math.max(par.y, ...sibs.filter((o) => overlapX(o) && o.y + o.h <= r.y).map((o) => o.y + o.h));
-    const bottom = Math.min(par.y + par.h, ...sibs.filter((o) => overlapX(o) && o.y >= r.y + r.h).map((o) => o.y));
-    if (r.x >= left) line(left, my, r.x, my, r.x - left);
-    if (right >= r.x + r.w) line(r.x + r.w, my, right, my, right - (r.x + r.w));
-    if (r.y >= top) line(mx, top, mx, r.y, r.y - top);
-    if (bottom >= r.y + r.h) line(mx, r.y + r.h, mx, bottom, bottom - (r.y + r.h));
-    return nodes;
-}
 
 function showGhost(content: Node[] | null): void {
     ghost.hidden = content === null;
     ghost.replaceChildren(...(content ?? []));
 }
 
-function guideNodes(rect: Rect, exclude: Set<string>, parent: string | null): HTMLElement[] {
-    const z = zoom();
-    return guidesFor(rect, exclude, parent).map((gd) => placed(el('div', { className: `ov guide ${gd.w === 0 ? 'v' : 'h'}` }), { x: gd.x, y: gd.y, w: gd.w === 0 ? 1 / z : gd.w, h: gd.h === 0 ? 1 / z : gd.h }));
-}
 
 /** The dashed intent outline, guides and live numbers shown while a gesture is running. */
 export function renderGhost(): void {
@@ -763,7 +358,7 @@ export function renderGhost(): void {
     if (!g || g.kind === 'pending' || !g.moved) {
         return;
     }
-    placedTags = [];
+    resetTags();
     const nodes: Node[] = [];
     if (g.kind === 'band') {
         nodes.push(placed(el('div', { className: 'ov band' }), g.rect));
@@ -1256,7 +851,7 @@ stage.addEventListener('dragover', (ev) => {
     if (!p) {
         return;
     }
-    placedTags = [];
+    resetTags();
     const target = containerAt(p.x, p.y);
     const nodes: HTMLElement[] = [];
     if (target) {
