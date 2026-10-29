@@ -1,0 +1,7 @@
+node_modules
+out
+media/webview
+media/protocol.js
+media/codicons
+.vscode-test
+tools/node_modules

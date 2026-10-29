@@ -1,0 +1,8 @@
+vendor/
+backend/build/
+extension/node_modules/
+extension/.vscode-test/
+extension/out/
+extension/media/webview/
+extension/media/codicons/
+*.vsix

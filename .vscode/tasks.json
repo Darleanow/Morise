@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend: build",
+      "type": "shell",
+      "command": "cmake -S backend -B backend/build -G Ninja -DCMAKE_PREFIX_PATH=${env:HOME}/Qt/6.11.3/gcc_64 -DCMAKE_BUILD_TYPE=Release && cmake --build backend/build",
+      "options": { "env": { "PATH": "${env:HOME}/Qt/6.11.3/gcc_64/bin:${env:PATH}" } },
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "extension: install dependencies",
+      "type": "shell",
+      "command": "[ -d node_modules ] || npm install",
+      "options": { "cwd": "${workspaceFolder}/extension" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "extension: build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}/extension" },
+      "dependsOn": ["extension: install dependencies"],
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": {
+        "base": "$tsc",
+        "fileLocation": ["relative", "${workspaceFolder}/extension"]
+      }
+    },
+    {
+      "label": "build all",
+      "dependsOn": ["backend: build", "extension: build"],
+      "dependsOrder": "sequence",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "extension: unit tests",
+      "type": "shell",
+      "command": "npm test",
+      "options": { "cwd": "${workspaceFolder}/extension" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: protocol tests",
+      "type": "shell",
+      "command": "python3 -I backend/tests/protocol_test.py",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}
