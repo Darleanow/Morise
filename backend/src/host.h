@@ -30,6 +30,7 @@
 #include <QtDesigner/private/formwindowbase_p.h>
 #include <QtDesigner/private/iconloader_p.h>
 #include <QtDesigner/private/layoutinfo_p.h>
+#include <QtDesigner/private/qtresourcemodel_p.h>
 #include <QtDesigner/private/qdesigner_menu_p.h>
 #include <QtDesigner/private/qdesigner_menubar_p.h>
 #include <QtDesigner/private/qdesigner_dnditem_p.h>
@@ -68,6 +69,9 @@
 #include <QKeySequence>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QPointer>
+#include <QUndoCommand>
+#include <QXmlStreamReader>
 #include <QDockWidget>
 #include <QListWidget>
 #include <QMainWindow>
@@ -258,6 +262,8 @@ private:
 
     QJsonObject setContents(const QJsonObject &p);
     QJsonObject addMenu(const QJsonObject &p);
+    QJsonObject resources(const QJsonObject &p);
+    QJsonObject changeResource(const QJsonObject &p, bool add);
     QJsonObject removeMenuEntry(const QJsonObject &p);
     static QJsonValue menusOf(QObject *o);
     QJsonObject addMenuEntry(const QJsonObject &p);

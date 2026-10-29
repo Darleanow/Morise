@@ -8,6 +8,7 @@ export interface EditorContext {
     pickFile(p: PropertyInfo): void;
     multiline(p: PropertyInfo, current: string): void;
     rerender(): void;
+    menu(anchor: HTMLElement, items: { label: string; run: () => void }[]): void;
 }
 
 const openFlagLists = new Set<string>();
@@ -181,7 +182,13 @@ function imageEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
     const clear = button('Remove the image', icon('close'), () => ctx.commit(p, ''), 'icon-btn');
     clear.disabled = path === '' || !p.enabled;
     pick.disabled = !p.enabled;
-    return el('div', { className: 'image-editor' }, thumb, name, pick, clear);
+    const entries = (S.formInfo?.resources ?? []).flatMap((f) => f.prefixes.flatMap((pre) => pre.files.map((file) => `:${pre.prefix.replace(/\/$/, '')}/${file}`)));
+    const fromRes = button('Choose from the form’s resources', icon('package'), () => {
+        const menu = entries.map((e) => ({ label: e, run: () => ctx.commit(p, e) }));
+        ctx.menu(fromRes, menu);
+    }, 'icon-btn');
+    fromRes.disabled = !p.enabled || entries.length === 0;
+    return el('div', { className: 'image-editor' }, thumb, name, pick, fromRes, clear);
 }
 
 function colorEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {

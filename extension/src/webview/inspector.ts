@@ -2,6 +2,7 @@ import type { ConnectionInfo, MenuEntry, MenuInfo, MethodInfo, PropertyInfo } fr
 import { $, button, dims, el, icon } from './dom';
 import { classGlyph, renderOverlay } from './canvas';
 import { openConnectDialog } from './connectdialog';
+import { openMenu } from './menu';
 import { openAddDynamicProperty, openPrompt, openTextEditor } from './dialogs';
 import { openGridEditor } from './gridedit';
 import { editorFor, isBlock, type EditorContext } from './editors';
@@ -100,8 +101,17 @@ export function setTab(tab: RightTab): void {
 }
 
 /** The form tab needs data the other tabs do not: tell the host to include it. */
+let lastWants = '';
+
 export function syncWants(): void {
-    send({ type: 'want', tabOrder: prefs.rightTab === 'form', formInfo: prefs.rightTab === 'form' });
+    // The icon editor offers the form's resources, so it needs the form info as well.
+    const images = !!S.properties?.properties.some((p) => p.kind === 'icon' || p.kind === 'pixmap');
+    const wants = { tabOrder: prefs.rightTab === 'form', formInfo: prefs.rightTab === 'form' || images };
+    const key = JSON.stringify(wants);
+    if (key !== lastWants) {
+        lastWants = key;
+        send({ type: 'want', ...wants });
+    }
 }
 
 // ---- properties -------------------------------------------------------------------------
@@ -131,6 +141,10 @@ const context: EditorContext = {
         openTextEditor(`${S.propertiesFor ?? ''} · ${p.name}`, current, (v) => context.commit(p, v));
     },
     rerender: () => renderProperties(),
+    menu(anchor, items) {
+        const r = anchor.getBoundingClientRect();
+        openMenu(r.left, r.bottom + 2, items);
+    },
 };
 
 function resetButton(p: PropertyInfo): HTMLElement {
@@ -469,6 +483,7 @@ export function renderInspector(force = false): void {
     }
     lastSignature = sig;
     renderHeader();
+    syncWants();
     renderTabs();
     renderProperties();
     renderCode();

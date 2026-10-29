@@ -48,7 +48,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -64,6 +64,8 @@ async function check(label, fn) {
         case 'action': snap = await client.request('action', { ...d, action: m.action }); break;
         case 'gesture': snap = await client.request('gesture', { ...d, phase: m.phase, label: m.label }); break;
         case 'setGeometries': snap = await client.request('setGeometries', { ...d, items: m.items }); break;
+        case 'pickResource': snap = await client.request('addResource', { ...d, path: process.env.E2E_QRC }); break;
+        case 'removeResource': snap = await client.request('removeResource', { ...d, path: m.path }); break;
         case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
@@ -861,6 +863,19 @@ async function check(label, fn) {
     assert.deepEqual(order, ['first', 'second', 'loneButton']);
     await page.locator('button[title^="Undo ("]').click(); await settle();
     assert.equal((await obj('loneButton')).laidOut, false, 'one undo puts it back');
+  });
+  await check('resources: a .qrc is added from the Form tab and its icons are offered by the icon editor', async () => {
+    process.env.E2E_QRC = path.join(ROOT, 'backend/testdata/resources/res.qrc');
+    await open('free.ui');
+    await page.mouse.click(...(await at(60, 35))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    await page.locator('button', { hasText: 'Add a resource file' }).click(); await settle();
+    assert.ok(await page.locator('.resource-file', { hasText: 'res.qrc' }).count(), 'the resource file is listed');
+    await page.locator('#inspector button.tab[title="Properties"]').click(); await settle();
+    await page.locator('button[title^="Choose from the form"]').click();
+    await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();
+    const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
+    assert.ok(String(icon.value).includes('save.png'), String(icon.value));
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

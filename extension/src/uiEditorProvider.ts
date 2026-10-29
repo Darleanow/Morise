@@ -450,6 +450,23 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 doc.snapshot = await client.request('setProperty', { docId: doc.docId, name: msg.name, property: msg.property, value: file.fsPath });
                 break;
             }
+            case 'pickResource': {
+                const picked = await vscode.window.showOpenDialog({
+                    canSelectMany: false,
+                    defaultUri: vscode.Uri.joinPath(doc.uri, '..'),
+                    filters: { 'Qt resource files': ['qrc'] },
+                    openLabel: 'Use resource file',
+                });
+                const file = picked?.[0];
+                if (!file || file.scheme !== 'file') {
+                    return;
+                }
+                doc.snapshot = await client.request('addResource', { docId: doc.docId, path: file.fsPath });
+                break;
+            }
+            case 'removeResource':
+                doc.snapshot = await client.request('removeResource', { docId: doc.docId, path: msg.path });
+                break;
             case 'findInCode':
                 await vscode.commands.executeCommand('workbench.action.findInFiles', { query: msg.query, triggerSearch: true, isRegex: false, matchWholeWord: false, isCaseSensitive: true });
                 return;

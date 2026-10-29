@@ -92,7 +92,11 @@ export interface FormInfo {
     pixmapFunction: string;
     includeHints: string[];
     resourceFiles: string[];
+    /** The resource files with what they contain, to choose icons from. */
+    resources: ResourceFile[];
 }
+
+export interface ResourceFile { path: string; exists: boolean; prefixes: { prefix: string; files: string[] }[] }
 
 export interface PreviewResult {
     png: string;
@@ -184,6 +188,8 @@ export interface BackendMethods {
     view: { params: { docId: string; scale: number }; result: Snapshot };
     gesture: { params: { docId: string; phase: 'begin' | 'end'; label?: string }; result: Snapshot };
     setGeometries: { params: { docId: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
+    addResource: { params: { docId: string; path: string }; result: Snapshot };
+    removeResource: { params: { docId: string; path: string }; result: Snapshot };
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
@@ -242,6 +248,8 @@ export type WebviewToHost =
     | { type: 'cancelGesture' }
     | { type: 'setGeometries'; items: { name: string; rect: number[] }[] }
     /** Move widgets into another container; rects are in form pixels. */
+    | { type: 'pickResource' }
+    | { type: 'removeResource'; path: string }
     | { type: 'addMenu'; title: string }
     | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }

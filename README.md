@@ -27,6 +27,10 @@ Webview (TypeScript, HTML, CSS with --vscode-* variables)
 
 ## Build and run
 
+The Qt Designer sources (tag `6.11.3`) are expected in `vendor/qttools` (not committed):
+`git clone --depth 1 --branch v6.11.3 https://code.qt.io/qt/qttools.git vendor/qttools`.
+
+
 ```bash
 # Qt 6.11.3 (done with aqtinstall into ~/Qt)
 export PATH=$HOME/Qt/6.11.3/gcc_64/bin:$PATH
@@ -44,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (141 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (167 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 97 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -83,6 +87,11 @@ A free widget dropped on a layout-managed container joins its layout.
 
 **Items.** Combo boxes and list widgets get an Items editor in the inspector (edit, add, remove, reorder; one undo step
 each, icons and other roles of unchanged items are kept). It uses the engine's own `ChangeListContentsCommand`.
+
+**Tables, trees, menus, resources.** Table and tree widgets get a grid editor (headers, rows, cells, nested items). On a
+`QMainWindow` form the context menu creates the menu bar, tool bars and status bar; menus are edited from the menu bar's
+inspector (add menu, entry, separator, remove). Resource files (`.qrc`) are added in the Form tab and their icons are
+offered by every icon editor; the form saves `<include location=...>` and `resource=` like Designer.
 
 **Adding.** Palette with Designer's icons, search and a Recent group (drag, double-click or Enter), `/` for a quick
 search, double-click on empty space to add right there, Ctrl+D to duplicate.
@@ -140,8 +149,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), tree and table widget item editors, menus, toolbars and the action
-  editor for `QMainWindow` forms, the resource (`.qrc`) browser (icons are chosen as files), palette
+- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), tree and table widget item editors, sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, palette
   editing, rulers, custom widget plugins.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go

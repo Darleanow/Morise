@@ -459,6 +459,22 @@ r = call("moveWidget", docId="sd1", name="loneButton", x=240, y=150, side="after
 kids = [o["name"] for o in sorted((o for o in r["result"]["objects"] if o["parent"] == "box"), key=lambda o: o["y"])]
 check("a free widget dropped 'after' the last item of a group box layout goes last", kids == ["first", "second", "loneButton"], kids)
 
+# resource files: added (undoable), listed with their contents, used by icons and saved with the form
+QRC = os.path.abspath(os.path.join(HERE, "..", "testdata", "resources", "res.qrc"))
+FORM_PATH = os.path.abspath(os.path.join(HERE, "..", "testdata", "free.ui"))
+call("open", docId="rs1", xml=open(FORM_PATH, encoding="utf-8").read(), path=FORM_PATH)
+check("a resource file can be added", "error" not in call("addResource", docId="rs1", path=QRC))
+info_rs = call("formInfo", docId="rs1")["result"]
+check("the resource file is listed with its prefixes and files", info_rs["resources"][0]["prefixes"][0] == {"prefix": "/icons", "files": ["open.png", "save.png"]} and info_rs["resources"][0]["exists"], info_rs["resources"])
+call("setProperty", docId="rs1", name="freeButton", property="icon", value=":/icons/open.png")
+xml_rs = saved("rs1")
+check("an icon from the resource is saved with its .qrc and the form includes it", 'resource="' in xml_rs and "<include location=" in xml_rs and ":/icons/open.png" in xml_rs, xml_rs[-300:])
+check("a missing resource file is refused", "error" in call("addResource", docId="rs1", path="/nonexistent/none.qrc"))
+call("removeResource", docId="rs1", path=call("formInfo", docId="rs1")["result"]["resourceFiles"][0])
+check("a resource file can be removed", call("formInfo", docId="rs1")["result"]["resources"] == [])
+call("undo", docId="rs1")
+check("removing a resource file is undoable", len(call("formInfo", docId="rs1")["result"]["resources"]) == 1)
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

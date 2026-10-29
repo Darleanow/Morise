@@ -57,6 +57,9 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("setItems")) return setItems(p);
     if (method == QLatin1String("setContents")) return setContents(p);
     if (method == QLatin1String("addMenu")) return addMenu(p);
+    if (method == QLatin1String("resources")) return resources(p);
+    if (method == QLatin1String("addResource")) return changeResource(p, true);
+    if (method == QLatin1String("removeResource")) return changeResource(p, false);
     if (method == QLatin1String("removeMenuEntry")) return removeMenuEntry(p);
     if (method == QLatin1String("addMenuEntry")) return addMenuEntry(p);
     if (method == QLatin1String("preview")) return preview(p);

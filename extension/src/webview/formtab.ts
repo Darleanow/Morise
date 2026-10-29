@@ -62,6 +62,22 @@ function tabOrderList(order: string[]): HTMLElement {
     return list;
 }
 
+function resourceList(info: NonNullable<typeof S.formInfo>): HTMLElement {
+    const box = el('div', { className: 'resource-list' });
+    for (const f of info.resources) {
+        box.append(el('div', { className: 'resource-file' }, icon(f.exists ? 'package' : 'warning'), el('span', { className: 'order-name', title: f.path }, f.path),
+            f.exists ? '' : el('span', { className: 'dim' }, 'missing'),
+            button(`Remove ${f.path}`, icon('trash'), () => send({ type: 'removeResource', path: f.path }), 'icon-btn')));
+        for (const pre of f.prefixes) {
+            box.append(el('div', { className: 'resource-prefix dim' }, `:${pre.prefix}  ·  ${pre.files.length} files`));
+        }
+    }
+    const add = el('button', { type: 'button', className: 'add-dynamic' }, icon('add'), 'Add a resource file (.qrc)…');
+    add.addEventListener('click', () => send({ type: 'pickResource' }));
+    box.append(add, el('p', { className: 'note' }, 'Icons chosen from a resource are saved as :/prefix/file and the form includes the .qrc.'));
+    return box;
+}
+
 /** Form-wide settings: grid, layout defaults, metadata, and the keyboard focus order. */
 export function renderFormTab(): void {
     const info = S.formInfo;
@@ -88,6 +104,8 @@ export function renderFormTab(): void {
             textField('Comment', info.comment, (v) => apply({ comment: v }), true),
             textField('Export macro', info.exportMacro, (v) => apply({ exportMacro: v })),
             textField('Include hints (one per line)', info.includeHints.join('\n'), (v) => apply({ includeHints: v.split('\n').map((l) => l.trim()).filter(Boolean) }), true)),
+        el('div', { className: 'section-title' }, 'Resources', el('span', { className: 'dim count' }, String(info.resources.length))),
+        resourceList(info),
         el('div', { className: 'section-title' }, 'Keyboard focus order', el('span', { className: 'dim count' }, String(S.tabOrder?.length ?? 0))),
         el('p', { className: 'note' }, 'The order Tab moves through the widgets, numbered on the form. Drag a row, or use the arrows.'));
     frag.append(S.tabOrder && S.tabOrder.length > 0 ? tabOrderList(S.tabOrder) : el('div', { className: 'hint' }, 'No widget takes keyboard focus.'));
