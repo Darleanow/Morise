@@ -283,7 +283,7 @@ QJsonObject Host::addMenuEntry(const QJsonObject &p)
 
 namespace qdr {
 
-static bool isPlaceholder(const QAction *a)
+bool isPlaceholder(const QAction *a)
 {
     return QLatin1String(a->metaObject()->className()).contains(QLatin1String("SpecialMenuAction"));
 }

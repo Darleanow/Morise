@@ -20,6 +20,8 @@ export interface SceneObject {
     y: number;
     w: number;
     h: number;
+    /** Tool bars only: where each entry is drawn (form pixels), in the order moveEntry counts them. */
+    entries?: { x: number; y: number; w: number; h: number; separator: boolean }[];
 }
 
 /** Palette entry: indexes address QDesignerWidgetBoxInterface category/widget. */

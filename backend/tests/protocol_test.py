@@ -629,6 +629,8 @@ if tb:
     e0 = entries()
     check("a tool bar lists its entries in order", e0[:1] == ["actionSaveAs"] and len(e0) == 3 and "actionSaveAs_2" in e0, e0)
     check("an entry moves to another position", "error" not in call("moveEntry", docId="sm1", target=tb[0]["name"], **{"from": 0, "to": 2}) and entries() == e0[1:] + e0[:1], entries())
+    _bar = next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == tb[0]["name"])
+    check("a tool bar tells where each entry is drawn", len(_bar.get("entries", [])) == 3 and all(e["w"] > 0 for e in _bar["entries"]), _bar.get("entries"))
     xml_mv = saved("sm1")
     order = re.findall(r'<addaction name="([^"]+)"/>', xml_mv.split('class="QToolBar"')[1])
     check("the new order is saved and accepted by uic", order[:3] == entries() and uic_ok(xml_mv), order)

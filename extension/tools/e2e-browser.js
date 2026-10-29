@@ -914,6 +914,29 @@ async function check(label, fn) {
     const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
     assert.ok(String(icon.value).includes('save.png'), String(icon.value));
   });
+  await check('entry drag: dragging a tool bar entry past its neighbour on the canvas reorders it, and undo restores', async () => {
+    await open('mainwindow.ui');
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Add Tool Bar' });
+    for (const t of ['Alpha', 'Beta']) await client.request('addAction', { docId, text: t });
+    const tb = (await client.request('formInfo', { docId })).actionTargets.find((t) => t.kind === 'toolbar').name;
+    for (const a of ['actionAlpha', 'actionBeta']) await client.request('useAction', { docId, action: a, target: tb });
+    await page.mouse.click(...(await at(60, 150))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const order = async () => (await page.locator('.entry-row .action-text').allTextContents());
+    assert.deepEqual(await order(), ['Alpha', 'Beta']);
+    const bar = (await backendNow()).objects.find((o) => o.name === tb);
+    assert.equal(bar.entries.length, 2, 'the page knows where the entries are');
+    const [a, b] = bar.entries;
+    const from = await at(a.x + a.w / 2, a.y + a.h / 2);
+    const to = await at(b.x + b.w - 2, b.y + b.h / 2);
+    await page.mouse.move(...from); await page.mouse.down(); await page.mouse.move(from[0] + 10, from[1], { steps: 3 });
+    await page.mouse.move(...to, { steps: 6 });
+    await shot('e2e-entry-drag');
+    await page.mouse.up(); await settle();
+    assert.deepEqual(await order(), ['Beta', 'Alpha']);
+    await page.locator('#toolbar button[title^="Undo"]').first().click(); await settle();
+    assert.deepEqual(await order(), ['Alpha', 'Beta']);
+  });
   await check('entry order: a tool bar entry moves down in the Form tab, and undo puts it back', async () => {
     await open('mainwindow.ui');
     await client.request('taskAction', { docId, name: 'MainWindow', text: 'Add Tool Bar' });

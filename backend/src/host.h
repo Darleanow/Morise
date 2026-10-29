@@ -120,6 +120,9 @@ using qdesigner_internal::PropertySheetPixmapValue;
 
 namespace qdr {
 
+/// The design-time "Type Here" entry of a menu: not a real action.
+bool isPlaceholder(const QAction *a);
+
 class PaletteDropItem : public qdesigner_internal::QDesignerDnDItem
 {
 public:

@@ -288,7 +288,7 @@ QJsonObject Host::snapshot(QDesignerFormWindowInterface *fw)
             parent = parent->parentWidget();
         const QPoint tl = w->mapTo(fw, QPoint(0, 0));
         const QPoint origin = w->parentWidget() ? w->parentWidget()->mapTo(fw, QPoint(0, 0)) : QPoint(0, 0);
-        objects.append(QJsonObject{
+        QJsonObject described{
             {QLatin1String("name"), idOf(w)},
             {QLatin1String("class"), QString::fromUtf8(w->metaObject()->className())},
             {QLatin1String("parent"), (w == root || !parent) ? QJsonValue() : QJsonValue(idOf(parent))},
@@ -296,7 +296,20 @@ QJsonObject Host::snapshot(QDesignerFormWindowInterface *fw)
             {QLatin1String("laidOut"), w != root && (isWindowPart(fw, w) || qdesigner_internal::LayoutInfo::isWidgetLaidout(m_core, w))},
             {QLatin1String("part"), isWindowPart(fw, w)},
             {QLatin1String("x"), tl.x()}, {QLatin1String("y"), tl.y()},
-            {QLatin1String("w"), w->width()}, {QLatin1String("h"), w->height()}});
+            {QLatin1String("w"), w->width()}, {QLatin1String("h"), w->height()}};
+        // The entries of a tool bar with where they are drawn, so the page can reorder them by dragging.
+        if (auto *bar = qobject_cast<QToolBar *>(w)) {
+            QJsonArray entries;
+            for (QAction *a : bar->actions()) {
+                if (isPlaceholder(a))
+                    continue;
+                const QRect r = bar->actionGeometry(a); // empty when the action is not drawn: the index still counts
+                entries.append(QJsonObject{{QLatin1String("x"), tl.x() + r.x()}, {QLatin1String("y"), tl.y() + r.y()}, {QLatin1String("w"), r.width()}, {QLatin1String("h"), r.height()},
+                                           {QLatin1String("separator"), a->isSeparator()}});
+            }
+            described.insert(QLatin1String("entries"), entries);
+        }
+        objects.append(described);
     };
     describeWidget(root);
     for (QWidget *w : root->findChildren<QWidget *>())
