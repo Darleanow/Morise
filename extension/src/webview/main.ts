@@ -8,6 +8,7 @@ import { $ } from './dom';
 import { onlyFormSelected, selectedObject } from './geometry';
 import { openHelp } from './help';
 import { hooks } from './hooks';
+import { runPendingTab } from './tabs';
 import { closeInplace, editableText, editText, editTextWhenReady, inplaceOpen, runPendingEdit } from './inplace';
 import { blurProperties, focusProperty, initInspector, inspectorWouldChange, propertiesHaveFocus, renderInspector } from './inspector';
 import { closeMenu, menuOpen, objectMenu, openMenu } from './menu';
@@ -242,6 +243,7 @@ function apply(msg: Extract<HostToWebview, { type: 'state' }>): void {
     frameArrived();
     flushPendingMenu();
     runPendingEdit();
+    runPendingTab();
     refreshPreviewSoon();
 }
 

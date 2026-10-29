@@ -929,6 +929,21 @@ async function check(label, fn) {
     const loc = (await client.request('properties', { docId, name: 'okButton' })).properties.find((q) => q.name === 'locale');
     assert.equal(loc.value.language, 'French');
   });
+  await check('tabs: a click on a tab header switches the page, a double-click renames it', async () => {
+    await open('tabs.ui');
+    const tabRect = async (i) => (await client.request('containerInfo', { docId, name: 'tabs' })).tabs[i];
+    const current = async () => (await client.request('containerInfo', { docId, name: 'tabs' })).current;
+    const second = await tabRect(1);
+    await page.mouse.click(...(await at(second.x + second.w / 2, second.y + second.h / 2))); await settle();
+    assert.equal(await current(), 1, 'the first click on an unselected tab widget already switches');
+    const third = await tabRect(2);
+    await page.mouse.dblclick(...(await at(third.x + third.w / 2, third.y + third.h / 2))); await settle();
+    await page.waitForSelector('input.inplace');
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Renamed'); await page.keyboard.press('Enter'); await settle();
+    assert.equal(await current(), 2);
+    const title = (await client.request('properties', { docId, name: 'tabs' })).properties.find((q) => q.name === 'currentTabText');
+    assert.equal(title.value, 'Renamed');
+  });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 
   await shot('e2e-final');

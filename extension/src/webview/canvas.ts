@@ -8,6 +8,7 @@ import { guideNodes, measureNodes, snapToSiblings } from './guides';
 import { hooks } from './hooks';
 import { descendantOf, layoutSlot, type LayoutSlot } from './layoutslot';
 import { classIcons, prefs, S, savePrefs, send } from './state';
+import { requestTab } from './tabs';
 import { attach, classGlyph, placedTags, resetTags, tag } from './tags';
 import { box, form, geomLabel, ghost, hint, overlay, placed, stage, toImage, viewport, zoom, fitZoom, layoutStage, onZoomChange, requestScale, resetRender, setZoom, stepZoom } from './view';
 
@@ -740,6 +741,9 @@ viewport.addEventListener('pointerup', (ev) => {
         if (sel.length !== 1 || sel[0] !== g.primary.obj.name) {
             send({ type: 'selectNames', names: [g.primary.obj.name] });
         }
+        if (g.primary.obj.class === 'QTabWidget') {
+            requestTab(g.primary.obj.name, p, false);
+        }
     } else if (g.kind === 'pending') {
         if (g.additive) {
             const hit = objectAt(p.x, p.y);
@@ -749,6 +753,10 @@ viewport.addEventListener('pointerup', (ev) => {
             }
         } else if (insideImage(p)) {
             send({ type: 'hitSelect', x: p.x, y: p.y });
+            const hit = objectAt(p.x, p.y);
+            if (hit?.class === 'QTabWidget') {
+                requestTab(hit.name, p, false);
+            }
         } else {
             const root = rootObject();
             if (root) {
@@ -769,6 +777,10 @@ viewport.addEventListener('dblclick', (ev) => {
         return;
     }
     const hit = objectAt(p.x, p.y);
+    if (hit?.class === 'QTabWidget') {
+        requestTab(hit.name, p, true);
+        return;
+    }
     const isBox = hit?.class === 'QGroupBox';
     const onTitle = isBox && hit !== undefined && p.y - hit.y < 26;
     const leafLike = !!hit && hit.parent !== null && (!isContainer(hit) || onTitle || hit.class === 'QLabel');

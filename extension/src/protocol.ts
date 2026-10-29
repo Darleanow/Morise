@@ -86,6 +86,8 @@ export interface SceneLayout {
 export interface ContainerInfo {
     pages: string[];
     current: number;
+    /** Tab headers of a tab widget in form pixels. */
+    tabs?: { x: number; y: number; w: number; h: number }[];
 }
 
 export interface FormInfo {

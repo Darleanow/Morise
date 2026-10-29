@@ -521,6 +521,12 @@ check("a widget's locale can be set", prop_("locale")["value"] == {"language": "
 lc = call("palette")["result"]["locales"]
 check("the locale choices are offered", "French" in lc["languages"] and "France" in lc["countries"])
 
+# tab widgets: the header rectangles are reported so a click can switch and rename a tab
+call("open", docId="tb1", xml=open(os.path.join(HERE, "..", "testdata", "tabs.ui"), encoding="utf-8").read())
+ci = call("containerInfo", docId="tb1", name="tabs")["result"]
+check("a tab widget reports one header rectangle per page", len(ci["tabs"]) == 3 and all(t["w"] > 10 and t["h"] > 10 for t in ci["tabs"]) and ci["tabs"][0]["x"] < ci["tabs"][1]["x"], ci)
+check("a container that is not a tab widget has no header rectangles", "tabs" not in call("containerInfo", docId="tb1", name="TabsForm")["result"])
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

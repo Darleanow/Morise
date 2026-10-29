@@ -112,7 +112,18 @@ QJsonObject Host::containerInfo(const QJsonObject &p)
     QJsonArray pages;
     for (int i = 0; i < c->count(); ++i)
         pages.append(idOf(c->widget(i)));
-    return {{QLatin1String("pages"), pages}, {QLatin1String("current"), c->currentIndex()}};
+    QJsonObject out{{QLatin1String("pages"), pages}, {QLatin1String("current"), c->currentIndex()}};
+    // Where the tab headers are drawn, so the page can switch and rename a tab by clicking on it.
+    if (auto *tabs = qobject_cast<QTabWidget *>(w)) {
+        QJsonArray rects;
+        for (int i = 0; i < tabs->count(); ++i) {
+            const QRect r = tabs->tabBar()->tabRect(i);
+            const QPoint tl = tabs->tabBar()->mapTo(fw, r.topLeft());
+            rects.append(QJsonObject{{QLatin1String("x"), tl.x()}, {QLatin1String("y"), tl.y()}, {QLatin1String("w"), r.width()}, {QLatin1String("h"), r.height()}});
+        }
+        out.insert(QLatin1String("tabs"), rects);
+    }
+    return out;
 }
 
 QJsonObject Host::pageOp(const QJsonObject &p)

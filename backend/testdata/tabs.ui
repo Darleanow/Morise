@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TabsForm</class>
+ <widget class="QWidget" name="TabsForm">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>360</width><height>240</height></rect></property>
+  <widget class="QTabWidget" name="tabs">
+   <property name="geometry"><rect><x>20</x><y>20</y><width>320</width><height>200</height></rect></property>
+   <property name="currentIndex"><number>0</number></property>
+   <widget class="QWidget" name="pageOne">
+    <attribute name="title"><string>One</string></attribute>
+   </widget>
+   <widget class="QWidget" name="pageTwo">
+    <attribute name="title"><string>Second</string></attribute>
+   </widget>
+   <widget class="QWidget" name="pageThree">
+    <attribute name="title"><string>Third</string></attribute>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

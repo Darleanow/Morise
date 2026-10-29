@@ -62,17 +62,28 @@ export function editText(): void {
     if (!o || !tp || !S.propertiesFor) {
         return;
     }
+    openEditor(S.propertiesFor, tp, o, `Edit ${tp.name} of ${o.name}`, tp.name === 'plainText' || tp.value.includes('\n'));
+}
+
+/** The title of the current tab, edited right over its header. */
+export function editTabTitle(rect: { x: number; y: number; w: number; h: number }): void {
+    const p = S.properties?.properties.find((x) => x.name === 'currentTabText' && x.kind === 'string' && x.enabled);
+    if (!p || !S.propertiesFor) {
+        return;
+    }
+    openEditor(S.propertiesFor, { name: 'currentTabText', value: String(p.value) }, rect, `Edit the tab title of ${S.propertiesFor}`, false);
+}
+
+function openEditor(target: string, tp: { name: string; value: string }, at: { x: number; y: number; w: number; h: number }, label: string, multi: boolean): void {
     closeInplace();
     const z = prefs.zoom;
-    const multi = tp.name === 'plainText' || tp.value.includes('\n');
     const input = multi ? el('textarea', { value: tp.value }) : el('input', { type: 'text', value: tp.value });
     input.className = 'inplace';
-    input.setAttribute('aria-label', `Edit ${tp.name} of ${o.name}`);
-    const box = { left: o.x * z, top: o.y * z, width: Math.max(o.w * z, 80), height: Math.max(o.h * z, 24) };
+    input.setAttribute('aria-label', label);
+    const box = { left: at.x * z, top: at.y * z, width: Math.max(at.w * z, 80), height: Math.max(at.h * z, 24) };
     Object.assign(input.style, { left: `${box.left}px`, top: `${box.top}px`, minWidth: `${box.width}px`, height: multi ? `${Math.max(box.height, 60)}px` : `${box.height}px` });
     editor = input;
     stage.append(input);
-    const target = S.propertiesFor;
     let done = false;
     const finish = (apply: boolean) => {
         if (done) {
