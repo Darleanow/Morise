@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BigForm</class>
+ <widget class="QWidget" name="BigForm">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>2200</width><height>1500</height></rect></property>
+  <widget class="QPushButton" name="corner">
+   <property name="geometry"><rect><x>20</x><y>20</y><width>120</width><height>30</height></rect></property>
+   <property name="text"><string>Corner</string></property>
+  </widget>
+  <widget class="QPushButton" name="farAway">
+   <property name="geometry"><rect><x>1900</x><y>1300</y><width>120</width><height>30</height></rect></property>
+   <property name="text"><string>Far away</string></property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

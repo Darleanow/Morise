@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Enzo</author>
+ <class>SampleForm</class>
+ <widget class="QWidget" name="SampleForm">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>320</width><height>200</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>Sample</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>7</number></property>
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text"><string>Hello</string></property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="okButton">
+     <property name="text"><string>OK</string></property>
+     <property name="toolTip"><string>Confirm</string></property>
+     <property name="customTag" stdset="0"><string>keep-me</string></property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="nameEdit"/>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>nameEdit</tabstop>
+  <tabstop>okButton</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>okButton</sender>
+   <signal>clicked()</signal>
+   <receiver>nameEdit</receiver>
+   <slot>clear()</slot>
+  </connection>
+ </connections>
+</ui>

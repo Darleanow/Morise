@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EmptyForm</class>
+ <widget class="QWidget" name="EmptyForm">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>320</width><height>200</height></rect></property>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
