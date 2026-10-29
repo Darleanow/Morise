@@ -1077,6 +1077,18 @@ async function check(label, fn) {
     assert.equal((await backendNow()).objects.length, n, 'nothing was deleted or duplicated');
     assert.equal(JSON.stringify(await obj('go')), before, 'nothing moved');
   });
+  await check('translation: a text can be marked not translatable and given a comment for the translator', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
+    await page.locator('button[title^="Translation of text"]').first().click();
+    await page.locator('input[aria-label="Translatable"]').uncheck();
+    await page.locator('textarea[aria-label="Comment for the translator"]').fill('Confirm button');
+    await page.locator('.popup button', { hasText: 'Apply' }).click(); await settle();
+    const xml = (await client.request('contents', { docId })).xml;
+    assert.match(xml, /<string notr="true"[^>]*extracomment="Confirm button"[^>]*>OK<\/string>/);
+    assert.ok(await page.locator('button[title^="Translation of text (not translated)"]').count(), 'the button shows it differs from the default');
+  });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');
     const go = await obj('go');

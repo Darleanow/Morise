@@ -51,8 +51,14 @@ QJsonObject Host::describeValue(const QVariant &v, QDesignerFormWindowInterface 
     auto make = [](const char *kind, const QJsonValue &value) {
         return QJsonObject{{QLatin1String("kind"), QLatin1String(kind)}, {QLatin1String("value"), value}};
     };
-    if (v.canConvert<PropertySheetStringValue>())
-        return make("string", v.value<PropertySheetStringValue>().value());
+    if (v.canConvert<PropertySheetStringValue>()) {
+        const auto s = v.value<PropertySheetStringValue>();
+        QJsonObject o = make("string", s.value());
+        // What lupdate needs: whether the text is translated, the disambiguation and the comment for the translator.
+        o.insert(QLatin1String("i18n"), QJsonObject{{QLatin1String("translatable"), s.translatable()}, {QLatin1String("comment"), s.comment()},
+                                                    {QLatin1String("disambiguation"), s.disambiguation()}});
+        return o;
+    }
     if (v.canConvert<PropertySheetStringListValue>())
         return make("stringlist", stringsToJson(v.value<PropertySheetStringListValue>().value()));
     if (v.canConvert<PropertySheetKeySequenceValue>())
@@ -159,6 +165,19 @@ QVariant Host::parseValue(const QVariant &current, const QJsonValue &val) const
     if (current.canConvert<PropertySheetStringValue>()) {
         // Keep the translatable/comment/disambiguation data the engine stores with the text.
         auto s = current.value<PropertySheetStringValue>();
+        if (val.isObject()) {
+            // Only the translation data changes; the text stays.
+            const QJsonObject o = val.toObject();
+            if (o.contains(QLatin1String("translatable")))
+                s.setTranslatable(o.value(QLatin1String("translatable")).toBool());
+            if (o.contains(QLatin1String("comment")))
+                s.setComment(o.value(QLatin1String("comment")).toString());
+            if (o.contains(QLatin1String("disambiguation")))
+                s.setDisambiguation(o.value(QLatin1String("disambiguation")).toString());
+            if (o.contains(QLatin1String("text")))
+                s.setValue(o.value(QLatin1String("text")).toString());
+            return QVariant::fromValue(s);
+        }
         s.setValue(val.toString());
         return QVariant::fromValue(s);
     }

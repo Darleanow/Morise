@@ -642,6 +642,18 @@ if dname:
     call("open", docId="dk2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())
     check("pasting a dock widget into a plain form is refused, not a crash", "error" in call("action", docId="dk2", action="paste") and "result" in call("snapshot", docId="dk2"))
 
+# translation data of a text (what lupdate reads)
+call("open", docId="tr1", xml=open(os.path.join(HERE, "..", "testdata", "sample.ui"), encoding="utf-8").read())
+tp = lambda: next(x for x in call("properties", docId="tr1", name="okButton")["result"]["properties"] if x["name"] == "text")
+check("a text reports its translation data", tp()["i18n"] == {"translatable": True, "comment": "", "disambiguation": ""}, tp())
+call("setProperty", docId="tr1", name="okButton", property="text", value={"translatable": False, "comment": "Confirm", "disambiguation": "dlg"})
+check("translation data is set without touching the text", tp()["value"] == "OK" and tp()["i18n"] == {"translatable": False, "comment": "Confirm", "disambiguation": "dlg"}, tp())
+xtr = saved("tr1")
+check("it is saved as notr, comment and extracomment and accepted by uic", 'notr="true"' in xtr and 'comment="dlg"' in xtr and 'extracomment="Confirm"' in xtr and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xtr, capture_output=True, text=True).returncode == 0)
+call("undo", docId="tr1")
+check("changing it is one undo step", tp()["i18n"]["translatable"] is True)
+check("editing the text afterwards keeps the translation data", (call("setProperty", docId="tr1", name="okButton", property="text", value={"translatable": False}), call("setProperty", docId="tr1", name="okButton", property="text", value="Yes"), tp()["i18n"]["translatable"] is False)[2])
+
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
 check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))

@@ -196,6 +196,8 @@ export interface PropertyInfo {
     dynamic?: boolean;
     /** Small preview of an icon or pixmap, as a PNG data URL. */
     thumb?: string;
+    /** Translation data of a string (what lupdate reads). */
+    i18n?: { translatable: boolean; comment: string; disambiguation: string };
 }
 
 /** Editable contents of a table or tree widget. */

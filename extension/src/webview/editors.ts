@@ -1,5 +1,6 @@
 import type { FontValue, LocaleValue, PaletteValue, PropertyInfo, SizePolicyValue } from '../protocol';
 import { button, el, icon } from './dom';
+import { openTranslationDialog } from './dialogs';
 import { S } from './state';
 
 /** What an editor can ask the inspector to do. */
@@ -14,6 +15,18 @@ export interface EditorContext {
 const openFlagLists = new Set<string>();
 
 const MULTILINE_NAMES = new Set(['styleSheet', 'toolTip', 'whatsThis', 'statusTip', 'plainText', 'html', 'accessibleDescription']);
+
+/** Opens the translation data of a text (translatable, disambiguation, comment); lit when it differs from the default. */
+function translateButton(p: PropertyInfo, ctx: EditorContext): HTMLElement {
+    const i = p.i18n;
+    if (!i || p.name === 'styleSheet') {
+        return el('span');
+    }
+    const custom = !i.translatable || i.comment !== '' || i.disambiguation !== '';
+    const b = button(`Translation of ${p.name}${custom ? (i.translatable ? ' (has a comment)' : ' (not translated)') : ''}`, icon('globe'), () => openTranslationDialog(p.name, i, (v) => ctx.commit(p, v)), custom ? 'icon-btn on' : 'icon-btn');
+    b.disabled = !p.enabled;
+    return b;
+}
 
 /** Properties that need a block (label above, editor below) instead of a label/editor pair. */
 export function isBlock(p: PropertyInfo): boolean {
@@ -260,11 +273,11 @@ export function editorFor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
             const input = el('input', { type: 'text', value: text.includes('\n') ? text.split('\n')[0] + ' ↵…' : text, disabled: !enabled || text.includes('\n') });
             input.addEventListener('change', () => ctx.commit(p, input.value));
             if (!(MULTILINE_NAMES.has(p.name) || text.includes('\n'))) {
-                return input;
+                return p.i18n ? el('div', { className: 'with-button' }, input, translateButton(p, ctx)) : input;
             }
             const expand = button(`Edit ${p.name} in a larger editor`, icon('edit'), () => ctx.multiline(p, text), 'icon-btn');
             expand.disabled = !p.enabled;
-            return el('div', { className: 'with-button' }, input, expand);
+            return el('div', { className: 'with-button' }, input, translateButton(p, ctx), expand);
         }
         case 'bool': {
             const input = el('input', { type: 'checkbox', checked: p.value === true, disabled: !enabled });

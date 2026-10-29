@@ -106,6 +106,8 @@ parser. **Save as image** (command palette) writes the runtime render as a PNG.
 
 **New forms.** `Qt Designer: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer. A brand new empty `.ui` file (File > New File) offers the same templates when it is opened.
 
+**Translation data.** Every text property has a small globe button: mark a text as not translatable and give lupdate a disambiguation and a comment for the translator (saved as `notr`, `comment` and `extracomment`).
+
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
 groups, page operations. Entries that would open a dialog ("Change text...") are left out.

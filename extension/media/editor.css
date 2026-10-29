@@ -433,3 +433,5 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 #toolbar.more-right { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 #toolbar.more-left { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
 #toolbar.more-left.more-right { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+
+.icon-btn.on { color: var(--vscode-textLink-foreground); }

@@ -24,6 +24,24 @@ function checkStyleSheet(text: string): Promise<boolean> {
     });
 }
 
+/** What the translator sees about a text: whether it is translated at all, a context and a comment (saved in the .ui). */
+export function openTranslationDialog(label: string, current: { translatable: boolean; comment: string; disambiguation: string }, onApply: (v: { translatable: boolean; comment: string; disambiguation: string }) => void): void {
+    const translatable = el('input', { type: 'checkbox', checked: current.translatable });
+    translatable.setAttribute('aria-label', 'Translatable');
+    const disambiguation = el('input', { type: 'text', value: current.disambiguation, className: 'wide', placeholder: 'tells apart identical texts, e.g. "menu"' });
+    disambiguation.setAttribute('aria-label', 'Disambiguation');
+    const comment = el('textarea', { rows: 3, value: current.comment, className: 'wide', placeholder: 'a hint for the translator' });
+    comment.setAttribute('aria-label', 'Comment for the translator');
+    const apply = () => {
+        popup.close();
+        onApply({ translatable: translatable.checked, comment: comment.value, disambiguation: disambiguation.value });
+    };
+    const popup = openPopup([header(`Translation of ${label}`, 'Read by lupdate; saved in the .ui'),
+        el('div', { className: 'form-grid' }, el('label', {}, 'Translatable'), translatable, el('label', {}, 'Disambiguation'), disambiguation, el('label', {}, 'Comment'), comment),
+        footer(el('span', { className: 'spacer' }), secondaryButton('Cancel', () => popup.close()), primaryButton('Apply', apply))], 'small');
+    translatable.focus();
+}
+
 export function openTextEditor(title: string, current: string, onApply: (value: string) => void, validate = false): void {
     const ta = el('textarea', { value: current, className: 'big-text', spellcheck: false });
     const status = el('span', { className: 'dim style-status' });
