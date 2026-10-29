@@ -1,6 +1,9 @@
 // Types shared by the extension host, the webview and the native backend.
 // Types only: nothing here may carry runtime code (the webview imports it with `import type`).
 
+/** Which side of the nearest layout item a drop means. */
+export type Side = 'before' | 'after';
+
 /** A widget managed by the Designer form window. Coordinates are in snapshot image pixels. */
 export interface SceneObject {
     name: string;
@@ -187,7 +190,7 @@ export interface BackendMethods {
     taskAction: { params: { docId: string; name: string; text: string }; result: Snapshot };
     setContents: { params: { docId: string; name: string; contents: GridContents }; result: Snapshot };
     setItems: { params: { docId: string; name: string; items: string[] }; result: Snapshot };
-    moveWidget: { params: { docId: string; name: string; x: number; y: number }; result: Snapshot };
+    moveWidget: { params: { docId: string; name: string; x: number; y: number; side?: Side }; result: Snapshot };
     reparent: { params: { docId: string; parent: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
     preview: { params: { docId: string; style?: string; dark?: boolean; scale?: number }; result: PreviewResult };
     containerInfo: { params: { docId: string; name: string }; result: ContainerInfo };
@@ -207,7 +210,7 @@ export interface BackendMethods {
     history: { params: { docId: string }; result: { items: string[]; index: number } };
     connections: { params: { docId: string }; result: { connections: ConnectionInfo[] } };
     palette: { params: Record<string, never>; result: { categories: PaletteCategory[]; fonts: string[] } };
-    addWidget: { params: { docId: string; category: number; index: number; x: number; y: number }; result: Snapshot };
+    addWidget: { params: { docId: string; category: number; index: number; x: number; y: number; side?: Side }; result: Snapshot };
     action: { params: { docId: string; action: ActionName }; result: Snapshot };
     select: { params: { docId: string; names: string[] }; result: Snapshot };
     hitTest: { params: { docId: string; x: number; y: number }; result: { name: string | null } };
@@ -231,7 +234,7 @@ export type WebviewToHost =
     | { type: 'selectNames'; names: string[] }
     | { type: 'setProperty'; name: string; names?: string[]; property: string; value: unknown }
     | { type: 'resetProperty'; name: string; property: string }
-    | { type: 'addWidget'; category: number; index: number; x: number; y: number }
+    | { type: 'addWidget'; category: number; index: number; x: number; y: number; side?: Side }
     /** Search the workspace for text (e.g. `ui->okButton`). */
     | { type: 'findInCode'; query: string }
     | { type: 'copyText'; text: string }
@@ -245,7 +248,7 @@ export type WebviewToHost =
     | { type: 'taskAction'; name: string; text: string }
     | { type: 'setContents'; name: string; contents: GridContents }
     | { type: 'setItems'; name: string; items: string[] }
-    | { type: 'moveWidget'; name: string; x: number; y: number }
+    | { type: 'moveWidget'; name: string; x: number; y: number; side?: Side }
     | { type: 'reparent'; parent: string; items: { name: string; rect: number[] }[] }
     | { type: 'preview'; style: string; dark: boolean; scale: number }
     | { type: 'pageOp'; name: string; op: 'add' | 'addAfter' | 'remove' }

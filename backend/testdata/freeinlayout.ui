@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FreeInLayout</class>
+ <widget class="QWidget" name="FreeInLayout">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>360</width><height>240</height></rect></property>
+  <widget class="QPushButton" name="loneButton">
+   <property name="geometry"><rect><x>10</x><y>10</y><width>90</width><height>26</height></rect></property>
+   <property name="text"><string>Lone</string></property>
+  </widget>
+  <widget class="QGroupBox" name="box">
+   <property name="geometry"><rect><x>140</x><y>20</y><width>200</width><height>180</height></rect></property>
+   <property name="title"><string>Box</string></property>
+   <layout class="QVBoxLayout" name="boxLayout">
+    <item><widget class="QPushButton" name="first"><property name="text"><string>First</string></property></widget></item>
+    <item><widget class="QPushButton" name="second"><property name="text"><string>Second</string></property></widget></item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1094,7 +1094,7 @@ viewport.addEventListener('pointerup', (ev) => {
         if (!g.moved) {
             send({ type: 'hitSelect', x: g.startX, y: g.startY });
         } else if (g.slot && !g.slot.noop) {
-            send({ type: 'moveWidget', name: g.from.name, x: g.slot.point.x, y: g.slot.point.y });
+            send({ type: 'moveWidget', name: g.from.name, x: g.slot.point.x, y: g.slot.point.y, ...(g.slot.axis === 'cell' ? {} : { side: g.slot.before ? 'before' : 'after' }) });
         }
         return;
     }
@@ -1107,7 +1107,7 @@ viewport.addEventListener('pointerup', (ev) => {
             if (g.sent) {
                 send({ type: 'cancelGesture' });
             }
-            send({ type: 'moveWidget', name: g.primary.obj.name, x: g.slot.point.x, y: g.slot.point.y });
+            send({ type: 'moveWidget', name: g.primary.obj.name, x: g.slot.point.x, y: g.slot.point.y, ...(g.slot.axis === 'cell' ? {} : { side: g.slot.before ? 'before' : 'after' }) });
             unpinForm();
             gesture = null;
             showGhost(null);

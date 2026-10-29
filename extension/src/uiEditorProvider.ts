@@ -374,7 +374,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 doc.snapshot = await client.request('setItems', { docId: doc.docId, name: msg.name, items: msg.items });
                 break;
             case 'moveWidget':
-                doc.snapshot = await client.request('moveWidget', { docId: doc.docId, name: msg.name, x: msg.x, y: msg.y });
+                doc.snapshot = await client.request('moveWidget', { docId: doc.docId, name: msg.name, x: msg.x, y: msg.y, side: msg.side });
                 break;
             case 'reparent':
                 doc.snapshot = await client.request('reparent', { docId: doc.docId, parent: msg.parent, items: msg.items });
@@ -494,7 +494,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 doc.snapshot = await client.request('resetProperty', { docId: doc.docId, name: msg.name, property: msg.property });
                 break;
             case 'addWidget':
-                doc.snapshot = await client.request('addWidget', { docId: doc.docId, category: msg.category, index: msg.index, x: msg.x, y: msg.y });
+                doc.snapshot = await client.request('addWidget', { docId: doc.docId, category: msg.category, index: msg.index, x: msg.x, y: msg.y, side: msg.side });
                 break;
             case 'action':
                 doc.snapshot = await client.request('action', { docId: doc.docId, action: msg.action });

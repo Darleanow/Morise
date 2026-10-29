@@ -278,7 +278,7 @@ private:
 
     /// The engine's own hover step picks the layout cell among the *visible* items, and the form is never shown
     /// here, so do the same choice by hand (nearest widget, never `skip`) and tell the layout where to insert.
-    void aimLayoutCell(qdesigner_internal::FormWindowBase *base, QWidget *target, const QPoint &global, QWidget *skip);
+    void aimLayoutCell(qdesigner_internal::FormWindowBase *base, QWidget *target, const QPoint &global, QWidget *skip, const QString &side = QString());
 
     /// Drops an existing widget at a form position: into a layout cell, or free in a container. This is the
     /// engine's own move (delete from the old cell, highlight the target cell, insert), so it is one undo step.

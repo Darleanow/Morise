@@ -2,12 +2,12 @@ import { containerAt, isContainer, byName, layoutsOf, selectedObject, rootObject
 import { rememberWidget, S, send } from './state';
 
 /** Where a widget added without an explicit position goes: inside the selected container, staggered. */
-export function defaultPosition(): { x: number; y: number } {
+export function defaultPosition(): { x: number; y: number; side?: 'after' } {
     const sel = selectedObject();
     // A widget a layout owns: the new one goes right after it, in the layout's direction.
     if (sel?.laidOut && sel.parent) {
         const kind = layoutsOf(sel.parent).find((l) => !l.parent)?.kind ?? '';
-        return /HBox/.test(kind) ? { x: sel.x + sel.w * 0.75, y: sel.y + sel.h / 2 } : { x: sel.x + sel.w / 2, y: sel.y + sel.h * 0.75 };
+        return /HBox/.test(kind) ? { x: sel.x + sel.w * 0.75, y: sel.y + sel.h / 2, side: 'after' } : { x: sel.x + sel.w / 2, y: sel.y + sel.h * 0.75, side: 'after' };
     }
     const container = (isContainer(sel) ? sel : byName(sel?.parent)) ?? rootObject();
     if (!container) {
@@ -30,8 +30,8 @@ export function defaultPosition(): { x: number; y: number } {
 
 export function addWidgetAt(category: number, index: number, at?: { x: number; y: number }): void {
     rememberWidget(category, index);
-    const p = at ?? defaultPosition();
-    send({ type: 'addWidget', category, index, x: Math.round(p.x), y: Math.round(p.y) });
+    const p: { x: number; y: number; side?: 'after' } = at ?? defaultPosition();
+    send({ type: 'addWidget', category, index, x: Math.round(p.x), y: Math.round(p.y), ...(p.side ? { side: p.side } : {}) });
 }
 
 export function containerName(at: { x: number; y: number }): string | undefined {

@@ -16,6 +16,8 @@ function isStringArray(v: unknown): v is string[] {
 }
 
 /** The webview is our own page, but its messages are still validated at the boundary. */
+const side = (m: Record<string, unknown>): { side?: 'before' | 'after' } => (m.side === 'before' || m.side === 'after' ? { side: m.side } : {});
+
 export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
     if (typeof raw !== 'object' || raw === null) {
         return undefined;
@@ -54,7 +56,7 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'setItems':
             return typeof m.name === 'string' && Array.isArray(m.items) && m.items.length <= 2000 && m.items.every((i) => typeof i === 'string') ? { type: 'setItems', name: m.name, items: m.items as string[] } : undefined;
         case 'moveWidget':
-            return typeof m.name === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y) ? { type: 'moveWidget', name: m.name, x: m.x as number, y: m.y as number } : undefined;
+            return typeof m.name === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y) ? { type: 'moveWidget', name: m.name, x: m.x as number, y: m.y as number, ...side(m) } : undefined;
         case 'reparent':
             return typeof m.parent === 'string' && Array.isArray(m.items) && m.items.length <= 1000 && m.items.every(isItem) ? { type: 'reparent', parent: m.parent, items: m.items as { name: string; rect: number[] }[] } : undefined;
         case 'preview':
@@ -116,7 +118,7 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return typeof m.name === 'string' && typeof m.property === 'string' ? { type: 'resetProperty', name: m.name, property: m.property } : undefined;
         case 'addWidget':
             return Number.isInteger(m.category) && Number.isInteger(m.index) && Number.isFinite(m.x) && Number.isFinite(m.y)
-                ? { type: 'addWidget', category: m.category as number, index: m.index as number, x: m.x as number, y: m.y as number }
+                ? { type: 'addWidget', category: m.category as number, index: m.index as number, x: m.x as number, y: m.y as number, ...side(m) }
                 : undefined;
         case 'action':
             return typeof m.action === 'string' && ACTIONS.includes(m.action) ? { type: 'action', action: m.action as ActionName } : undefined;

@@ -513,7 +513,7 @@ QJsonObject Host::addWidget(const QJsonObject &p)
     if (!base)
         throw ProtocolError{QStringLiteral("form window does not support drops")};
     m_core->formWindowManager()->setActiveFormWindow(fw);
-    aimLayoutCell(base, target, global, nullptr);
+    aimLayoutCell(base, target, global, nullptr, p.value(QLatin1String("side")).toString());
     const bool ok = base->dropWidgets({item}, target, global);
     delete item;
     if (!ok)

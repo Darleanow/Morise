@@ -52,7 +52,7 @@ QJsonObject Host::reparent(const QJsonObject &p)
     return snapshot(fw);
 }
 
-void Host::aimLayoutCell(qdesigner_internal::FormWindowBase *base, QWidget *target, const QPoint &global, QWidget *skip)
+void Host::aimLayoutCell(qdesigner_internal::FormWindowBase *base, QWidget *target, const QPoint &global, QWidget *skip, const QString &side)
 {
     QWidget *container = base->findContainer(target, false);
     if (!container)
@@ -60,19 +60,36 @@ void Host::aimLayoutCell(qdesigner_internal::FormWindowBase *base, QWidget *targ
     auto *deco = qt_extension<QDesignerLayoutDecorationExtension *>(m_core->extensionManager(), container);
     if (!deco)
         return;
-    const QPoint pt = container->mapFromGlobal(global);
-    int best = -1, bestDist = 0;
-    for (QWidget *cand : deco->widgets(qdesigner_internal::LayoutInfo::managedLayout(m_core, container))) {
+    QPoint pt = container->mapFromGlobal(global);
+    QLayout *layout = qdesigner_internal::LayoutInfo::managedLayout(m_core, container);
+    QWidget *nearest = nullptr;
+    int bestDist = 0;
+    for (QWidget *cand : deco->widgets(layout)) {
         if (cand == skip)
             continue;
         const int d = (cand->geometry().center() - pt).manhattanLength();
-        if (best == -1 || d < bestDist) {
-            best = deco->indexOf(cand);
+        if (!nearest || d < bestDist) {
+            nearest = cand;
             bestDist = d;
         }
     }
-    if (best >= 0)
-        deco->adjustIndicator(pt, best);
+    if (!nearest)
+        return;
+    // The engine decides before/after from where the point falls in the item's cell, and the last cell stretches to
+    // the layout's edge. When the page says which side it means, aim at that side of the item itself.
+    const auto type = qdesigner_internal::LayoutInfo::layoutType(m_core, layout);
+    const bool before = side == QLatin1String("before");
+    if (before || side == QLatin1String("after")) {
+        // A point far beyond the item's edge on that side: the engine compares it with the cell's edges, and the
+        // last cell stretches to the layout's border, so a point just inside the widget would read as "before".
+        const QRect g = nearest->geometry();
+        constexpr int far = 100000;
+        if (type == qdesigner_internal::LayoutInfo::VBox)
+            pt = QPoint(g.center().x(), before ? -far : far);
+        else if (type == qdesigner_internal::LayoutInfo::HBox)
+            pt = QPoint(before ? -far : far, g.center().y());
+    }
+    deco->adjustIndicator(pt, deco->indexOf(nearest));
 }
 
 QJsonObject Host::moveWidget(const QJsonObject &p)
@@ -99,7 +116,7 @@ QJsonObject Host::moveWidget(const QJsonObject &p)
     decoration->setGeometry(QRect(global - QPoint(w->width() / 2, w->height() / 2), w->size()));
     MoveDropItem item(w, decoration, global);
     m_core->formWindowManager()->setActiveFormWindow(fw);
-    aimLayoutCell(base, target, global, w);
+    aimLayoutCell(base, target, global, w, p.value(QLatin1String("side")).toString());
     const bool ok = base->dropWidgets({&item}, target, global);
     if (!ok)
         throw ProtocolError{QStringLiteral("the engine refused the move to this position")};

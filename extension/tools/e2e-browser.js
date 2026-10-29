@@ -60,7 +60,7 @@ async function check(label, fn) {
         case 'inspect': inspectName = m.name; break;
         case 'setProperty': snap = await client.request('setProperty', { ...d, name: m.name, names: m.names, property: m.property, value: m.value }); break;
         case 'resetProperty': snap = await client.request('resetProperty', { ...d, name: m.name, property: m.property }); break;
-        case 'addWidget': snap = await client.request('addWidget', { ...d, category: m.category, index: m.index, x: m.x, y: m.y }); break;
+        case 'addWidget': snap = await client.request('addWidget', { ...d, category: m.category, index: m.index, x: m.x, y: m.y, side: m.side }); break;
         case 'action': snap = await client.request('action', { ...d, action: m.action }); break;
         case 'gesture': snap = await client.request('gesture', { ...d, phase: m.phase, label: m.label }); break;
         case 'setGeometries': snap = await client.request('setGeometries', { ...d, items: m.items }); break;
@@ -70,7 +70,7 @@ async function check(label, fn) {
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text }); break;
         case 'setContents': snap = await client.request('setContents', { ...d, name: m.name, contents: m.contents }); break;
         case 'setItems': snap = await client.request('setItems', { ...d, name: m.name, items: m.items }); break;
-        case 'moveWidget': snap = await client.request('moveWidget', { ...d, name: m.name, x: m.x, y: m.y }); break;
+        case 'moveWidget': snap = await client.request('moveWidget', { ...d, name: m.name, x: m.x, y: m.y, side: m.side }); break;
         case 'reparent': snap = await client.request('reparent', { ...d, parent: m.parent, items: m.items }); break;
         case 'pageOp': snap = await client.request('pageOp', { ...d, name: m.name, op: m.op }); break;
         case 'setCurrentPage': snap = await client.request('setCurrentPage', { ...d, name: m.name, index: m.index }); break;
@@ -845,6 +845,22 @@ async function check(label, fn) {
     await page.locator('.menus-editor .link-btn', { hasText: 'Open' }).click(); await settle();
     assert.ok(await page.locator('#inspector').getByText('actionOpen').count(), 'the action opens in the inspector');
     await shot('e2e-menus');
+  });
+  await check('layout: a free widget dragged onto a laid-out container joins its layout', async () => {
+    await open('freeinlayout.ui');
+    const lone = await obj('loneButton'), second = await obj('second');
+    assert.equal(lone.laidOut, false);
+    await page.mouse.move(...(await at(lone.x + 40, lone.y + 12))); await page.mouse.down();
+    await page.mouse.move(...(await at(second.x + second.w / 2, second.y + second.h * 0.8)), { steps: 10 });
+    assert.ok(await page.locator('#ghost .insert-line').count() >= 1, 'an insertion line shows where it would land');
+    await page.mouse.up(); await settle();
+    const now = await obj('loneButton');
+    assert.equal(now.laidOut, true);
+    assert.equal(now.parent, 'box');
+    const order = (await backendNow()).objects.filter((o) => o.parent === 'box').sort((a, b) => a.y - b.y).map((o) => o.name);
+    assert.deepEqual(order, ['first', 'second', 'loneButton']);
+    await page.locator('button[title^="Undo ("]').click(); await settle();
+    assert.equal((await obj('loneButton')).laidOut, false, 'one undo puts it back');
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

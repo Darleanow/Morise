@@ -453,6 +453,12 @@ call("setProperty", docId="mn1", name="actionNew", property="shortcut", value="C
 xml_mn = saved("mn1")
 check("menus and actions are saved and accepted by uic", "actionNew" in xml_mn and "Ctrl+N" in xml_mn and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=xml_mn, capture_output=True, text=True).returncode == 0)
 
+# a drop that names its side lands exactly there, also after the last item of a group box layout
+call("open", docId="sd1", xml=open(os.path.join(HERE, "..", "testdata", "freeinlayout.ui"), encoding="utf-8").read())
+r = call("moveWidget", docId="sd1", name="loneButton", x=240, y=150, side="after")
+kids = [o["name"] for o in sorted((o for o in r["result"]["objects"] if o["parent"] == "box"), key=lambda o: o["y"])]
+check("a free widget dropped 'after' the last item of a group box layout goes last", kids == ["first", "second", "loneButton"], kids)
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())
