@@ -67,7 +67,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeySequence>
+#include <QAbstractButton>
 #include <QComboBox>
+#include <QTabBar>
+#include <QTabWidget>
+#include <QToolBox>
 #include <QLineEdit>
 #include <QEnterEvent>
 #include <QPointer>

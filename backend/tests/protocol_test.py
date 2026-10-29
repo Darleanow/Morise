@@ -527,6 +527,10 @@ ci = call("containerInfo", docId="tb1", name="tabs")["result"]
 check("a tab widget reports one header rectangle per page", len(ci["tabs"]) == 3 and all(t["w"] > 10 and t["h"] > 10 for t in ci["tabs"]) and ci["tabs"][0]["x"] < ci["tabs"][1]["x"], ci)
 check("a container that is not a tab widget has no header rectangles", "tabs" not in call("containerInfo", docId="tb1", name="TabsForm")["result"])
 
+call("open", docId="tb2", xml=open(os.path.join(HERE, "..", "testdata", "toolbox.ui"), encoding="utf-8").read())
+ci2 = call("containerInfo", docId="tb2", name="box")["result"]
+check("a tool box reports its page headers and the title property", len(ci2["tabs"]) == 3 and ci2["titleProperty"] == "currentItemText" and ci2["tabs"][0]["y"] < ci2["tabs"][1]["y"], ci2)
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

@@ -88,6 +88,8 @@ export interface ContainerInfo {
     current: number;
     /** Tab headers of a tab widget in form pixels. */
     tabs?: { x: number; y: number; w: number; h: number }[];
+    /** The property that holds the title of the current page. */
+    titleProperty?: string;
 }
 
 export interface FormInfo {

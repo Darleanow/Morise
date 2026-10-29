@@ -36,6 +36,6 @@ export function runPendingTab(): void {
     }
     pending = null;
     if (p.edit) {
-        editTabTitle(c.tabs[index] as { x: number; y: number; w: number; h: number });
+        editTabTitle(c.tabs[index] as { x: number; y: number; w: number; h: number }, c.titleProperty);
     }
 }

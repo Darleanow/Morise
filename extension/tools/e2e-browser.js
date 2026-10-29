@@ -944,6 +944,19 @@ async function check(label, fn) {
     const title = (await client.request('properties', { docId, name: 'tabs' })).properties.find((q) => q.name === 'currentTabText');
     assert.equal(title.value, 'Renamed');
   });
+  await check('tool box: a click on a page header opens that page, a double-click renames it', async () => {
+    await open('toolbox.ui');
+    const info = async () => client.request('containerInfo', { docId, name: 'box' });
+    const beta = (await info()).tabs[1];
+    await page.mouse.click(...(await at(beta.x + beta.w / 2, beta.y + beta.h / 2))); await settle();
+    assert.equal((await info()).current, 1);
+    const header = (await info()).tabs[1];
+    await page.mouse.dblclick(...(await at(header.x + header.w / 2, header.y + header.h / 2))); await settle();
+    await page.waitForSelector('input.inplace');
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Delta'); await page.keyboard.press('Enter'); await settle();
+    const title = (await client.request('properties', { docId, name: 'box' })).properties.find((q) => q.name === 'currentItemText');
+    assert.equal(title.value, 'Delta');
+  });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 
   await shot('e2e-final');

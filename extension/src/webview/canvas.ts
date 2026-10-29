@@ -198,6 +198,9 @@ export function renderOverlay(): void {
     overlay.replaceChildren(frag);
 }
 
+/** Containers whose page headers are drawn in the form image and can be clicked. */
+const TAB_CLASSES = new Set(['QTabWidget', 'QToolBox']);
+
 // The overlay follows the zoom first; later listeners (the status bar, the inspector) see it already redrawn.
 onZoomChange(renderOverlay);
 
@@ -741,7 +744,7 @@ viewport.addEventListener('pointerup', (ev) => {
         if (sel.length !== 1 || sel[0] !== g.primary.obj.name) {
             send({ type: 'selectNames', names: [g.primary.obj.name] });
         }
-        if (g.primary.obj.class === 'QTabWidget') {
+        if (TAB_CLASSES.has(g.primary.obj.class)) {
             requestTab(g.primary.obj.name, p, false);
         }
     } else if (g.kind === 'pending') {
@@ -754,7 +757,7 @@ viewport.addEventListener('pointerup', (ev) => {
         } else if (insideImage(p)) {
             send({ type: 'hitSelect', x: p.x, y: p.y });
             const hit = objectAt(p.x, p.y);
-            if (hit?.class === 'QTabWidget') {
+            if (hit && TAB_CLASSES.has(hit.class)) {
                 requestTab(hit.name, p, false);
             }
         } else {
@@ -777,7 +780,7 @@ viewport.addEventListener('dblclick', (ev) => {
         return;
     }
     const hit = objectAt(p.x, p.y);
-    if (hit?.class === 'QTabWidget') {
+    if (hit && TAB_CLASSES.has(hit.class)) {
         requestTab(hit.name, p, true);
         return;
     }

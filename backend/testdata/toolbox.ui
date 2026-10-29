@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ToolBoxForm</class>
+ <widget class="QWidget" name="ToolBoxForm">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>300</width><height>260</height></rect></property>
+  <widget class="QToolBox" name="box">
+   <property name="geometry"><rect><x>20</x><y>20</y><width>240</width><height>220</height></rect></property>
+   <widget class="QWidget" name="pageA"><attribute name="label"><string>Alpha</string></attribute></widget>
+   <widget class="QWidget" name="pageB"><attribute name="label"><string>Beta</string></attribute></widget>
+   <widget class="QWidget" name="pageC"><attribute name="label"><string>Gamma</string></attribute></widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

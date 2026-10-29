@@ -66,12 +66,12 @@ export function editText(): void {
 }
 
 /** The title of the current tab, edited right over its header. */
-export function editTabTitle(rect: { x: number; y: number; w: number; h: number }): void {
-    const p = S.properties?.properties.find((x) => x.name === 'currentTabText' && x.kind === 'string' && x.enabled);
+export function editTabTitle(rect: { x: number; y: number; w: number; h: number }, property = 'currentTabText'): void {
+    const p = S.properties?.properties.find((x) => x.name === property && x.kind === 'string' && x.enabled);
     if (!p || !S.propertiesFor) {
         return;
     }
-    openEditor(S.propertiesFor, { name: 'currentTabText', value: String(p.value) }, rect, `Edit the tab title of ${S.propertiesFor}`, false);
+    openEditor(S.propertiesFor, { name: property, value: String(p.value) }, rect, `Edit the tab title of ${S.propertiesFor}`, false);
 }
 
 function openEditor(target: string, tp: { name: string; value: string }, at: { x: number; y: number; w: number; h: number }, label: string, multi: boolean): void {

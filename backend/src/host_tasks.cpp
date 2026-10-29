@@ -122,6 +122,23 @@ QJsonObject Host::containerInfo(const QJsonObject &p)
             rects.append(QJsonObject{{QLatin1String("x"), tl.x()}, {QLatin1String("y"), tl.y()}, {QLatin1String("w"), r.width()}, {QLatin1String("h"), r.height()}});
         }
         out.insert(QLatin1String("tabs"), rects);
+        out.insert(QLatin1String("titleProperty"), QLatin1String("currentTabText"));
+    } else if (auto *tb = qobject_cast<QToolBox *>(w)) {
+        // The page headers of a tool box are buttons the widget creates itself, one per page, top to bottom.
+        QList<QAbstractButton *> buttons;
+        for (QAbstractButton *b : tb->findChildren<QAbstractButton *>())
+            if (QLatin1String(b->metaObject()->className()).contains(QLatin1String("ToolBoxButton")))
+                buttons << b;
+        std::sort(buttons.begin(), buttons.end(), [](QAbstractButton *a, QAbstractButton *b) { return a->y() < b->y(); });
+        QJsonArray rects;
+        for (QAbstractButton *b : std::as_const(buttons)) {
+            const QPoint tl = b->mapTo(fw, QPoint(0, 0));
+            rects.append(QJsonObject{{QLatin1String("x"), tl.x()}, {QLatin1String("y"), tl.y()}, {QLatin1String("w"), b->width()}, {QLatin1String("h"), b->height()}});
+        }
+        if (rects.size() == tb->count()) {
+            out.insert(QLatin1String("tabs"), rects);
+            out.insert(QLatin1String("titleProperty"), QLatin1String("currentItemText"));
+        }
     }
     return out;
 }
