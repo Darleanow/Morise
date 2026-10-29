@@ -37,3 +37,11 @@ Rules: no commit, no push, nothing deleted outside files created here. Every ste
   restarts the backend if it happens.
 - Menus: sub menus and tool bar entries are not editable (engine commands are not exported, events only reach the menu bar
   and its menus).
+
+## Later session
+- Action editor in the Form tab (create, edit, place in menus and tool bars, remove), custom slots/signals of the form, live style
+  sheet validation, save as PNG.
+- Bugs fixed: quick add row clicks killed by a native image drag; menus left as the active popup broke the next preview;
+  in-place edit box sizing and toolbar overlap; rename hint wrapping; connecting to the form itself failed when children covered it.
+- Test tooling: `ONLY=<label part>` filters e2e scenarios; run the fuzz with `python3 -u` (output is lost otherwise);
+  never `pkill -f` a pattern that is in your own command line.

@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (197 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (237 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 98 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -98,6 +98,11 @@ offered by every icon editor; the form saves `<include location=...>` and `resou
 checkable), edit it in the inspector, put it into a menu or tool bar (or take it out), add a separator to a tool bar, and
 remove it. Creation and removal use the engine's own commands; placing uses a small undo command of ours because the engine's
 is not exported. Each step is one undo step and the saved `.ui` passes `uic`.
+
+**Signals and slots of the form.** The Form tab edits the form's own custom slots and signals (Designer's "Edit Signals/Slots"):
+they are offered in the connection dialog, saved in the `.ui` (`<slots>`) and one undo step each. Connecting a widget to the
+form itself works even when its children cover it. **Style sheets** are validated live in the larger editor with Qt's own CSS
+parser. **Save as image** (command palette) writes the runtime render as a PNG.
 
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
