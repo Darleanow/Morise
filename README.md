@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (187 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (190 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 98 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -83,7 +83,8 @@ the pointed cell; with `/` they go right after the selected widget.
 
 **Alignment and buddies.** Alignment is two rows of buttons: a click sets, a second click on the active button clears
 that axis, and its reset button is always there. A label's `buddy` is picked from the widgets of the form.
-A free widget dropped on a layout-managed container joins its layout.
+A free widget dropped on a layout-managed container joins its layout, and a widget dragged out of its layout onto a
+free area becomes free there, under the point where you grabbed it.
 
 **Items.** Combo boxes and list widgets get an Items editor in the inspector (edit, add, remove, reorder; one undo step
 each, icons and other roles of unchanged items are kept). It uses the engine's own `ChangeListContentsCommand`.

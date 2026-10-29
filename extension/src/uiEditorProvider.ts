@@ -375,7 +375,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 doc.snapshot = await client.request('setItems', { docId: doc.docId, name: msg.name, items: msg.items });
                 break;
             case 'moveWidget':
-                doc.snapshot = await client.request('moveWidget', { docId: doc.docId, name: msg.name, x: msg.x, y: msg.y, side: msg.side });
+                doc.snapshot = await client.request('moveWidget', { docId: doc.docId, name: msg.name, x: msg.x, y: msg.y, side: msg.side, grabX: msg.grabX, grabY: msg.grabY });
                 break;
             case 'reparent':
                 doc.snapshot = await client.request('reparent', { docId: doc.docId, parent: msg.parent, items: msg.items });

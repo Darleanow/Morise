@@ -226,7 +226,7 @@ type Gesture =
     | (Common & { kind: 'band'; additive: boolean; base: string[]; container: SceneObject | undefined; rect: Rect; moved: boolean })
     | (Common & { kind: 'move'; targets: Origin[]; primary: Origin; delta: { dx: number; dy: number }; moved: boolean; sent: boolean; drop: SceneObject | undefined; slot?: LayoutSlot })
     | (Common & { kind: 'resize'; target: SceneObject; handle: Handle; origin: Rect; rect: Rect; moved: boolean; sent: boolean })
-    | (Common & { kind: 'relayout'; from: SceneObject; moved: boolean; slot: LayoutSlot | undefined })
+    | (Common & { kind: 'relayout'; from: SceneObject; moved: boolean; slot: LayoutSlot | undefined; free?: SceneObject; at?: { x: number; y: number } })
     | (Common & { kind: 'connect'; from: SceneObject; to: SceneObject | undefined; moved: boolean; point: { x: number; y: number } });
 
 
@@ -336,6 +336,18 @@ export function frameArrived(): void {
     next?.();
 }
 
+/** The container under the pointer that has no layout of its own: a widget dropped there becomes free. */
+function freeContainerAt(from: SceneObject, p: { x: number; y: number }): SceneObject | undefined {
+    const names = new Set([from.name]);
+    let best: SceneObject | undefined;
+    for (const o of S.snapshot?.objects ?? []) {
+        if ((isContainer(o) || o.parent === null) && contains(o, p.x, p.y) && !descendantOf(o, names) && (!best || o.w * o.h <= best.w * best.h)) {
+            best = o;
+        }
+    }
+    return best && layoutsOf(best.name).every((l) => l.parent) ? best : undefined;
+}
+
 function pushFrame(g: Extract<Gesture, { kind: 'move' | 'resize' }>): void {
     if (inFlight) {
         queued = () => {
@@ -383,8 +395,12 @@ export function renderGhost(): void {
                 nodes.push(tag(slot.sibling, 'good', icon('arrow-down'), what));
             }
         }
+        if (!slot && g.free) {
+            nodes.push(placed(el('div', { className: 'ov drop-target' }), g.free));
+            nodes.push(tag(g.free, 'good', icon('arrow-down'), `Take it out of the layout, into ${g.free.name}`));
+        }
         showGhost(nodes);
-        hint.textContent = slot ? (slot.noop ? 'Already here' : 'Release to move it in the layout') : 'Drop inside a layout to reorder';
+        hint.textContent = slot ? (slot.noop ? 'Already here' : 'Release to move it in the layout') : g.free ? 'Release to place it freely here' : 'Drop inside a layout to reorder';
         return;
     }
     if (g.kind === 'connect') {
@@ -607,6 +623,9 @@ viewport.addEventListener('pointermove', (ev) => {
             renderOverlay();
         }
         g.slot = layoutSlot(g.from, p);
+        // Not over a layout: a container without one takes the widget out of its layout, free at that spot.
+        g.free = g.slot ? undefined : freeContainerAt(g.from, p);
+        g.at = p;
         renderGhost();
         return;
     }
@@ -694,6 +713,8 @@ viewport.addEventListener('pointerup', (ev) => {
             send({ type: 'hitSelect', x: g.startX, y: g.startY });
         } else if (g.slot && !g.slot.noop) {
             send({ type: 'moveWidget', name: g.from.name, x: g.slot.point.x, y: g.slot.point.y, ...(g.slot.axis === 'cell' ? {} : { side: g.slot.before ? 'before' : 'after' }) });
+        } else if (!g.slot && g.free && g.at) {
+            send({ type: 'moveWidget', name: g.from.name, x: g.at.x, y: g.at.y, grabX: Math.max(0, Math.min(g.from.w, g.startX - g.from.x)), grabY: Math.max(0, Math.min(g.from.h, g.startY - g.from.y)) });
         }
         return;
     }

@@ -224,7 +224,7 @@ export interface BackendMethods {
     taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
     setContents: { params: { docId: string; name: string; contents: GridContents }; result: Snapshot };
     setItems: { params: { docId: string; name: string; items: string[] }; result: Snapshot };
-    moveWidget: { params: { docId: string; name: string; x: number; y: number; side?: Side }; result: Snapshot };
+    moveWidget: { params: { docId: string; name: string; x: number; y: number; side?: Side; grabX?: number; grabY?: number }; result: Snapshot };
     reparent: { params: { docId: string; parent: string; items: { name: string; rect: number[] }[] }; result: Snapshot };
     previewEvent: { params: { docId: string } & PreviewInput; result: PreviewResult };
     previewStop: { params: { docId: string }; result: Record<string, never> };
@@ -286,7 +286,7 @@ export type WebviewToHost =
     | { type: 'taskAction'; name: string; text?: string; path?: number[] }
     | { type: 'setContents'; name: string; contents: GridContents }
     | { type: 'setItems'; name: string; items: string[] }
-    | { type: 'moveWidget'; name: string; x: number; y: number; side?: Side }
+    | { type: 'moveWidget'; name: string; x: number; y: number; side?: Side; grabX?: number; grabY?: number }
     | { type: 'reparent'; parent: string; items: { name: string; rect: number[] }[] }
     | { type: 'preview'; style: string; dark: boolean; scale: number }
     | ({ type: 'previewEvent' } & PreviewInput)

@@ -72,7 +72,7 @@ async function check(label, fn) {
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;
         case 'setContents': snap = await client.request('setContents', { ...d, name: m.name, contents: m.contents }); break;
         case 'setItems': snap = await client.request('setItems', { ...d, name: m.name, items: m.items }); break;
-        case 'moveWidget': snap = await client.request('moveWidget', { ...d, name: m.name, x: m.x, y: m.y, side: m.side }); break;
+        case 'moveWidget': snap = await client.request('moveWidget', { ...d, name: m.name, x: m.x, y: m.y, side: m.side, grabX: m.grabX, grabY: m.grabY }); break;
         case 'reparent': snap = await client.request('reparent', { ...d, parent: m.parent, items: m.items }); break;
         case 'pageOp': snap = await client.request('pageOp', { ...d, name: m.name, op: m.op }); break;
         case 'setCurrentPage': snap = await client.request('setCurrentPage', { ...d, name: m.name, index: m.index }); break;
@@ -956,6 +956,20 @@ async function check(label, fn) {
     await page.keyboard.press('Control+a'); await page.keyboard.type('Delta'); await page.keyboard.press('Enter'); await settle();
     const title = (await client.request('properties', { docId, name: 'box' })).properties.find((q) => q.name === 'currentItemText');
     assert.equal(title.value, 'Delta');
+  });
+  await check('layout: a widget dragged out of its layout onto a free area becomes free, one undo puts it back', async () => {
+    await open('freeinlayout.ui');
+    const first = await obj('first');
+    assert.equal(first.laidOut, true);
+    await page.mouse.move(...(await at(first.x + 20, first.y + 8))); await page.mouse.down();
+    await page.mouse.move(...(await at(50, 160)), { steps: 10 });
+    assert.ok(await page.locator('#ghost .drop-target').count() >= 1, 'the free area is highlighted');
+    await page.mouse.up(); await settle();
+    const now = await obj('first');
+    assert.equal(now.laidOut, false);
+    assert.equal(now.parent, 'FreeInLayout');
+    await page.locator('button[title^="Undo ("]').click(); await settle();
+    assert.equal((await obj('first')).laidOut, true);
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

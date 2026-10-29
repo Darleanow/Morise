@@ -531,6 +531,12 @@ call("open", docId="tb2", xml=open(os.path.join(HERE, "..", "testdata", "toolbox
 ci2 = call("containerInfo", docId="tb2", name="box")["result"]
 check("a tool box reports its page headers and the title property", len(ci2["tabs"]) == 3 and ci2["titleProperty"] == "currentItemText" and ci2["tabs"][0]["y"] < ci2["tabs"][1]["y"], ci2)
 
+call("open", docId="out1", xml=open(os.path.join(HERE, "..", "testdata", "freeinlayout.ui"), encoding="utf-8").read())
+r = call("moveWidget", docId="out1", name="first", x=60, y=150, grabX=10, grabY=5)
+fo = next(o for o in r["result"]["objects"] if o["name"] == "first")
+check("a widget dragged out of a layout onto the free form becomes a free widget there, under the grab point", not fo["laidOut"] and fo["parent"] == "FreeInLayout" and abs(fo["x"] - 50) <= 10 and abs(fo["y"] - 145) <= 10, fo)
+check("leaving the layout is one undo step", (call("undo", docId="out1"), next(o for o in call("snapshot", docId="out1")["result"]["objects"] if o["name"] == "first")["laidOut"])[1])
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

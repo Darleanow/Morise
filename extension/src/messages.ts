@@ -66,7 +66,7 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'setItems':
             return typeof m.name === 'string' && Array.isArray(m.items) && m.items.length <= 2000 && m.items.every((i) => typeof i === 'string') ? { type: 'setItems', name: m.name, items: m.items as string[] } : undefined;
         case 'moveWidget':
-            return typeof m.name === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y) ? { type: 'moveWidget', name: m.name, x: m.x as number, y: m.y as number, ...side(m) } : undefined;
+            return typeof m.name === 'string' && Number.isFinite(m.x) && Number.isFinite(m.y) ? { type: 'moveWidget', name: m.name, x: m.x as number, y: m.y as number, ...side(m), ...(Number.isFinite(m.grabX) ? { grabX: m.grabX as number } : {}), ...(Number.isFinite(m.grabY) ? { grabY: m.grabY as number } : {}) } : undefined;
         case 'reparent':
             return typeof m.parent === 'string' && Array.isArray(m.items) && m.items.length <= 1000 && m.items.every(isItem) ? { type: 'reparent', parent: m.parent, items: m.items as { name: string; rect: number[] }[] } : undefined;
         case 'previewStop':

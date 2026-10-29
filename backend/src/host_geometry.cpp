@@ -113,7 +113,10 @@ QJsonObject Host::moveWidget(const QJsonObject &p)
         throw ProtocolError{QStringLiteral("%1 already has content").arg(idOf(target))};
     const QPoint global = fw->mapToGlobal(pos);
     auto *decoration = new QWidget;
-    decoration->setGeometry(QRect(global - QPoint(w->width() / 2, w->height() / 2), w->size()));
+    // Where the widget lands relative to the pointer: where the user grabbed it, else its centre.
+    const QPoint grab(p.contains(QLatin1String("grabX")) ? p.value(QLatin1String("grabX")).toInt() : w->width() / 2,
+                      p.contains(QLatin1String("grabY")) ? p.value(QLatin1String("grabY")).toInt() : w->height() / 2);
+    decoration->setGeometry(QRect(global - grab, w->size()));
     MoveDropItem item(w, decoration, global);
     m_core->formWindowManager()->setActiveFormWindow(fw);
     aimLayoutCell(base, target, global, w, p.value(QLatin1String("side")).toString());
