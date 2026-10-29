@@ -1,5 +1,7 @@
 #include "host.h"
 
+#include <private/qcssparser_p.h>
+
 namespace qdr {
 
 QWidgetList Host::currentTabOrder(QDesignerFormWindowInterface *fw) const
@@ -770,6 +772,24 @@ QJsonObject Host::setCustomMethods(const QJsonObject &p)
     const QStringList slotList = clean(QStringLiteral("slots")), signalList = clean(QStringLiteral("signals"));
     fw->commandHistory()->push(new CustomMethodsCommand(fw, w, slotList, signalList));
     return snapshot(fw);
+}
+
+} // namespace qdr
+
+namespace qdr {
+
+/// Whether a style sheet parses, with Designer's own rule: either a full sheet or bare declarations for the widget.
+QJsonObject Host::checkStyleSheet(const QJsonObject &p)
+{
+    const QString text = p.value(QLatin1String("text")).toString();
+    QCss::StyleSheet sheet;
+    QCss::Parser parser(text);
+    bool valid = text.trimmed().isEmpty() || parser.parse(&sheet);
+    if (!valid) {
+        QCss::Parser wrapped(QStringLiteral("* { ") + text + QLatin1Char('}'));
+        valid = wrapped.parse(&sheet);
+    }
+    return {{QLatin1String("valid"), valid}};
 }
 
 } // namespace qdr

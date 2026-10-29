@@ -237,6 +237,7 @@ export interface BackendMethods {
     addAction: { params: { docId: string; text: string; name?: string; checkable?: boolean; shortcut?: string }; result: Snapshot };
     useAction: { params: { docId: string; target: string; action?: string; separator?: boolean; remove?: boolean }; result: Snapshot };
     setCustomMethods: { params: { docId: string; name?: string; slots: string[]; signals: string[] }; result: Snapshot };
+    checkStyleSheet: { params: { text: string }; result: { valid: boolean } };
     removeAction: { params: { docId: string; name: string }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
     taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
@@ -293,6 +294,7 @@ export type WebviewToHost =
     | { type: 'findInCode'; query: string }
     | { type: 'copyText'; text: string }
     | { type: 'saveImage' }
+    | { type: 'checkStyleSheet'; text: string }
     /** Abort the gesture in progress: undo what the live preview already applied. */
     | { type: 'cancelGesture' }
     | { type: 'setGeometries'; items: { name: string; rect: number[] }[] }
@@ -350,6 +352,7 @@ export type HostToWebview =
     | { type: 'preview'; result: PreviewResult; style: string; dark: boolean }
     | { type: 'previewFrame'; result: PreviewResult }
     | { type: 'describeResult'; name: string; result: DescribeResult | null }
+    | { type: 'styleSheetCheck'; text: string; valid: boolean }
     | { type: 'history'; items: string[]; index: number }
     | { type: 'error'; message: string }
     | { type: 'backendStatus'; text: string };

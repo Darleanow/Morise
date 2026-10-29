@@ -495,6 +495,11 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             case 'findInCode':
                 await vscode.commands.executeCommand('workbench.action.findInFiles', { query: msg.query, triggerSearch: true, isRegex: false, matchWholeWord: false, isCaseSensitive: true });
                 return;
+            case 'checkStyleSheet': {
+                const r = await client.request('checkStyleSheet', { text: msg.text }).catch(() => ({ valid: true }));
+                this.post(doc, panel, { type: 'styleSheetCheck', text: msg.text, valid: r.valid });
+                return;
+            }
             case 'saveImage': {
                 // The runtime render (no grid, no handles) at twice the size, like Designer's "Save Form as Image".
                 let png: Buffer;

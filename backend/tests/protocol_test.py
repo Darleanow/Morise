@@ -621,6 +621,10 @@ check("a widget can be connected to the form itself even when children cover it"
 rc = call("open", docId="cm2", xml=xcm)
 check("a form with custom methods reopens with them", call("customMethods", docId="cm2")["result"]["slots"] == ["save()", "rename(QString)"], call("customMethods", docId="cm2"))
 
+ss = lambda t: call("checkStyleSheet", text=t)["result"]["valid"]
+check("style sheets are checked like Designer does: full sheets and bare declarations are valid", ss("QPushButton { color: red; }") and ss("color: red; background: blue;") and ss(""))
+check("a broken style sheet is reported", not ss("QPushButton { color: red;") and not ss("}{ nonsense"))
+
 check("the central widget cannot be moved (it used to freeze the engine)", "error" in call("moveWidget", docId="sm1", name="centralwidget", x=100, y=100))
 check("the central widget is marked as a part of the window", next(o for o in call("snapshot", docId="sm1")["result"]["objects"] if o["name"] == "centralwidget").get("part") is True)
 check("backend alive after the refused move", "result" in call("snapshot", docId="sm1"))

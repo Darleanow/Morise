@@ -291,6 +291,7 @@ private:
     QJsonObject removeAction(const QJsonObject &p);
     QJsonObject useAction(const QJsonObject &p);
     QJsonObject customMethods(const QJsonObject &p);
+    static QJsonObject checkStyleSheet(const QJsonObject &p);
     QJsonObject setCustomMethods(const QJsonObject &p);
     QJsonArray actionTargets(QDesignerFormWindowInterface *fw) const;
 

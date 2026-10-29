@@ -138,7 +138,7 @@ const context: EditorContext = {
         }
     },
     multiline(p, current) {
-        openTextEditor(`${S.propertiesFor ?? ''} · ${p.name}`, current, (v) => context.commit(p, v));
+        openTextEditor(`${S.propertiesFor ?? ''} · ${p.name}`, current, (v) => context.commit(p, v), p.name === 'styleSheet');
     },
     rerender: () => renderProperties(),
     menu(anchor, items) {

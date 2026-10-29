@@ -4,8 +4,47 @@ import { footer, header, openPopup, primaryButton, secondaryButton } from './pop
 import { send } from './state';
 
 /** A larger editor for long text such as style sheets and tooltips. */
-export function openTextEditor(title: string, current: string, onApply: (value: string) => void): void {
+const styleChecks = new Map<string, (valid: boolean) => void>();
+
+/** The host answers `checkStyleSheet` with `styleSheetCheck` (Qt's own CSS parser, as Designer validates). */
+export function onStyleSheetCheck(text: string, valid: boolean): void {
+    styleChecks.get(text)?.(valid);
+    styleChecks.delete(text);
+}
+
+function checkStyleSheet(text: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        styleChecks.set(text, resolve);
+        send({ type: 'checkStyleSheet', text });
+        setTimeout(() => {
+            if (styleChecks.delete(text)) {
+                resolve(true); // no answer: do not block the user
+            }
+        }, 3000);
+    });
+}
+
+export function openTextEditor(title: string, current: string, onApply: (value: string) => void, validate = false): void {
     const ta = el('textarea', { value: current, className: 'big-text', spellcheck: false });
+    const status = el('span', { className: 'dim style-status' });
+    status.setAttribute('aria-live', 'polite');
+    let timer: number | undefined;
+    const recheck = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+            const text = ta.value;
+            void checkStyleSheet(text).then((valid) => {
+                if (ta.value === text) {
+                    status.textContent = text.trim() === '' ? '' : valid ? 'Valid style sheet' : 'Invalid style sheet';
+                    status.className = `style-status ${text.trim() === '' ? 'dim' : valid ? 'ok' : 'bad'}`;
+                }
+            });
+        }, 250);
+    };
+    if (validate) {
+        ta.addEventListener('input', recheck);
+        recheck();
+    }
     ta.setAttribute('aria-label', title);
     const apply = () => {
         popup.close();
@@ -13,7 +52,7 @@ export function openTextEditor(title: string, current: string, onApply: (value: 
             onApply(ta.value);
         }
     };
-    const popup = openPopup([header(title, 'Ctrl+Enter to apply'), ta, footer(el('span', { className: 'spacer' }), secondaryButton('Cancel', () => popup.close()), primaryButton('Apply', apply))], 'text-editor');
+    const popup = openPopup([header(title, 'Ctrl+Enter to apply'), ta, footer(status, el('span', { className: 'spacer' }), secondaryButton('Cancel', () => popup.close()), primaryButton('Apply', apply))], 'text-editor');
     ta.addEventListener('keydown', (ev) => {
         if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
             ev.preventDefault();

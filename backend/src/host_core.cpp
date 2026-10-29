@@ -62,6 +62,7 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("removeAction")) return removeAction(p);
     if (method == QLatin1String("useAction")) return useAction(p);
     if (method == QLatin1String("customMethods")) return customMethods(p);
+    if (method == QLatin1String("checkStyleSheet")) return checkStyleSheet(p);
     if (method == QLatin1String("setCustomMethods")) return setCustomMethods(p);
     if (method == QLatin1String("previewEvent")) return previewEvent(p);
     if (method == QLatin1String("previewStop")) return previewStop(p);

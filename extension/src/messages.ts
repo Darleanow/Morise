@@ -28,6 +28,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return { type: 'ready' };
         case 'findInCode':
             return typeof m.query === 'string' && m.query.length > 0 && m.query.length <= 300 ? { type: 'findInCode', query: m.query } : undefined;
+        case 'checkStyleSheet':
+            return typeof m.text === 'string' && m.text.length <= 200000 ? { type: 'checkStyleSheet', text: m.text } : undefined;
         case 'saveImage':
             return { type: 'saveImage' };
         case 'copyText':

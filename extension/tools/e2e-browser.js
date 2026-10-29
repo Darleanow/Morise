@@ -73,6 +73,7 @@ async function check(label, fn) {
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
         case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
         case 'saveImage': return;
+        case 'checkStyleSheet': await post({ type: 'styleSheetCheck', text: m.text, valid: (await client.request('checkStyleSheet', { text: m.text })).valid }); return;
         case 'setCustomMethods': snap = await client.request('setCustomMethods', { ...d, slots: m.slots, signals: m.signals }); break;
         case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
@@ -1042,6 +1043,17 @@ async function check(label, fn) {
     assert.ok(d.slots.some((m) => m.signature === 'save(bool)'), 'the engine knows it');
     await page.locator('button[aria-label="Remove save(bool)"]').click(); await settle();
     assert.equal(await page.locator('.method-row', { hasText: 'save(bool)' }).count(), 0);
+  });
+  await check('style sheet: the larger editor says live whether the sheet is valid', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
+    await page.locator('button[title^="Edit styleSheet"]').click();
+    const ta = page.locator('textarea.big-text');
+    await ta.fill('QPushButton { color: red;'); await page.waitForSelector('.style-status.bad');
+    await ta.fill('color: red;'); await page.waitForSelector('.style-status.ok');
+    assert.match(await page.locator('.style-status').textContent(), /Valid/);
+    await page.keyboard.press('Escape');
   });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');

@@ -16,6 +16,7 @@ import { initOutline, refreshOutlineHover, renderOutline } from './outline';
 import { initPalette, learnIcons, renderPalette } from './palette';
 import { anyPopupOpen } from './popup';
 import { onPreview, onPreviewFrame, openPreview, refreshPreviewSoon } from './preview';
+import { onStyleSheetCheck } from './dialogs';
 import { closeQuickAdd, openQuickAdd, quickAddOpen } from './quickadd';
 import { closeRename, openRename, renameOpen } from './rename';
 import { initSplitters } from './splitter';
@@ -258,6 +259,9 @@ window.addEventListener('message', (ev: MessageEvent<HostToWebview>) => {
             break;
         case 'preview':
             onPreview(msg.result, msg.style, msg.dark);
+            break;
+        case 'styleSheetCheck':
+            onStyleSheetCheck(msg.text, msg.valid);
             break;
         case 'describeResult':
             onDescribeResult(msg.name, msg.result);
