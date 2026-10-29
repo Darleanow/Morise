@@ -125,7 +125,7 @@ QJsonObject Host::formInfo(const QJsonObject &p)
             {QLatin1String("resources"), resources(p).value(QLatin1String("files"))},
             {QLatin1String("customSlots"), methods.value(QLatin1String("slots"))},
             {QLatin1String("customSignals"), methods.value(QLatin1String("signals"))},
-            {QLatin1String("actions"), actionsOf(fw)}, {QLatin1String("actionTargets"), actionTargets(fw)}};
+            {QLatin1String("actions"), actionsOf(fw)}, {QLatin1String("actionGroups"), actionGroupsOf(fw)}, {QLatin1String("actionTargets"), actionTargets(fw)}};
 }
 
 QJsonObject Host::setFormInfo(const QJsonObject &p)
@@ -639,6 +639,129 @@ private:
 };
 
 } // namespace
+
+namespace {
+
+/// An undoable change expressed as a pair of functions: the engine has no command for action groups.
+class ActionGroupCommand : public QUndoCommand
+{
+public:
+    ActionGroupCommand(const QString &text, std::function<void()> redo, std::function<void()> undo)
+        : QUndoCommand(text), m_redo(std::move(redo)), m_undo(std::move(undo)) {}
+    void redo() override { m_redo(); }
+    void undo() override { m_undo(); }
+
+private:
+    std::function<void()> m_redo, m_undo;
+};
+
+QActionGroup *groupNamed(QDesignerFormWindowInterface *fw, const QString &name)
+{
+    for (QActionGroup *g : fw->mainContainer()->findChildren<QActionGroup *>(name))
+        if (g->objectName() == name)
+            return g;
+    return nullptr;
+}
+
+QAction *plainAction(QDesignerFormWindowInterface *fw, const QString &name)
+{
+    for (QAction *a : fw->mainContainer()->findChildren<QAction *>(name))
+        if (a->objectName() == name && !a->menu() && !a->isSeparator())
+            return a;
+    return nullptr;
+}
+
+} // namespace
+
+/// The action groups of the form with the actions they hold.
+QJsonArray Host::actionGroupsOf(QDesignerFormWindowInterface *fw) const
+{
+    QJsonArray out;
+    for (QActionGroup *g : fw->mainContainer()->findChildren<QActionGroup *>()) {
+        QJsonArray members;
+        for (QAction *a : g->actions())
+            members.append(a->objectName());
+        out.append(QJsonObject{{QLatin1String("name"), g->objectName()}, {QLatin1String("exclusive"), g->isExclusive()}, {QLatin1String("actions"), members}});
+    }
+    return out;
+}
+
+/// Creates (`name`), removes (`name` + `remove`) an action group, or puts an action in one (`action` + `group`,
+/// an empty group takes it out). Each is one undo step.
+QJsonObject Host::actionGroup(const QJsonObject &p)
+{
+    QDesignerFormWindowInterface *fw = form(p);
+    QWidget *owner = fw->mainContainer();
+    QDesignerMetaDataBaseInterface *db = m_core->metaDataBase();
+    if (p.contains(QLatin1String("action"))) {
+        QAction *a = plainAction(fw, p.value(QLatin1String("action")).toString());
+        if (!a)
+            throw ProtocolError{QStringLiteral("unknown action")};
+        const QString groupName = p.value(QLatin1String("group")).toString();
+        QActionGroup *group = groupName.isEmpty() ? nullptr : groupNamed(fw, groupName);
+        if (!groupName.isEmpty() && !group)
+            throw ProtocolError{QStringLiteral("unknown action group: ") + groupName};
+        QPointer<QAction> action = a;
+        QPointer<QActionGroup> before = a->actionGroup(), after = group;
+        if (before == after)
+            throw ProtocolError{QStringLiteral("nothing to change")};
+        fw->commandHistory()->push(new ActionGroupCommand(QStringLiteral("Change action group"),
+            [action, after] { if (action) action->setActionGroup(after); },
+            [action, before] { if (action) action->setActionGroup(before); }));
+        return snapshot(fw);
+    }
+    const QString name = p.value(QLatin1String("name")).toString().trimmed();
+    static const QRegularExpression ident(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
+    if (!ident.match(name).hasMatch())
+        throw ProtocolError{QStringLiteral("not a valid object name: ") + name};
+    if (p.value(QLatin1String("remove")).toBool()) {
+        QActionGroup *g = groupNamed(fw, name);
+        if (!g)
+            throw ProtocolError{QStringLiteral("unknown action group: ") + name};
+        QPointer<QActionGroup> group = g;
+        auto members = std::make_shared<QList<QPointer<QAction>>>();
+        for (QAction *a : g->actions())
+            members->append(a);
+        fw->commandHistory()->push(new ActionGroupCommand(QStringLiteral("Remove action group %1").arg(name),
+            [group, members, db, owner] {
+                if (!group) return;
+                for (const auto &a : *members) if (a) a->setActionGroup(nullptr);
+                db->remove(group);
+                group->setParent(nullptr);
+            },
+            [group, members, db, owner] {
+                if (!group) return;
+                group->setParent(owner);
+                db->add(group);
+                for (const auto &a : *members) if (a) a->setActionGroup(group);
+            }));
+        return snapshot(fw);
+    }
+    if (groupNamed(fw, name) || plainAction(fw, name) || owner->findChild<QObject *>(name))
+        throw ProtocolError{QStringLiteral("the name is already used: ") + name};
+    auto *group = new QActionGroup(nullptr);
+    group->setObjectName(name);
+    group->setParent(owner);
+    db->add(group);
+    group->setParent(nullptr);
+    QPointer<QActionGroup> guard = group;
+    auto owned = std::make_shared<std::unique_ptr<QActionGroup>>(group);
+    fw->commandHistory()->push(new ActionGroupCommand(QStringLiteral("Add action group %1").arg(name),
+        [guard, owned, owner, db] {
+            if (!guard) return;
+            guard->setParent(owner);
+            db->add(guard);
+            owned->release();
+        },
+        [guard, owned, db] {
+            if (!guard) return;
+            for (QAction *a : guard->actions()) a->setActionGroup(nullptr);
+            db->remove(guard);
+            guard->setParent(nullptr);
+            owned->reset(guard);
+        }));
+    return snapshot(fw);
+}
 
 /// The menus and tool bars an action can be placed in.
 QJsonArray Host::actionTargets(QDesignerFormWindowInterface *fw) const

@@ -56,7 +56,12 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
 
     private backendPath(): string {
         const configured = vscode.workspace.getConfiguration('qtDesignerRevamped').get<string>('backendPath', '').trim();
-        return configured || path.join(this.context.extensionPath, '..', 'backend', 'build', 'designer_backend');
+        if (configured) {
+            return configured;
+        }
+        // A packaged extension carries the backend in bin/ (see backend/scripts/bundle-backend.sh); a checkout uses the build folder.
+        const bundled = path.join(this.context.extensionPath, 'bin', 'designer_backend');
+        return fs.existsSync(bundled) ? bundled : path.join(this.context.extensionPath, '..', 'backend', 'build', 'designer_backend');
     }
 
     private ensureClient(): Promise<BackendClient> {
@@ -387,6 +392,9 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             case 'addAction':
                 doc.snapshot = await client.request('addAction', { docId: doc.docId, text: msg.text, checkable: msg.checkable, shortcut: msg.shortcut });
                 break;
+            case 'actionGroup':
+                doc.snapshot = await client.request('actionGroup', { docId: doc.docId, name: msg.name, remove: msg.remove, action: msg.action, group: msg.group });
+                break;
             case 'useAction':
                 doc.snapshot = await client.request('useAction', { docId: doc.docId, target: msg.target, action: msg.action, separator: msg.separator, remove: msg.remove });
                 break;
@@ -585,13 +593,43 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 doc.snapshot = await client.request('addWidget', { docId: doc.docId, category: msg.category, index: msg.index, x: msg.x, y: msg.y, side: msg.side });
                 break;
             case 'action':
+                if (msg.action === 'paste') {
+                    await this.pullClipboard(client);
+                }
                 doc.snapshot = await client.request('action', { docId: doc.docId, action: msg.action });
+                if (msg.action === 'copy' || msg.action === 'cut') {
+                    await this.pushClipboard(client);
+                }
                 break;
         }
         if (!doc.gesture) {
             this.recordEdit(doc, before, doc.snapshot);
         }
         await this.pushState(doc);
+    }
+
+    /** The engine's clipboard lives in the backend: copies are mirrored to the system clipboard so other applications and VS Code windows can paste them. */
+    private async pushClipboard(client: BackendClient): Promise<void> {
+        try {
+            const { text } = await client.request('getClipboard', {});
+            if (text) {
+                await vscode.env.clipboard.writeText(text);
+            }
+        } catch {
+            // the in-process clipboard still works
+        }
+    }
+
+    /** A paste takes what the system clipboard holds when it is a Designer selection (copied here or from another window). */
+    private async pullClipboard(client: BackendClient): Promise<void> {
+        try {
+            const text = await vscode.env.clipboard.readText();
+            if (text.includes('<ui version') && text.includes('__qt_fake_top_level')) {
+                await client.request('setClipboard', { text });
+            }
+        } catch {
+            // keep the in-process clipboard
+        }
     }
 
     /** Ends the bookkeeping of a drag: one VS Code undo entry if it changed anything. */

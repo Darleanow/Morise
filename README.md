@@ -48,10 +48,10 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (250 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (262 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
-| `cd extension && npm test` | 108 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm test` | 109 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
 | `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
 
 ## What the editor does today
@@ -98,6 +98,8 @@ offered by every icon editor; the form saves `<include location=...>` and `resou
 checkable), edit it in the inspector, put it into a menu or tool bar (or take it out), add a separator to a tool bar, and
 remove it. Creation and removal use the engine's own commands; placing uses a small undo command of ours because the engine's
 is not exported. Each step is one undo step and the saved `.ui` passes `uic`.
+Action groups (`QActionGroup`) are created and removed in the same tab and an action is put in one from its place button; the engine has no
+command for them, so these are small undo commands of ours, and the saved `<actiongroup>` nests its actions and passes `uic`.
 
 **Signals and slots of the form.** The Form tab edits the form's own custom slots and signals (Designer's "Edit Signals/Slots"):
 they are offered in the connection dialog, saved in the `.ui` (`<slots>`) and one undo step each. Connecting a widget to the
@@ -179,7 +181,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** dragging an action onto a tool bar and reordering its entries (the engine's commands for them are not exported; actions are placed from the Form tab instead), action groups (`QActionGroup`).
+- **Not implemented yet:** dragging an action onto a tool bar and reordering its entries (the engine's commands for them are not exported; actions are placed from the Form tab instead).
 - **Rulers** (command `> rulers`) show form pixels along the top and left edges; they are not draggable guides.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
@@ -204,8 +206,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
   engine would free the first one without telling the rest of the editor, which crashed the backend; found by fuzzing).
   Connections whose endpoint vanished that way are detected and refused instead of dereferenced.
 - **Reparenting** is refused for containers that already have a layout (Designer would insert into the layout).
-- **Clipboard:** copy/paste uses the offscreen Qt clipboard inside the backend process: it works between documents
-  but not with other applications.
+- **Clipboard:** copies are mirrored to the system clipboard as Designer XML and a paste reads it back, so it works between documents, VS Code windows and applications that keep that text (checked in real VS Code with the system clipboard). Pasting other kinds of text does nothing.
 - **Host quirks found:** the host must resize the `FormWindow` to the form size or the saved geometry changes;
   static form-editor plugins must be initialised or `<connections>` are dropped; a shell-exported
   `QT_SCALE_FACTOR` scales snapshots (the backend neutralises it); a paste into a laid-out container is refused by
@@ -213,7 +214,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Teardown:** closing a document is done properly (50 open/edit/close cycles, 192 kB RSS growth). Destroying
   `QApplication`/`FormEditor` at process exit still segfaults, so the backend exits with `_Exit` on stdin EOF.
 - **Not verified:** hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
-- **Packaging:** the backend binary has an absolute RUNPATH to `~/Qt`; it is not relocatable.
+- **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only; no `.vsix` is produced yet.
 - **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
   VS Code theme variables are used.
 - **Licenses:** `lib/` is LGPL-3/GPL; `components/` is GPL-3 with Qt exception. Linking them makes the backend

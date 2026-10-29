@@ -147,6 +147,18 @@ export async function run(): Promise<void> {
     await until('redo re-applies it', async () => (await widthOf()) === 400);
     console.log('ok: a resize gesture is one native undo/redo step');
 
+    // 6b. a copy reaches the system clipboard, and a paste reads it from there (other windows and applications)
+    await api.provider.injectMessage(gUri, { type: 'selectNames', names: ['freeButton'] });
+    await api.provider.injectMessage(gUri, { type: 'action', action: 'copy' });
+    assert.match(await vscode.env.clipboard.readText(), /name="freeButton"/);
+    const own = (await api.provider.inspect(gUri)).snapshot?.objects.length ?? 0;
+    await vscode.env.clipboard.writeText((await vscode.env.clipboard.readText()).replace('name="freeButton"', 'name="fromOutside"'));
+    await api.provider.injectMessage(gUri, { type: 'action', action: 'paste' });
+    const pasted = (await api.provider.inspect(gUri)).snapshot?.objects ?? [];
+    assert.equal(pasted.length, own + 1);
+    assert.ok(pasted.some((o) => o.name === 'fromOutside'), 'the pasted widget comes from the system clipboard');
+    console.log('ok: copy and paste go through the system clipboard');
+
     // 7. what the Code and Connections tabs show comes through the host
     const info = await api.provider.inspect(gUri, 'freeButton');
     assert.ok(info.properties?.properties.some((p) => p.name === 'text'));

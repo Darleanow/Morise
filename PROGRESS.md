@@ -36,6 +36,7 @@ The test numbers below were true at the time of writing; the commands that produ
   sequence: rich.ui + MDI Area + group box + a tab widget move, then moving the MDI area onto the group box.
   Not reproducible with a shorter sequence (ddmin gave 7 operations). Not fixed; the page shows "engine down" and
   restarts the backend if it happens.
+- Action groups (QActionGroup), system clipboard mirroring and a relocatable backend bundle (backend/scripts/bundle-backend.sh) were added.
 - Outline: the form actions and the menus (with their entries) are listed in groups.
 - Menus: sub menus and tool bar entries are not editable (engine commands are not exported, events only reach the menu bar
   and its menus).

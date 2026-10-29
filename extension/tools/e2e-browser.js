@@ -51,7 +51,7 @@ async function check(label, fn) {
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
-  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
+  const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','actionGroup','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
     sent.push(m);
     const d = { docId };
@@ -74,6 +74,7 @@ async function check(label, fn) {
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
         case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
+        case 'actionGroup': snap = await client.request('actionGroup', { ...d, name: m.name, remove: m.remove, action: m.action, group: m.group }); break;
         case 'saveImage': return;
         case 'checkStyleSheet': await post({ type: 'styleSheetCheck', text: m.text, valid: (await client.request('checkStyleSheet', { text: m.text })).valid }); return;
         case 'setCustomMethods': snap = await client.request('setCustomMethods', { ...d, slots: m.slots, signals: m.signals }); break;
@@ -911,6 +912,28 @@ async function check(label, fn) {
     await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();
     const icon = (await client.request('properties', { docId, name: 'freeButton' })).properties.find((q) => q.name === 'icon');
     assert.ok(String(icon.value).includes('save.png'), String(icon.value));
+  });
+  await check('action groups: created in the Form tab, an action put in it and taken out, removed, and undo restores', async () => {
+    await open('mainwindow.ui');
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Create Menu Bar' });
+    await page.mouse.click(...(await at(60, 35))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const text = page.locator('.action-new input[aria-label="Text of the new action"]');
+    await text.fill('Left'); await text.press('Enter'); await settle();
+    const name = page.locator('.action-new input[aria-label="Name of the new action group"]');
+    await name.fill('alignGroup'); await name.press('Enter'); await settle();
+    assert.equal(await page.locator('.action-row', { hasText: 'alignGroup' }).count(), 1, 'the group is listed');
+    await page.locator('.action-row', { hasText: 'Left' }).locator('button[aria-label^="Place"]').click();
+    await page.locator('.menu-item', { hasText: 'Put in group alignGroup' }).click(); await settle();
+    assert.ok((await page.locator('.action-row', { hasText: 'alignGroup' }).textContent()).includes('actionLeft'), 'the group lists its member');
+    await shot('e2e-action-groups');
+    await page.locator('.action-row', { hasText: 'Left' }).locator('button[aria-label^="Place"]').click();
+    await page.locator('.menu-item', { hasText: 'Take out of group alignGroup' }).click(); await settle();
+    assert.ok((await page.locator('.action-row', { hasText: 'alignGroup' }).textContent()).includes('empty'), 'taken out again');
+    await page.locator('button[aria-label="Remove the group alignGroup"]').click(); await settle();
+    assert.equal(await page.locator('.action-row', { hasText: 'alignGroup' }).count(), 0, 'the group is gone');
+    await page.locator('#toolbar button[title^="Undo"]').first().click(); await settle();
+    assert.equal(await page.locator('.action-row', { hasText: 'alignGroup' }).count(), 1, 'undo brings it back');
   });
   await check('actions: the Form tab lists them, creates one, opens it in the inspector, removes it, and undo brings it back', async () => {
     await open('mainwindow.ui');

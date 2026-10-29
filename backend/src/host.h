@@ -77,6 +77,8 @@
 #include <QLineEdit>
 #include <QEnterEvent>
 #include <QPointer>
+#include <QActionGroup>
+#include <memory>
 #include <QWheelEvent>
 #include <QUndoCommand>
 #include <QXmlStreamReader>
@@ -291,6 +293,8 @@ private:
     QJsonObject addAction(const QJsonObject &p);
     QJsonObject removeAction(const QJsonObject &p);
     QJsonObject useAction(const QJsonObject &p);
+    QJsonObject actionGroup(const QJsonObject &p);
+    QJsonArray actionGroupsOf(QDesignerFormWindowInterface *fw) const;
     QJsonObject customMethods(const QJsonObject &p);
     static QJsonObject checkStyleSheet(const QJsonObject &p);
     QJsonObject setCustomMethods(const QJsonObject &p);

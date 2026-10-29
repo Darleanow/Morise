@@ -101,9 +101,41 @@ function placeButton(a: ActionInfo, info: NonNullable<typeof S.formInfo>): HTMLE
                 run: () => send({ type: 'useAction', target: t.name, action: a.name, ...(has ? { remove: true } : {}) }),
             };
         });
-        openMenu(r.left, r.bottom, items.length > 0 ? items : [{ label: 'No menu or tool bar in this form', disabled: true }]);
+        const groups = (info.actionGroups ?? []).map((g) => {
+            const has = g.actions.includes(a.name);
+            return { label: `${has ? 'Take out of' : 'Put in'} group ${g.name}`, icon: has ? 'close' : 'symbol-namespace', run: () => send({ type: 'actionGroup', action: a.name, group: has ? '' : g.name }) };
+        });
+        const all = [...items, ...groups];
+        openMenu(r.left, r.bottom, all.length > 0 ? all : [{ label: 'No menu, tool bar or action group in this form', disabled: true }]);
     }, 'icon-btn');
     return b;
+}
+
+/** Action groups (QActionGroup: exclusive choices such as left/centre/right): a row per group with its members, and a field to create one. */
+function groupList(info: NonNullable<typeof S.formInfo>): HTMLElement {
+    const box = el('div', { className: 'action-list' });
+    for (const g of info.actionGroups ?? []) {
+        box.append(el('div', { className: 'action-row', title: g.actions.join(', ') },
+            icon('symbol-namespace'), el('span', { className: 'action-text' }, g.name),
+            el('span', { className: 'dim action-meta' }, g.actions.length > 0 ? g.actions.join(', ') : 'empty'),
+            button(`Remove the group ${g.name}`, icon('trash'), () => send({ type: 'actionGroup', name: g.name, remove: true }), 'icon-btn')));
+    }
+    const name = el('input', { type: 'text', placeholder: 'New group name…' });
+    name.setAttribute('aria-label', 'Name of the new action group');
+    const create = () => {
+        if (name.value.trim() !== '') {
+            send({ type: 'actionGroup', name: name.value.trim() });
+            name.value = '';
+        }
+    };
+    name.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+            create();
+        }
+    });
+    box.append(el('div', { className: 'action-new' }, name, button('Add the group', icon('add'), create, 'icon-btn')),
+        el('p', { className: 'note' }, 'Checkable actions in one group are mutually exclusive. Use the place button of an action to put it in a group.'));
+    return box;
 }
 
 /** One list of signatures with a field to add one; every change sends the whole pair of lists. */
@@ -218,6 +250,8 @@ export function renderFormTab(): void {
         el('p', { className: 'note' }, 'Slots and signals of the form itself, offered in the connection dialog and saved in the .ui.'),
         el('div', { className: 'section-title' }, 'Actions', el('span', { className: 'dim count' }, String(info.actions.length))),
         actionList(info),
+        el('div', { className: 'section-title' }, 'Action groups', el('span', { className: 'dim count' }, String((info.actionGroups ?? []).length))),
+        groupList(info),
         el('div', { className: 'section-title' }, 'Keyboard focus order', el('span', { className: 'dim count' }, String(S.tabOrder?.length ?? 0))),
         el('p', { className: 'note' }, 'The order Tab moves through the widgets, numbered on the form. Drag a row, or use the arrows.'));
     frag.append(S.tabOrder && S.tabOrder.length > 0 ? tabOrderList(S.tabOrder) : el('div', { className: 'hint' }, 'No widget takes keyboard focus.'));

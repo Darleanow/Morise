@@ -1,8 +1,9 @@
 import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { BackendClient } from '../src/backendClient';
+import { BackendClient, bundledPluginPath } from '../src/backendClient';
 import { parseWebviewMessage } from '../src/messages';
 
 const root = path.resolve(__dirname, '..', '..', '..');
@@ -107,6 +108,11 @@ describe('parseWebviewMessage', () => {
         assert.equal(parseWebviewMessage({ type: 'addAction', text: '  ' }), undefined);
         assert.deepEqual(parseWebviewMessage({ type: 'useAction', target: 'menuFile', action: 'actionNew', remove: true }), { type: 'useAction', target: 'menuFile', action: 'actionNew', remove: true });
         assert.equal(parseWebviewMessage({ type: 'useAction', target: 'menuFile' }), undefined);
+        assert.deepEqual(parseWebviewMessage({ type: 'actionGroup', name: 'g' }), { type: 'actionGroup', name: 'g' });
+        assert.deepEqual(parseWebviewMessage({ type: 'actionGroup', name: 'g', remove: true }), { type: 'actionGroup', name: 'g', remove: true });
+        assert.deepEqual(parseWebviewMessage({ type: 'actionGroup', action: 'a', group: '' }), { type: 'actionGroup', action: 'a', group: '' });
+        assert.equal(parseWebviewMessage({ type: 'actionGroup', action: 'a' }), undefined);
+        assert.equal(parseWebviewMessage({ type: 'actionGroup' }), undefined);
         assert.deepEqual(parseWebviewMessage({ type: 'cancelGesture' }), { type: 'cancelGesture' });
         const items = [{ name: 'a', rect: [1, 2, 3, 4] }];
         assert.deepEqual(parseWebviewMessage({ type: 'setGeometries', items }), { type: 'setGeometries', items });
@@ -154,6 +160,19 @@ describe('custom widget plugins', () => {
             assert.match(saved.xml, /<class>Gauge<\/class>/);
         } finally {
             client.dispose();
+        }
+    });
+});
+
+describe('bundled backend', () => {
+    it('finds the Qt plugins folder beside the executable only when it holds a platform plugin', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qdr-bundle-'));
+        try {
+            assert.equal(bundledPluginPath(path.join(dir, 'designer_backend')), undefined);
+            fs.mkdirSync(path.join(dir, 'plugins', 'platforms'), { recursive: true });
+            assert.equal(bundledPluginPath(path.join(dir, 'designer_backend')), path.join(dir, 'plugins'));
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
         }
     });
 });

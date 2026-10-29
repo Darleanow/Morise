@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { BackendMethod, BackendMethods } from './protocol';
 
@@ -49,6 +50,11 @@ export class BackendClient extends EventEmitter {
             // Custom widget plugins: folders that contain a `designer` directory with the plugin libraries.
             if (this.options.pluginPaths?.length) {
                 env.QT_PLUGIN_PATH = [...this.options.pluginPaths, env.QT_PLUGIN_PATH ?? ''].filter(Boolean).join(path.delimiter);
+            }
+            // A bundled backend (scripts/bundle-backend.sh) carries its own Qt plugins next to the executable.
+            const bundled = bundledPluginPath(this.options.executable);
+            if (bundled) {
+                env.QT_PLUGIN_PATH = [bundled, env.QT_PLUGIN_PATH ?? ''].filter(Boolean).join(path.delimiter);
             }
             if (this.options.crashLog) {
                 env.QDR_CRASH_LOG = this.options.crashLog;
@@ -159,4 +165,10 @@ export class BackendClient extends EventEmitter {
             p.resolve(msg.result);
         }
     }
+}
+
+/** The `plugins` folder beside a bundled backend executable, when there is one. */
+export function bundledPluginPath(executable: string): string | undefined {
+    const dir = path.join(path.dirname(executable), 'plugins');
+    return fs.existsSync(path.join(dir, 'platforms')) ? dir : undefined;
 }

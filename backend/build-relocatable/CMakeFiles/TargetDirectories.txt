@@ -1,0 +1,4 @@
+/home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/CMakeFiles/poc.dir
+/home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/CMakeFiles/designer_backend.dir
+/home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/CMakeFiles/edit_cache.dir
+/home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/CMakeFiles/rebuild_cache.dir

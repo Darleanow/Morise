@@ -1,0 +1,4 @@
+set(__QT_DEPLOY_TARGET_poc_FILE /home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/poc)
+set(__QT_DEPLOY_TARGET_poc_TYPE EXECUTABLE)
+set(__QT_DEPLOY_TARGET_designer_backend_FILE /home/devel/Dev/QtDesignerRevamped/backend/build-relocatable/designer_backend)
+set(__QT_DEPLOY_TARGET_designer_backend_TYPE EXECUTABLE)

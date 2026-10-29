@@ -21,6 +21,12 @@ target_include_directories(designer_backend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(designer_backend PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Designer Qt6::DesignerPrivate Qt6::DesignerComponentsPrivate Qt6::GuiPrivate)
 
+# A relocatable build looks for its Qt libraries next to the executable (see scripts/bundle-backend.sh).
+option(QDR_RELOCATABLE "Link with RPATH $ORIGIN/lib instead of the Qt install path" OFF)
+if(QDR_RELOCATABLE)
+    set_target_properties(designer_backend PROPERTIES BUILD_RPATH "$ORIGIN/lib" INSTALL_RPATH "$ORIGIN/lib" BUILD_WITH_INSTALL_RPATH ON SKIP_BUILD_RPATH OFF)
+endif()
+
 # A tiny Designer custom widget plugin used by the tests (cmake -DQDR_TEST_PLUGIN=ON): it ends up in build/designer.
 option(QDR_TEST_PLUGIN "Build the demo custom widget plugin used by the tests" ON)
 if(QDR_TEST_PLUGIN)

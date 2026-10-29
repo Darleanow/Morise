@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """End-to-end protocol test of designer_backend. Exits non-zero on any failed check."""
-import base64, json, os, subprocess, sys, tempfile
+import base64, json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BACKEND = os.path.join(HERE, "..", "build", "designer_backend")
@@ -21,6 +21,11 @@ def call(method, **params):
     msg = json.loads(p.stdout.readline())
     assert msg["id"] == _id, msg
     return msg
+
+def uic_ok(xml):
+    with tempfile.NamedTemporaryFile('w', suffix='.ui', delete=False, encoding='utf-8') as f:
+        f.write(xml)
+    return subprocess.run([QT + '/libexec/uic', f.name], capture_output=True, text=True).returncode == 0
 
 def check(label, cond, detail=""):
     print(("PASS " if cond else "FAIL ") + label + (f"  [{str(detail)[:300]}]" if detail and not cond else ""))
@@ -58,6 +63,14 @@ s = call("setProperty", docId="d1", name="okButton", property="text", value="Val
 half = call("view", docId="d1", scale=0.5)["result"]
 check("render below 1x keeps the logical size and a half-size image", half["dpr"] == 0.5 and half["width"] == 320 and int.from_bytes(base64.b64decode(half["png"])[16:20], "big") == half["width"] // 2, (half["dpr"], half["width"]))
 call("view", docId="d1", scale=1)
+call("select", docId="d1", names=["okButton"])
+call("action", docId="d1", action="copy")
+clip = call("getClipboard")["result"]["text"]
+check("a copy puts the selection on the clipboard as Designer XML", "__qt_fake_top_level" in clip and 'name="okButton"' in clip, clip[:80])
+call("setClipboard", text="")
+check("the clipboard can be replaced from outside", call("getClipboard")["result"]["text"] == "")
+call("setClipboard", text=clip)
+check("a pasted external clipboard is read back unchanged", call("getClipboard")["result"]["text"] == clip)
 s = call("select", docId="d1", names=["okButton"])["result"]
 check("selection reported", s["selection"] == ["okButton"], s["selection"])
 o = names["okButton"]
@@ -451,6 +464,25 @@ call("removeMenuEntry", docId="mn1", menu="menuEdit")
 check("a whole menu can be removed", [m["name"] for m in menus()] == ["menuFile"])
 call("undo", docId="mn1")
 check("removing a menu is undoable", [m["name"] for m in menus()] == ["menuFile", "menuEdit"])
+# action groups: created, filled, saved (accepted by uic), undone, removed
+call("addAction", docId="mn1", text="Left")
+call("addAction", docId="mn1", text="Right")
+ag = lambda: call("formInfo", docId="mn1")["result"]["actionGroups"]
+check("an action group is created", "error" not in call("actionGroup", docId="mn1", name="alignGroup") and [g["name"] for g in ag()] == ["alignGroup"], ag())
+check("an action is put in the group", "error" not in call("actionGroup", docId="mn1", action="actionLeft", group="alignGroup") and ag()[0]["actions"] == ["actionLeft"], ag())
+call("actionGroup", docId="mn1", action="actionRight", group="alignGroup")
+gx = call("contents", docId="mn1")["result"]["xml"]
+check("the saved form nests the actions in the group", re.search(r'<actiongroup name="alignGroup">\s*<action name="actionLeft">', gx) is not None)
+check("a form with an action group is accepted by uic", uic_ok(gx))
+check("a name already in use is refused", "error" in call("actionGroup", docId="mn1", name="actionLeft"))
+check("an unknown group is refused", "error" in call("actionGroup", docId="mn1", action="actionLeft", group="nope"))
+call("undo", docId="mn1")
+check("undo takes the last action out of the group", ag()[0]["actions"] == ["actionLeft"], ag())
+call("redo", docId="mn1")
+call("actionGroup", docId="mn1", name="alignGroup", remove=True)
+check("removing a group frees its actions", ag() == [])
+call("undo", docId="mn1")
+check("undoing the removal brings the group and its actions back", ag() and sorted(ag()[0]["actions"]) == ["actionLeft", "actionRight"], ag())
 check("an action has its own property sheet", any(q["name"] == "text" for q in call("properties", docId="mn1", name="actionNew")["result"]["properties"]))
 call("setProperty", docId="mn1", name="actionNew", property="shortcut", value="Ctrl+N")
 xml_mn = saved("mn1")

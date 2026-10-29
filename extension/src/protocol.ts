@@ -112,7 +112,11 @@ export interface FormInfo {
     customSignals: string[];
     /** The menus and tool bars an action can be placed in. */
     actionTargets: ActionTarget[];
+    /** The action groups, with the names of the actions they hold. */
+    actionGroups?: ActionGroupInfo[];
 }
+
+export interface ActionGroupInfo { name: string; exclusive: boolean; actions: string[] }
 
 export interface ActionTarget { name: string; kind: 'menu' | 'toolbar'; title: string }
 
@@ -237,9 +241,12 @@ export interface BackendMethods {
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     addAction: { params: { docId: string; text: string; name?: string; checkable?: boolean; shortcut?: string }; result: Snapshot };
+    actionGroup: { params: { docId: string; name?: string; remove?: boolean; action?: string; group?: string }; result: Snapshot };
     useAction: { params: { docId: string; target: string; action?: string; separator?: boolean; remove?: boolean }; result: Snapshot };
     setCustomMethods: { params: { docId: string; name?: string; slots: string[]; signals: string[] }; result: Snapshot };
     checkStyleSheet: { params: { text: string }; result: { valid: boolean } };
+    getClipboard: { params: Record<string, never>; result: { text: string } };
+    setClipboard: { params: { text: string }; result: Record<string, never> };
     removeAction: { params: { docId: string; name: string }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
     taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
@@ -309,6 +316,7 @@ export type WebviewToHost =
     | { type: 'addAction'; text: string; checkable?: boolean; shortcut?: string }
     | { type: 'removeAction'; name: string }
     | { type: 'setCustomMethods'; slots: string[]; signals: string[] }
+    | { type: 'actionGroup'; name?: string; remove?: boolean; action?: string; group?: string }
     | { type: 'useAction'; target: string; action?: string; separator?: boolean; remove?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }
     | { type: 'taskAction'; name: string; text?: string; path?: number[] }
