@@ -29,6 +29,10 @@
     ],
     "commands": [
       {
+        "command": "qtDesignerRevamped.newForm",
+        "title": "Qt Designer: New Form..."
+      },
+      {
         "command": "qtDesignerRevamped.restartBackend",
         "title": "Qt Designer: Restart Backend"
       },
@@ -37,6 +41,11 @@
         "title": "Qt Designer: Open .ui as XML Text"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        { "command": "qtDesignerRevamped.newForm", "when": "explorerResourceIsFolder", "group": "navigation@50" }
+      ]
+    },
     "configuration": {
       "title": "Qt Designer Revamped",
       "properties": {

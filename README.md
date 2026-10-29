@@ -51,7 +51,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 | `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (237 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
-| `cd extension && npm test` | 98 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm test` | 104 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
 | `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
 
 ## What the editor does today
@@ -103,6 +103,8 @@ is not exported. Each step is one undo step and the saved `.ui` passes `uic`.
 they are offered in the connection dialog, saved in the `.ui` (`<slots>`) and one undo step each. Connecting a widget to the
 form itself works even when its children cover it. **Style sheets** are validated live in the larger editor with Qt's own CSS
 parser. **Save as image** (command palette) writes the runtime render as a PNG.
+
+**New forms.** `Qt Designer: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer.
 
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
