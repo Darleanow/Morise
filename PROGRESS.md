@@ -46,3 +46,7 @@ The test numbers below were true at the time of writing; the commands that produ
   in-place edit box sizing and toolbar overlap; rename hint wrapping; connecting to the form itself failed when children covered it.
 - Test tooling: `ONLY=<label part>` filters e2e scenarios; run the fuzz with `python3 -u` (output is lost otherwise);
   never `pkill -f` a pattern that is in your own command line.
+- Fuzz now finds crashes with a call stack: run with `QDR_CRASH_LOG=/tmp/qdr-crash.log` (the backend writes the stack and the
+  running request there). Found and fixed this way: reparenting a free widget into a laid-out container (stack overflow, seed 63)
+  and pasting a dock widget into a plain form (seed 78). The old seed 92 crash did not reproduce again on 300, 600, 1200 and 9000
+  operations (hypothesis: it was the same family as seed 63; not proven).
