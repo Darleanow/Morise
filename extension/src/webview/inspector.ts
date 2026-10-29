@@ -104,9 +104,8 @@ export function setTab(tab: RightTab): void {
 let lastWants = '';
 
 export function syncWants(): void {
-    // The icon editor offers the form's resources, so it needs the form info as well.
-    const images = !!S.properties?.properties.some((p) => p.kind === 'icon' || p.kind === 'pixmap');
-    const wants = { tabOrder: prefs.rightTab === 'form', formInfo: prefs.rightTab === 'form' || images };
+    // The outline lists the form's actions and the icon editor offers its resources: both need the form info.
+    const wants = { tabOrder: prefs.rightTab === 'form', formInfo: true };
     const key = JSON.stringify(wants);
     if (key !== lastWants) {
         lastWants = key;

@@ -10,9 +10,12 @@ const collapseBtn = $<HTMLButtonElement>('outline-collapse');
 
 interface Node {
     key: string;
-    kind: 'widget' | 'layout';
+    kind: 'widget' | 'layout' | 'action' | 'group';
     obj?: SceneObject;
     layout?: SceneLayout;
+    /** Label and class for the rows that are not widgets (the actions group and its entries). */
+    text?: string;
+    meta?: string;
     children: Node[];
     parent: Node | null;
 }
@@ -54,11 +57,20 @@ function build(): Node[] {
         }
         return node;
     };
-    return (kids.get(null) ?? []).map((r) => widgetNode(r, null));
+    const roots = (kids.get(null) ?? []).map((r) => widgetNode(r, null));
+    const acts = (S.formInfo?.actions ?? []).filter((a) => !a.separator);
+    if (acts.length > 0) {
+        const group: Node = { key: 'g:actions', kind: 'group', text: 'actions', meta: String(acts.length), children: [], parent: null };
+        for (const a of acts) {
+            group.children.push({ key: `a:${a.name}`, kind: 'action', text: a.name, meta: a.text || (a.usedIn.length > 0 ? '' : 'unused'), children: [], parent: group });
+        }
+        roots.push(group);
+    }
+    return roots;
 }
 
 function matches(n: Node, q: string): boolean {
-    const text = n.kind === 'widget' ? `${n.obj?.name} ${n.obj?.class}` : `${n.layout?.name} ${n.layout?.kind}`;
+    const text = n.kind === 'widget' ? `${n.obj?.name} ${n.obj?.class}` : n.kind === 'layout' ? `${n.layout?.name} ${n.layout?.kind}` : `${n.text} ${n.meta}`;
     return text.toLowerCase().includes(q);
 }
 
@@ -88,6 +100,13 @@ function flatten(nodes: Node[], q: string): { node: Node; depth: number }[] {
 }
 
 function selectNode(n: Node, additive = false): void {
+    if (n.kind === 'action') {
+        send({ type: 'inspect', name: n.text ?? '' });
+        return;
+    }
+    if (n.kind === 'group') {
+        return;
+    }
     if (n.kind === 'layout' && n.layout) {
         S.focusedLayout = n.layout.name;
         renderOverlay();
@@ -107,7 +126,7 @@ function selectNode(n: Node, additive = false): void {
 }
 
 function nodeName(n: Node): string {
-    return n.kind === 'widget' ? (n.obj?.name ?? '') : (n.layout?.name ?? '');
+    return n.kind === 'widget' ? (n.obj?.name ?? '') : n.kind === 'layout' ? (n.layout?.name ?? '') : (n.text ?? '');
 }
 
 function revealSelection(): void {
@@ -135,15 +154,15 @@ export function renderOutline(): void {
     const frag = document.createDocumentFragment();
     let tabStop = false;
     for (const { node, depth } of flat) {
-        const isSel = node.kind === 'widget' ? selected.has(nodeName(node)) : S.propertiesFor === nodeName(node);
+        const isSel = node.kind === 'widget' ? selected.has(nodeName(node)) : node.kind !== 'group' && S.propertiesFor === nodeName(node);
         const hasKids = node.children.length > 0;
         const open = q !== '' || !collapsed.has(node.key);
-        const glyph = node.kind === 'layout' ? icon('layout') : node.obj ? classGlyph(node.obj) : icon('symbol-field');
+        const glyph = node.kind === 'layout' ? icon('layout') : node.kind === 'group' ? icon('zap') : node.kind === 'action' ? icon('symbol-event') : node.obj ? classGlyph(node.obj) : icon('symbol-field');
         const chevron = hasKids
             ? el('span', { className: 'twisty' }, icon(open ? 'chevron-down' : 'chevron-right'))
             : el('span', { className: 'twisty leaf' });
-        const label = node.kind === 'widget' ? node.obj?.name ?? '' : node.layout?.name ?? '';
-        const cls = node.kind === 'widget' ? node.obj?.class ?? '' : node.layout?.kind ?? '';
+        const label = nodeName(node);
+        const cls = node.kind === 'widget' ? node.obj?.class ?? '' : node.kind === 'layout' ? node.layout?.kind ?? '' : node.meta ?? '';
         const row = el('div', { className: `tree-row${isSel ? ' selected' : ''}${node.kind === 'layout' ? ' layout' : ''}${nodeName(node) === S.hovered ? ' hover' : ''}`, role: 'treeitem', tabIndex: isSel && !tabStop ? 0 : -1 },
             chevron, glyph, el('span', { className: 'tree-name' }, label), el('span', { className: 'tree-class' }, cls));
         if (isSel) {

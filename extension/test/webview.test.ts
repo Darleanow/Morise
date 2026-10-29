@@ -80,7 +80,7 @@ describe('webview page', () => {
     it('announces readiness and the wanted render density', () => {
         assert.ok(sent.some((m) => m.type === 'ready'));
         assert.deepEqual(sent.find((m) => m.type === 'view'), { type: 'view', scale: 1 });
-        assert.deepEqual(sent.find((m) => m.type === 'want'), { type: 'want', tabOrder: false, formInfo: false });
+        assert.deepEqual(sent.find((m) => m.type === 'want'), { type: 'want', tabOrder: false, formInfo: true });
     });
 
     it('restores saved view preferences', () => {
@@ -927,7 +927,7 @@ describe('webview page', () => {
             $$('.tab').find((t) => t.textContent?.includes('Form'))?.click();
             assert.deepEqual(sent.find((m) => m.type === 'want'), { type: 'want', tabOrder: true, formInfo: true });
             $$('.tab').find((t) => t.textContent?.includes('Properties'))?.click();
-            assert.deepEqual(sent.filter((m) => m.type === 'want').at(-1), { type: 'want', tabOrder: false, formInfo: false });
+            assert.deepEqual(sent.filter((m) => m.type === 'want').at(-1), { type: 'want', tabOrder: false, formInfo: true });
         });
 
         it('form settings are edited field by field; the tab order is numbered on the form and reorderable', () => {
@@ -1044,6 +1044,16 @@ describe('webview page', () => {
             assert.deepEqual(names(), ['Form', 'box', 'c'], 'the group box is folded');
             post({ snapshot: { ...tree(), selection: ['a'] } });
             assert.deepEqual(names(), ['Form', 'box', 'a', 'b', 'c'], 'selecting a hidden widget unfolds its ancestors');
+        });
+
+        it('the outline lists the form actions in a group, and a click opens one in the inspector', () => {
+            const info = { grid: [10, 10], layoutDefault: [null, null], author: '', comment: '', exportMacro: '', pixmapFunction: '', includeHints: [], resourceFiles: [], resources: [], customSlots: [], customSignals: [], actionTargets: [],
+                actions: [{ name: 'actionOpen', text: 'Open', separator: false, checkable: false, shortcut: '', hasIcon: false, usedIn: [] }, { name: 'sep', text: '', separator: true, checkable: false, shortcut: '', hasIcon: false, usedIn: [] }] };
+            post({ snapshot: tree(), formInfo: info } as never);
+            assert.deepEqual(names(), ['Form', 'box', 'a', 'b', 'c', 'actions', 'actionOpen']);
+            sent.length = 0;
+            ($$('.tree-row').find((r) => r.dataset.name === 'actionOpen') as HTMLElement).click();
+            assert.deepEqual(sent.find((m) => m.type === 'inspect'), { type: 'inspect', name: 'actionOpen' });
         });
 
         it('the outline filter keeps ancestors of matches', () => {
