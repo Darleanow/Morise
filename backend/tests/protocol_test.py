@@ -505,6 +505,22 @@ call("undo", docId="tk1")
 check("the morph is one undo step", next(o for o in call("snapshot", docId="tk1")["result"]["objects"] if o["name"] == "okButton")["class"] == "QPushButton")
 check("a bad task path is refused", "error" in call("taskAction", docId="tk1", name="okButton", path=[99, 99]))
 
+# palette and locale properties are editable
+call("open", docId="pl1", xml=lay)
+prop_ = lambda nm: next(q for q in call("properties", docId="pl1", name="okButton")["result"]["properties"] if q["name"] == nm)
+check("a widget's palette is described by group and role", prop_("palette")["kind"] == "palette" and "Button" in prop_("palette")["value"]["groups"]["Active"] and prop_("palette")["value"]["set"] == [])
+r = call("setProperty", docId="pl1", name="okButton", property="palette", value={"groups": {"Active": {"Button": "#ffcc0000"}, "Inactive": {"Button": "#ffcc0000"}}})
+pv_ = prop_("palette")
+check("a palette colour can be set and the role is marked as set", "error" not in r and pv_["changed"] and pv_["value"]["set"] == ["Button"] and pv_["value"]["groups"]["Active"]["Button"] == "#ffcc0000", pv_["value"]["set"])
+check("a palette is saved and accepted by uic", "<colorrole" in saved("pl1") and subprocess.run([QT + "/libexec/uic", "/dev/stdin"], input=saved("pl1"), capture_output=True, text=True).returncode == 0)
+call("resetProperty", docId="pl1", name="okButton", property="palette")
+check("a palette can be reset to the style", not prop_("palette")["changed"])
+check("an invalid palette colour is refused", "error" in call("setProperty", docId="pl1", name="okButton", property="palette", value={"groups": {"Active": {"Button": "nope"}}}))
+call("setProperty", docId="pl1", name="okButton", property="locale", value={"language": "French", "country": "France"})
+check("a widget's locale can be set", prop_("locale")["value"] == {"language": "French", "country": "France"}, prop_("locale")["value"])
+lc = call("palette")["result"]["locales"]
+check("the locale choices are offered", "French" in lc["languages"] and "France" in lc["countries"])
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

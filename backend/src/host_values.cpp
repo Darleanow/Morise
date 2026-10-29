@@ -29,6 +29,23 @@ QString Host::thumbnailFor(QDesignerFormWindowInterface *fw, const QString &path
     return iconDataUrl(QIcon(px.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation)), 48);
 }
 
+const std::vector<Host::PaletteRole> &Host::paletteRoles()
+{
+    static const std::vector<PaletteRole> roles{
+        {"Window", QPalette::Window}, {"WindowText", QPalette::WindowText}, {"Base", QPalette::Base}, {"AlternateBase", QPalette::AlternateBase},
+        {"ToolTipBase", QPalette::ToolTipBase}, {"ToolTipText", QPalette::ToolTipText}, {"PlaceholderText", QPalette::PlaceholderText},
+        {"Text", QPalette::Text}, {"Button", QPalette::Button}, {"ButtonText", QPalette::ButtonText}, {"BrightText", QPalette::BrightText},
+        {"Light", QPalette::Light}, {"Midlight", QPalette::Midlight}, {"Dark", QPalette::Dark}, {"Mid", QPalette::Mid}, {"Shadow", QPalette::Shadow},
+        {"Highlight", QPalette::Highlight}, {"HighlightedText", QPalette::HighlightedText}, {"Link", QPalette::Link}, {"LinkVisited", QPalette::LinkVisited}};
+    return roles;
+}
+
+const std::vector<Host::PaletteGroup> &Host::paletteGroups()
+{
+    static const std::vector<PaletteGroup> groups{{"Active", QPalette::Active}, {"Inactive", QPalette::Inactive}, {"Disabled", QPalette::Disabled}};
+    return groups;
+}
+
 QJsonObject Host::describeValue(const QVariant &v, QDesignerFormWindowInterface *fw) const
 {
     auto make = [](const char *kind, const QJsonValue &value) {
@@ -109,7 +126,27 @@ QJsonObject Host::describeValue(const QVariant &v, QDesignerFormWindowInterface 
         o.insert(QLatin1String("choices"), stringsToJson(enumKeys(me)));
         return o;
     }
-    case QMetaType::QPalette: return make("unsupported", QStringLiteral("custom palette (edit with styleSheet)"));
+    case QMetaType::QPalette: {
+        // Colours per group and role, plus the roles this palette sets itself (the others follow the style).
+        const QPalette pal = v.value<QPalette>();
+        QJsonObject groups;
+        QJsonArray set;
+        for (const auto &g : paletteGroups()) {
+            QJsonObject colors;
+            for (const auto &r : paletteRoles()) {
+                colors.insert(QLatin1String(r.name), pal.color(g.group, r.role).name(QColor::HexArgb));
+                if (g.group == QPalette::Active && pal.isBrushSet(g.group, r.role))
+                    set.append(QLatin1String(r.name));
+            }
+            groups.insert(QLatin1String(g.name), colors);
+        }
+        return make("palette", QJsonObject{{QLatin1String("groups"), groups}, {QLatin1String("set"), set}});
+    }
+    case QMetaType::QLocale: {
+        const QLocale l = v.toLocale();
+        return make("locale", QJsonObject{{QLatin1String("language"), QString::fromLatin1(QMetaEnum::fromType<QLocale::Language>().valueToKey(l.language()))},
+                                           {QLatin1String("country"), QString::fromLatin1(QMetaEnum::fromType<QLocale::Country>().valueToKey(l.territory()))}});
+    }
     default: break;
     }
     QJsonObject o = make("unsupported", v.toString());
@@ -191,6 +228,32 @@ QVariant Host::parseValue(const QVariant &current, const QJsonValue &val) const
     case QMetaType::QTime: return QTime::fromString(val.toString(), Qt::ISODate);
     case QMetaType::QDateTime: return QDateTime::fromString(val.toString(), Qt::ISODate);
     case QMetaType::QKeySequence: return QKeySequence::fromString(val.toString(), QKeySequence::PortableText);
+    case QMetaType::QPalette: {
+        // Only the colours the page changed: everything else stays as the widget has it.
+        QPalette pal = current.value<QPalette>();
+        const QJsonObject groups = val.toObject().value(QLatin1String("groups")).toObject();
+        for (const auto &g : paletteGroups()) {
+            const QJsonObject colors = groups.value(QLatin1String(g.name)).toObject();
+            for (const auto &r : paletteRoles()) {
+                if (!colors.contains(QLatin1String(r.name)))
+                    continue;
+                const QColor c(colors.value(QLatin1String(r.name)).toString());
+                if (!c.isValid())
+                    throw ProtocolError{QStringLiteral("invalid colour")};
+                pal.setBrush(g.group, r.role, c);
+            }
+        }
+        return pal;
+    }
+    case QMetaType::QLocale: {
+        const QJsonObject o = val.toObject();
+        bool ok1 = false, ok2 = false;
+        const int lang = QMetaEnum::fromType<QLocale::Language>().keyToValue(o.value(QLatin1String("language")).toString().toLatin1().constData(), &ok1);
+        const int country = QMetaEnum::fromType<QLocale::Country>().keyToValue(o.value(QLatin1String("country")).toString().toLatin1().constData(), &ok2);
+        if (!ok1 || !ok2)
+            throw ProtocolError{QStringLiteral("unknown language or country")};
+        return QLocale(QLocale::Language(lang), QLocale::Country(country));
+    }
     case QMetaType::QSizePolicy: {
         const QMetaEnum me = QMetaEnum::fromType<QSizePolicy::Policy>();
         const QJsonObject o = val.toObject();

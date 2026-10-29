@@ -55,6 +55,7 @@ export const S = {
     tabOrder: undefined as string[] | undefined,
     formInfo: undefined as FormInfo | undefined,
     fonts: [] as string[],
+    locales: { languages: [] as string[], countries: [] as string[] },
     /** The page is in connect mode: dragging from a widget to another creates a signal/slot connection. */
     mode: 'select' as 'select' | 'connect',
     hovered: null as string | null,

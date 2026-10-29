@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (177 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (184 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 97 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -96,6 +96,9 @@ offered by every icon editor; the form saves `<include location=...>` and `resou
 **Widget tasks.** The context menu has a *Widget tasks* submenu with what Designer's own task menu offers without a
 dialog: *Morph into* (a push button becomes a tool button, a check box...), size constraints, layout alignment, button
 groups, page operations. Entries that would open a dialog ("Change text...") are left out.
+
+**Palette and locale.** A widget's palette is edited as colours per role and group (only the roles you change are saved; the
+reset button goes back to the style). The locale has language and country lists.
 
 **Adding.** Palette with Designer's icons, search and a Recent group (drag, double-click or Enter), `/` for a quick
 search, double-click on empty space to add right there, Ctrl+D to duplicate.
@@ -154,8 +157,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, palette
-  editing, rulers, custom widget plugins.
+- **Not implemented yet:** in-place editing of tab titles (use `currentTabText`), sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, rulers, custom widget plugins.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
   through the same `SetPropertyCommand` Designer itself uses for resizing.

@@ -1,4 +1,4 @@
-import type { FontValue, PropertyInfo, SizePolicyValue } from '../protocol';
+import type { FontValue, LocaleValue, PaletteValue, PropertyInfo, SizePolicyValue } from '../protocol';
 import { button, el, icon } from './dom';
 import { S } from './state';
 
@@ -17,7 +17,7 @@ const MULTILINE_NAMES = new Set(['styleSheet', 'toolTip', 'whatsThis', 'statusTi
 
 /** Properties that need a block (label above, editor below) instead of a label/editor pair. */
 export function isBlock(p: PropertyInfo): boolean {
-    return ['rect', 'size', 'point', 'rectf', 'sizef', 'pointf', 'sizePolicy', 'font', 'flags', 'stringlist'].includes(p.kind);
+    return ['palette', 'rect', 'size', 'point', 'rectf', 'sizef', 'pointf', 'sizePolicy', 'font', 'flags', 'stringlist'].includes(p.kind);
 }
 
 function numberInput(value: number, step: string, onChange: (v: number) => void, enabled: boolean, label?: string): HTMLInputElement {
@@ -191,6 +191,41 @@ function imageEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
     return el('div', { className: 'image-editor' }, thumb, name, pick, fromRes, clear);
 }
 
+const PALETTE_GROUPS = ['Active', 'Inactive', 'Disabled'];
+
+/** Colours per role and group. A change is sent as just that colour; the roles a widget sets are marked. */
+function paletteEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
+    const v = p.value as PaletteValue;
+    const roles = Object.keys(v.groups['Active'] ?? {});
+    const set = new Set(v.set);
+    const grid = el('div', { className: 'palette-grid' });
+    grid.append(el('span', {}), ...PALETTE_GROUPS.map((g) => el('span', { className: 'dim palette-group' }, g)));
+    for (const role of roles) {
+        grid.append(el('span', { className: `palette-role${set.has(role) ? ' changed' : ''}`, title: role }, role));
+        for (const group of PALETTE_GROUPS) {
+            const hex = v.groups[group]?.[role] ?? '#ff000000';
+            const input = el('input', { type: 'color', value: `#${hex.slice(3)}`, disabled: !p.enabled });
+            input.setAttribute('aria-label', `${role}, ${group}`);
+            input.title = `${role} (${group}) ${hex}`;
+            input.addEventListener('change', () => ctx.commit(p, { groups: { [group]: { [role]: `#${hex.slice(1, 3)}${input.value.slice(1)}` } } }));
+            grid.append(input);
+        }
+    }
+    const open = openFlagLists.has(`palette:${p.name}`);
+    const head = el('button', { type: 'button', className: 'flags-head', disabled: !p.enabled }, icon(open ? 'chevron-down' : 'chevron-right'),
+        el('span', {}, set.size > 0 ? `${set.size} role${set.size === 1 ? '' : 's'} set` : 'Follows the style'));
+    head.addEventListener('click', () => {
+        const key = `palette:${p.name}`;
+        if (openFlagLists.has(key)) {
+            openFlagLists.delete(key);
+        } else {
+            openFlagLists.add(key);
+        }
+        ctx.rerender();
+    });
+    return el('div', { className: 'flags' }, head, ...(open ? [grid] : []));
+}
+
 function colorEditor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
     const v = String(p.value);
     const hasAlpha = /^#[0-9a-fA-F]{8}$/.test(v);
@@ -260,6 +295,23 @@ export function editorFor(p: PropertyInfo, ctx: EditorContext): HTMLElement {
             ta.setAttribute('aria-label', `${p.name}, one entry per line`);
             ta.addEventListener('change', () => ctx.commit(p, ta.value.split('\n').filter((l) => l.length > 0)));
             return ta;
+        }
+        case 'palette':
+            return paletteEditor(p, ctx);
+        case 'locale': {
+            const v = p.value as LocaleValue;
+            const pick = (list: string[], current: string, label: string, onChange: (value: string) => void) => {
+                const select = el('select', { disabled: !enabled });
+                select.setAttribute('aria-label', label);
+                for (const name of list.includes(current) ? list : [current, ...list]) {
+                    select.append(el('option', { value: name, selected: name === current }, name));
+                }
+                select.addEventListener('change', () => onChange(select.value));
+                return select;
+            };
+            return el('div', { className: 'locale-editor' },
+                pick(S.locales.languages, v.language, 'Language', (language) => ctx.commit(p, { language, country: v.country })),
+                pick(S.locales.countries, v.country, 'Country', (country) => ctx.commit(p, { language: v.language, country })));
         }
         case 'keysequence': {
             const input = el('input', { type: 'text', value: String(p.value), placeholder: 'Ctrl+S', disabled: !enabled });

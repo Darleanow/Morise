@@ -153,7 +153,12 @@ export interface Snapshot {
 export type PropertyKind =
     | 'string' | 'bool' | 'int' | 'double' | 'enum' | 'flags' | 'rect' | 'size' | 'point' | 'rectf' | 'sizef' | 'pointf'
     | 'sizePolicy' | 'font' | 'icon' | 'pixmap' | 'stringlist' | 'keysequence' | 'color' | 'url' | 'date' | 'time' | 'datetime'
-    | 'unsupported';
+    | 'palette' | 'locale' | 'unsupported';
+
+/** A palette: colours per group and role, and the roles the widget sets itself. */
+export interface PaletteValue { groups: Record<string, Record<string, string>>; set: string[] }
+export interface LocaleValue { language: string; country: string }
+export interface LocaleChoices { languages: string[]; countries: string[] }
 
 export interface SizePolicyValue { h: string; v: string; hs: number; vs: number }
 export interface FontValue { family: string; pointSize: number; bold: boolean; italic: boolean; underline: boolean; strikeOut: boolean }
@@ -163,7 +168,7 @@ export interface PropertyInfo {
     group: string;
     kind: PropertyKind;
     /** string | boolean | number | number[] | string[] | SizePolicyValue | FontValue depending on kind. */
-    value: string | boolean | number | number[] | string[] | SizePolicyValue | FontValue;
+    value: string | boolean | number | number[] | string[] | SizePolicyValue | FontValue | PaletteValue | LocaleValue;
     choices?: string[];
     typeName?: string;
     changed: boolean;
@@ -236,7 +241,7 @@ export interface BackendMethods {
     describe: { params: { docId: string; name: string }; result: DescribeResult };
     history: { params: { docId: string }; result: { items: string[]; index: number } };
     connections: { params: { docId: string }; result: { connections: ConnectionInfo[] } };
-    palette: { params: Record<string, never>; result: { categories: PaletteCategory[]; fonts: string[] } };
+    palette: { params: Record<string, never>; result: { categories: PaletteCategory[]; fonts: string[]; locales: LocaleChoices } };
     addWidget: { params: { docId: string; category: number; index: number; x: number; y: number; side?: Side }; result: Snapshot };
     action: { params: { docId: string; action: ActionName }; result: Snapshot };
     select: { params: { docId: string; names: string[] }; result: Snapshot };
@@ -313,7 +318,7 @@ export type WebviewToHost =
 
 /** Messages extension host -> webview. */
 export type HostToWebview =
-    | { type: 'state'; snapshot: Snapshot; properties: PropertiesResult | null; propertiesFor: string | null; palette: PaletteCategory[]; fonts: string[]; notices: string[]; code: DescribeResult | null; connections: ConnectionInfo[]; container: ContainerInfo | null; tabOrder?: string[]; formInfo?: FormInfo }
+    | { type: 'state'; snapshot: Snapshot; properties: PropertiesResult | null; propertiesFor: string | null; palette: PaletteCategory[]; fonts: string[]; locales?: LocaleChoices; notices: string[]; code: DescribeResult | null; connections: ConnectionInfo[]; container: ContainerInfo | null; tabOrder?: string[]; formInfo?: FormInfo }
     | { type: 'preview'; result: PreviewResult; style: string; dark: boolean }
     | { type: 'previewFrame'; result: PreviewResult }
     | { type: 'describeResult'; name: string; result: DescribeResult | null }

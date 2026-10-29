@@ -202,6 +202,9 @@ function apply(msg: Extract<HostToWebview, { type: 'state' }>): void {
     S.tabOrder = msg.tabOrder;
     S.formInfo = msg.formInfo;
     S.fonts = msg.fonts;
+    if (msg.locales) {
+        S.locales = msg.locales;
+    }
     if (paletteChanged) {
         S.palette = msg.palette;
         learnIcons();

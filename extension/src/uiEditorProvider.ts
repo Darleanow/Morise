@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { BackendClient } from './backendClient';
 import { parseWebviewMessage } from './messages';
 import { pageBody } from './pageBody';
-import type { ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
+import type { LocaleChoices, ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
 
 export const VIEW_TYPE = 'qtDesignerRevamped.uiEditor';
 
@@ -598,16 +598,16 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         const formInfo: FormInfo | undefined = doc.wants.formInfo ? await client.request('formInfo', { docId: doc.docId }).catch(() => undefined) : undefined;
         const notices = snapshot.messages ?? [];
         delete snapshot.messages; // one-shot: shown once, not replayed to panels opened later
-        const { categories: palette, fonts } = await this.paletteData();
-        const message: HostToWebview = { type: 'state', snapshot, properties, propertiesFor: name ?? null, palette, fonts, notices, code, connections, container, ...(tabOrder ? { tabOrder } : {}), ...(formInfo ? { formInfo } : {}) };
+        const { categories: palette, fonts, locales } = await this.paletteData();
+        const message: HostToWebview = { type: 'state', snapshot, properties, propertiesFor: name ?? null, palette, fonts, locales, notices, code, connections, container, ...(tabOrder ? { tabOrder } : {}), ...(formInfo ? { formInfo } : {}) };
         for (const p of only ? [only] : doc.panels) {
             void p.webview.postMessage(message);
         }
     }
 
-    private paletteCache: { categories: PaletteCategory[]; fonts: string[] } | undefined;
+    private paletteCache: { categories: PaletteCategory[]; fonts: string[]; locales: LocaleChoices } | undefined;
 
-    private async paletteData(): Promise<{ categories: PaletteCategory[]; fonts: string[] }> {
+    private async paletteData(): Promise<{ categories: PaletteCategory[]; fonts: string[]; locales: LocaleChoices }> {
         if (!this.paletteCache) {
             this.paletteCache = await (await this.ensureClient()).request('palette', {});
         }

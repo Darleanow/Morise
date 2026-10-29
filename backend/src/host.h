@@ -227,6 +227,10 @@ private:
 
     QString thumbnailFor(QDesignerFormWindowInterface *fw, const QString &path) const;
 
+    struct PaletteRole { const char *name; QPalette::ColorRole role; };
+    struct PaletteGroup { const char *name; QPalette::ColorGroup group; };
+    static const std::vector<PaletteRole> &paletteRoles();
+    static const std::vector<PaletteGroup> &paletteGroups();
     QJsonObject describeValue(const QVariant &v, QDesignerFormWindowInterface *fw) const;
 
     static QJsonArray numbers(const QJsonValue &v) { return v.toArray(); }

@@ -46,7 +46,7 @@ async function check(label, fn) {
     if (wants.tabOrder) extra.tabOrder = (await client.request('tabOrder', { docId })).order;
     if (wants.formInfo) extra.formInfo = await client.request('formInfo', { docId });
     const s = { ...snap }; delete s.messages;
-    await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, notices: snap.messages ?? [], code, connections, container, ...extra });
+    await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
   }
   const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
@@ -913,6 +913,21 @@ async function check(label, fn) {
     await page.locator('.menu-item', { hasText: 'Morph into' }).hover();
     await page.locator('.menu-item', { hasText: 'QCheckBox' }).click(); await settle();
     assert.equal((await obj('okButton')).class, 'QCheckBox');
+  });
+  await check('palette and locale: a role colour is changed from the inspector, the locale from two lists', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
+    const block = page.locator('.prop-block', { has: page.locator('[data-prop="palette"]') });
+    await block.locator('.flags-head').click();
+    await block.locator('input[type=color][aria-label="Button, Active"]').fill('#cc0000'); await settle();
+    const pal = (await client.request('properties', { docId, name: 'okButton' })).properties.find((q) => q.name === 'palette');
+    assert.deepEqual(pal.value.set, ['Button']);
+    assert.equal(pal.value.groups.Active.Button, '#ffcc0000');
+    await page.locator('.locale-editor select[aria-label="Language"]').scrollIntoViewIfNeeded();
+    await page.locator('.locale-editor select[aria-label="Language"]').selectOption('French', { timeout: 3000 }); await settle();
+    const loc = (await client.request('properties', { docId, name: 'okButton' })).properties.find((q) => q.name === 'locale');
+    assert.equal(loc.value.language, 'French');
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

@@ -391,7 +391,15 @@ QJsonObject Host::palette()
         }
         cats.append(QJsonObject{{QLatin1String("name"), cat.name()}, {QLatin1String("index"), c}, {QLatin1String("widgets"), widgets}});
     }
-    return {{QLatin1String("categories"), cats}, {QLatin1String("fonts"), stringsToJson(QFontDatabase::families())}};
+    // Languages and countries for the locale editor, in the order of the enums.
+    QJsonArray languages, countries;
+    const QMetaEnum le = QMetaEnum::fromType<QLocale::Language>(), ce = QMetaEnum::fromType<QLocale::Country>();
+    for (int i = 0; i < le.keyCount(); ++i)
+        languages.append(QString::fromLatin1(le.key(i)));
+    for (int i = 0; i < ce.keyCount(); ++i)
+        countries.append(QString::fromLatin1(ce.key(i)));
+    return {{QLatin1String("categories"), cats}, {QLatin1String("fonts"), stringsToJson(QFontDatabase::families())},
+            {QLatin1String("locales"), QJsonObject{{QLatin1String("languages"), languages}, {QLatin1String("countries"), countries}}}};
 }
 
 QJsonObject Host::describe(const QJsonObject &p)
