@@ -20,3 +20,12 @@ add_executable(designer_backend
 target_include_directories(designer_backend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/qttools/src/designer/src/lib/shared)
 target_link_libraries(designer_backend PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Designer Qt6::DesignerPrivate Qt6::DesignerComponentsPrivate)
+
+# A tiny Designer custom widget plugin used by the tests (cmake -DQDR_TEST_PLUGIN=ON): it ends up in build/designer.
+option(QDR_TEST_PLUGIN "Build the demo custom widget plugin used by the tests" ON)
+if(QDR_TEST_PLUGIN)
+    set(CMAKE_AUTOMOC ON)
+    add_library(gaugeplugin MODULE testplugin/gauge_plugin.cpp)
+    set_target_properties(gaugeplugin PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/designer)
+    target_link_libraries(gaugeplugin PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Designer)
+endif()

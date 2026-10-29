@@ -1,5 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import * as path from 'node:path';
 import type { BackendMethod, BackendMethods } from './protocol';
 
 interface Pending {
@@ -10,6 +11,8 @@ interface Pending {
 
 export interface BackendClientOptions {
     executable: string;
+    /** Folders holding a `designer` directory of custom widget plugins (added to QT_PLUGIN_PATH). */
+    pluginPaths?: string[];
     /** Per-request timeout in ms. */
     requestTimeoutMs?: number;
     /** Time allowed for the backend's `ready` event. */
@@ -41,6 +44,10 @@ export class BackendClient extends EventEmitter {
             const env = { ...process.env };
             delete env.QT_SCALE_FACTOR;
             delete env.QT_QPA_PLATFORM;
+            // Custom widget plugins: folders that contain a `designer` directory with the plugin libraries.
+            if (this.options.pluginPaths?.length) {
+                env.QT_PLUGIN_PATH = [...this.options.pluginPaths, env.QT_PLUGIN_PATH ?? ''].filter(Boolean).join(path.delimiter);
+            }
             const proc = spawn(this.options.executable, [], { stdio: ['pipe', 'pipe', 'pipe'], env });
             this.proc = proc;
             const startTimer = setTimeout(() => {

@@ -40,6 +40,12 @@
     "configuration": {
       "title": "Qt Designer Revamped",
       "properties": {
+        "qtDesignerRevamped.pluginPaths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "markdownDescription": "Folders that contain a `designer` directory with Qt Designer custom widget plugins (the same layout as `QT_PLUGIN_PATH`). The plugins must be built for the same Qt version as the backend. Restart the backend after changing it."
+        },
         "qtDesignerRevamped.backendPath": {
           "type": "string",
           "default": "",

@@ -51,7 +51,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 | `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (187 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
-| `cd extension && npm test` | 97 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm test` | 98 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
 | `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
 
 ## What the editor does today
@@ -101,6 +101,11 @@ groups, page operations. Entries that would open a dialog ("Change text...") are
 reset button goes back to the style). The locale has language and country lists.
 
 **Tabs.** Click a tab header (or a tool box page header) on the form to switch to that page; double-click it to rename it in place.
+
+**Custom widget plugins.** Qt Designer plugins (Qwt, KDE widgets, your own) are loaded from the folders listed in the
+`qtDesignerRevamped.pluginPaths` setting (each folder holds a `designer` directory, like `QT_PLUGIN_PATH`). They must be
+built for the same Qt version as the backend. Their widgets appear in the palette, in their own group. The build also
+produces a tiny demo plugin (`backend/testplugin`) that the tests use.
 
 **Adding.** Palette with Designer's icons, search and a Recent group (drag, double-click or Enter), `/` for a quick
 search, double-click on empty space to add right there, Ctrl+D to duplicate.
@@ -159,7 +164,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, rulers, custom widget plugins.
+- **Not implemented yet:** sub menus and tool bar entries (the engine's commands for them are not exported), the action editor, rulers.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
   through the same `SetPropertyCommand` Designer itself uses for resizing.

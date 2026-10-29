@@ -67,7 +67,8 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             if (!fs.existsSync(exe)) {
                 return Promise.reject(new Error(`Backend executable not found: ${exe}. Build it (see README) or set qtDesignerRevamped.backendPath.`));
             }
-            const client = new BackendClient({ executable: exe });
+            const pluginPaths = vscode.workspace.getConfiguration('qtDesignerRevamped').get<string[]>('pluginPaths', []).map((p) => p.trim()).filter(Boolean);
+            const client = new BackendClient({ executable: exe, pluginPaths });
             client.on('stderr', (text: string) => this.log.trace(String(text).trimEnd()));
             client.on('exit', (code: number | null, signal: string | null) => {
                 this.log.warn(`backend exited (code ${code}, signal ${signal})`);

@@ -130,3 +130,25 @@ describe('parseWebviewMessage', () => {
         }
     });
 });
+
+describe('custom widget plugins', () => {
+    const pluginDir = path.join(root, 'backend', 'build');
+    const available = fs.existsSync(path.join(pluginDir, 'designer', 'libgaugeplugin.so'));
+
+    it('are loaded from the configured folders and usable in a form', { skip: !available && 'the demo plugin is not built' }, async () => {
+        const client = new BackendClient({ executable: exe, requestTimeoutMs: 20000, pluginPaths: [pluginDir] });
+        try {
+            await client.start();
+            const { categories } = await client.request('palette', {});
+            const entry = categories.flatMap((c) => c.widgets.map((w) => ({ category: c.index, index: w.index, name: w.name }))).find((w) => w.name === 'Gauge');
+            assert.ok(entry, 'the plugin widget is in the widget box');
+            await client.request('open', { docId: 'p', xml: sample });
+            const s = await client.request('addWidget', { docId: 'p', category: entry.category, index: entry.index, x: 40, y: 40 });
+            assert.ok(s.objects.some((o) => o.class === 'Gauge'));
+            const saved = await client.request('contents', { docId: 'p' });
+            assert.match(saved.xml, /<class>Gauge<\/class>/);
+        } finally {
+            client.dispose();
+        }
+    });
+});
