@@ -4,6 +4,7 @@ import { ALIGNMENTS, alignable, canAlign, runAlignment } from './align';
 import { connectionArrows, SVG, tabOrderBadges } from './arrows';
 import { button, dims, el, icon } from './dom';
 import { byName, canResize, containerAt, contains, isContainer, isFree, layoutsOf, objectAt, rootObject, selectedObject, snap, type Rect } from './geometry';
+import { currentSuggestion, runSmartLayout } from './smartlayout';
 import { guideNodes, measureNodes, snapToSiblings } from './guides';
 import { hooks } from './hooks';
 import { descendantOf, layoutSlot, type LayoutSlot } from './layoutslot';
@@ -91,6 +92,10 @@ function pill(first: SceneObject): HTMLElement {
         if (buttons.length > 0) {
             buttons.push(el('span', { className: 'pill-sep' }));
         }
+        const hint = currentSuggestion();
+        if (hint) {
+            buttons.push(button(`Lay out ${hint.label} (best fit): ${hint.reason}`, icon('wand'), runSmartLayout, 'pill-btn pill-hint'));
+        }
         for (const a of ['layoutVertical', 'layoutHorizontal', 'layoutGrid', 'delete'] as const) {
             if (actions.isEnabled(a)) {
                 buttons.push(button(actions.title(a), icon(actions.ACTIONS[a].icon), () => actions.run(a), 'pill-btn'));
@@ -102,6 +107,10 @@ function pill(first: SceneObject): HTMLElement {
             : (['delete', 'layoutVertical', 'layoutHorizontal', 'layoutGrid', 'breakLayout', 'raise', 'lower'] as const);
         if (first.parent !== null && hooks.editableText()) {
             buttons.push(button('Edit text (Enter)', icon('edit'), () => hooks.editText(), 'pill-btn'));
+        }
+        const hint = currentSuggestion();
+        if (hint) {
+            buttons.push(button(`Lay out ${hint.label} (best fit): ${hint.reason}`, icon('wand'), runSmartLayout, 'pill-btn pill-hint'));
         }
         for (const a of quick) {
             if (actions.isEnabled(a)) {

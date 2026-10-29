@@ -226,6 +226,20 @@ describe('webview page', () => {
         assert.ok([...dom.window.document.querySelectorAll('.qa-name')].some((n) => n.textContent === 'okButton'));
     });
 
+    it('suggests the layout that matches how the widgets are arranged', () => {
+        const mk = (cls: string[][]) => cls.flatMap((row, r) => row.map((c, i) => obj({ name: `w${r}${i}`, class: c, parent: 'Form', x: 10 + i * 120, y: 10 + r * 40, w: 100, h: 24 })));
+        const check = (rows: string[][], action: string) => {
+            post({ snapshot: snap({ selection: ['Form'], actions: { layoutHorizontal: true, layoutVertical: true, layoutGrid: true, layoutForm: true }, objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), ...mk(rows)] }) });
+            sent.length = 0;
+            ($('.pill-hint') as HTMLElement).click();
+            assert.deepEqual(sent[0], { type: 'action', action });
+        };
+        check([['QPushButton', 'QPushButton', 'QPushButton']], 'layoutHorizontal');
+        check([['QLineEdit'], ['QLineEdit'], ['QPushButton']], 'layoutVertical');
+        check([['QLabel', 'QLineEdit'], ['QLabel', 'QSpinBox']], 'layoutForm');
+        check([['QPushButton', 'QPushButton'], ['QPushButton', 'QPushButton']], 'layoutGrid');
+    });
+
     it('rename validates C++ identifiers and duplicates before sending anything', () => {
         post({ snapshot: snap({ selection: ['b'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'b', class: 'QPushButton', parent: 'Form', x: 10, y: 10, w: 50, h: 20 }), obj({ name: 'taken', class: 'QLabel', parent: 'Form', x: 70, y: 10, w: 50, h: 20 })] }) });
         sent.length = 0;
