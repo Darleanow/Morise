@@ -450,3 +450,4 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .ruler { background: color-mix(in srgb, var(--vscode-editor-background) 70%, var(--vscode-foreground)); color: var(--vscode-foreground); }
 .ruler line { opacity: .55; }
 .ov.entry-drop { background: var(--vscode-focusBorder, #007fd4); pointer-events: none; z-index: 5; }
+.qa-head { padding: 6px 14px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }

@@ -6,6 +6,10 @@ export interface Command {
     icon: string;
     shortcut?: string;
     enabled?: boolean;
+    /** Grey text after the label (a class, a value). */
+    detail?: string;
+    /** Heading shown above the first row of each section when results are mixed. */
+    section?: string;
     run: () => void;
 }
 
@@ -25,6 +29,8 @@ export const hooks = {
     editTextWhenReady: (_name: string): void => undefined,
     /** Everything the > command search offers right now. */
     commands: (): Command[] => [],
+    objects: (): Command[] => [],
+    properties: (): Command[] => [],
     openCommands: (): void => undefined,
     openHelp: (): void => undefined,
     openPreview: (): void => undefined,

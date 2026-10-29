@@ -22,6 +22,22 @@ function score(e: Entry, q: string): number {
     return e.categoryName.toLowerCase().includes(q) ? 10 : 0;
 }
 
+/** Typo tolerant match: whole word and prefix beat substring, which beats letters in order. */
+function fuzzy(haystack: string, label: string, q: string): number {
+    const h = haystack.toLowerCase();
+    const l = label.toLowerCase();
+    if (l === q) return 100;
+    if (l.startsWith(q)) return 85;
+    if (h.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) return 70;
+    if (h.includes(q)) return 50;
+    let at = 0;
+    for (const ch of q) {
+        at = h.indexOf(ch, at) + 1;
+        if (at === 0) return 0;
+    }
+    return 15;
+}
+
 export function quickAddOpen(): boolean {
     return root !== null;
 }
@@ -60,30 +76,41 @@ export function openQuickAdd(at?: { x: number; y: number }, startInCommands = fa
         }
         addWidgetAt(e.category, e.w.index, at);
     };
+    const rank = (items: Command[], q: string, limit: number): Command[] =>
+        (q === '' ? items.map((c) => ({ c, s: 1 })) : items.map((c) => ({ c, s: fuzzy(`${c.label} ${c.keywords ?? ''}`, c.label, q) })).filter((x) => x.s > 0))
+            .sort((x, y) => (Number(y.c.enabled !== false) - Number(x.c.enabled !== false)) || y.s - x.s).map((x) => x.c).slice(0, limit);
     const paint = () => {
         const raw = input.value;
-        const commandMode = raw.startsWith('>');
-        const q = (commandMode ? raw.slice(1) : raw).trim().toLowerCase();
-        input.placeholder = commandMode ? 'Type a command: align, preview, zoom\u2026' : 'Add a widget: button, label, line edit\u2026   (type > for commands)';
-        hintText.textContent = commandMode ? 'Runs a command' : at ? `Adds at ${Math.round(at.x)}, ${Math.round(at.y)}` : 'Adds inside the selected container';
-        if (commandMode) {
-            const all = hooks.commands();
-            shown = (q === '' ? all : all.filter((c) => `${c.label} ${c.keywords ?? ''}`.toLowerCase().includes(q))).sort((a, b) => Number(b.enabled !== false) - Number(a.enabled !== false)).slice(0, 60);
+        const prefix = raw[0] === '>' || raw[0] === '@' || raw[0] === ':' ? raw[0] : '';
+        const q = (prefix ? raw.slice(1) : raw).trim().toLowerCase();
+        const commandMode = prefix !== '';
+        input.placeholder = prefix === '>' ? 'Type a command: align, preview, zoom\u2026' : prefix === '@' ? 'Go to an object of the form\u2026' : prefix === ':' ? 'Go to a property of the selection\u2026' : 'Search widgets, objects and commands\u2026   (> commands  @ objects  : properties)';
+        hintText.textContent = prefix === '>' ? 'Runs a command' : prefix === '@' ? 'Selects the object' : prefix === ':' ? 'Edits the property' : at ? `Adds at ${Math.round(at.x)}, ${Math.round(at.y)}` : 'Adds inside the selected container';
+        if (prefix === '>') {
+            shown = rank(hooks.commands(), q, 60);
+        } else if (prefix === '@') {
+            shown = rank(hooks.objects(), q, 60);
+        } else if (prefix === ':') {
+            shown = rank(hooks.properties(), q, 80);
         } else {
             const all = entries();
             if (q === '') {
                 const recent = prefs.recent.flatMap((r) => all.filter((e) => e.category === r.category && e.w.index === r.index));
                 shown = [...recent, ...all.filter((e) => !recent.includes(e))].slice(0, 40);
             } else {
-                shown = all.map((e) => ({ e, s: score(e, q) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).map((x) => x.e).slice(0, 40);
+                const widgets = all.map((e) => ({ e, s: score(e, q) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).map((x) => x.e).slice(0, 24);
+                const sect = (items: Command[], section: string) => items.map((c) => ({ ...c, section }));
+                shown = [...widgets, ...sect(rank(hooks.objects(), q, 5), 'Objects in this form'), ...sect(rank(hooks.commands(), q, 8), 'Commands')];
             }
         }
         active = Math.min(active, Math.max(0, shown.length - 1));
-        list.replaceChildren(...shown.map((e, i) => {
+        let lastHead = '';
+        const hasMixed = !commandMode && q !== '';
+        list.replaceChildren(...shown.flatMap((e, i) => {
             let row: HTMLElement;
             if (isCommand(e)) {
                 row = el('div', { className: `qa-item${i === active ? ' active' : ''}${e.enabled === false ? ' off' : ''}`, role: 'option' },
-                    icon(e.icon), el('span', { className: 'qa-name' }, e.label), el('span', { className: 'spacer' }), e.shortcut ? el('kbd', {}, e.shortcut) : '');
+                    icon(e.icon), el('span', { className: 'qa-name' }, e.label), e.detail ? el('span', { className: 'dim' }, e.detail) : '', el('span', { className: 'spacer' }), e.shortcut ? el('kbd', {}, e.shortcut) : '');
             } else {
                 const glyph = e.w.icon ? el('img', { className: 'wicon', src: e.w.icon, alt: '', draggable: false }) : icon('symbol-field');
                 row = el('div', { className: `qa-item${i === active ? ' active' : ''}`, role: 'option' }, glyph, el('span', { className: 'qa-name' }, e.w.name), el('span', { className: 'dim' }, e.w.className), el('span', { className: 'dim qa-cat' }, e.categoryName));
@@ -98,10 +125,15 @@ export function openQuickAdd(at?: { x: number; y: number }, startInCommands = fa
                 });
             });
             row.addEventListener('click', () => choose(e));
-            return row;
+            const head = isCommand(e) ? (e.section ?? '') : (hasMixed ? 'Add a widget' : '');
+            if (head !== '' && head !== lastHead) {
+                lastHead = head;
+                return [el('div', { className: 'qa-head dim' }, head), row];
+            }
+            return [row];
         }));
         if (shown.length === 0) {
-            list.append(el('div', { className: 'hint' }, commandMode ? 'No command matches.' : 'No widget matches.'));
+            list.append(el('div', { className: 'hint' }, commandMode ? 'Nothing matches.' : 'Nothing matches.'));
         }
         list.querySelector('.qa-item.active')?.scrollIntoView?.({ block: 'nearest' });
     };

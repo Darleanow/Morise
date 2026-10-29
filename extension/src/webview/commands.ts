@@ -5,11 +5,11 @@ import { openConnectDialog } from './connectdialog';
 import { openHelp } from './help';
 import type { Command } from './hooks';
 import { editableText, editText } from './inplace';
-import { setTab } from './inspector';
 import { openPreview } from './preview';
 import { openRename } from './rename';
 import { renderRulers } from './rulers';
 import { byName, primarySelection } from './geometry';
+import { focusProperty, setTab } from './inspector';
 import { togglePanel } from './splitter';
 import { prefs, S, savePrefs, send } from './state';
 import { toggleConnectMode } from './toolbar';
@@ -75,4 +75,21 @@ export function buildCommands(): Command[] {
         { id: 'help', label: 'Show the keyboard shortcuts', icon: 'question', shortcut: '?', run: openHelp },
     );
     return out;
+}
+
+/** Every object of the form, to jump to by name or class (the @ search). */
+export function buildObjectCommands(): Command[] {
+    return (S.snapshot?.objects ?? []).map((o) => ({
+        id: `object.${o.name}`, label: o.name, detail: o.class, keywords: o.class, icon: 'symbol-class', section: 'Objects in this form',
+        run: () => send({ type: 'selectNames', names: [o.name] }),
+    }));
+}
+
+/** The properties of the selected object, to jump to the editor of one (the : search). */
+export function buildPropertyCommands(): Command[] {
+    const props = S.properties?.properties ?? [];
+    return props.map((p) => ({
+        id: `property.${p.name}`, label: p.name, detail: p.group, keywords: p.group, icon: 'symbol-property', section: `Properties of ${S.propertiesFor ?? 'the selection'}`,
+        enabled: p.enabled, run: () => focusProperty(p.name),
+    }));
 }

@@ -210,6 +210,22 @@ describe('webview page', () => {
         assert.equal($('.quickadd'), null);
     });
 
+    it('the search jumps to objects with @ and finds them without a prefix', () => {
+        post({ snapshot: snap({ selection: ['Form'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'okButton', class: 'QPushButton', parent: 'Form', x: 10, y: 10, w: 50, h: 20 })] }), palette });
+        sent.length = 0;
+        key('/');
+        const input = $('.qa-input') as HTMLInputElement;
+        input.value = '@ok'; input.dispatchEvent(new dom.window.Event('input'));
+        assert.equal($('.qa-item.active .qa-name')?.textContent, 'okButton');
+        key('Enter', {}, input);
+        assert.deepEqual(sent.at(-1), { type: 'selectNames', names: ['okButton'] });
+        key('/');
+        const again = $('.qa-input') as HTMLInputElement;
+        again.value = 'okbu'; again.dispatchEvent(new dom.window.Event('input'));
+        assert.ok($('.qa-head'), 'mixed results are grouped under headings');
+        assert.ok([...dom.window.document.querySelectorAll('.qa-name')].some((n) => n.textContent === 'okButton'));
+    });
+
     it('rename validates C++ identifiers and duplicates before sending anything', () => {
         post({ snapshot: snap({ selection: ['b'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'b', class: 'QPushButton', parent: 'Form', x: 10, y: 10, w: 50, h: 20 }), obj({ name: 'taken', class: 'QLabel', parent: 'Form', x: 70, y: 10, w: 50, h: 20 })] }) });
         sent.length = 0;
