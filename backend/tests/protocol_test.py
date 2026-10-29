@@ -689,6 +689,19 @@ print(f"info: RSS growth over 50 cycles = {growth} kB")
 check("memory growth over 50 cycles is bounded (<40 MB)", growth < 40000, f"{growth} kB")
 check("backend still serves requests after the cycles", "result" in call("snapshot", docId="d1"))
 
+# requests sent back to back (no waiting) are answered one at a time, in order, and none is lost at EOF
+pp = subprocess.Popen([BACKEND], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=env)
+pp.stdout.readline()
+batch = [{"id": 1, "method": "open", "params": {"docId": "pl", "xml": xml}}]
+for i in range(2, 42):
+    batch.append({"id": i, "method": "setProperty" if i % 2 == 0 else "snapshot", "params": {"docId": "pl", "name": "okButton", "property": "text", "value": f"t{i}"}})
+batch.append({"id": 42, "method": "contents", "params": {"docId": "pl"}})
+out, _ = pp.communicate("".join(json.dumps(b) + "\n" for b in batch), timeout=60)
+replies = [json.loads(l) for l in out.splitlines() if l.strip()]
+check("40+ pipelined requests are all answered, in order", [r["id"] for r in replies] == list(range(1, 43)) and all("result" in r for r in replies), [r["id"] for r in replies][:50])
+check("and they ran one after the other (the last text wins)", "t40" in replies[-1]["result"]["xml"])
+check("the backend exits cleanly after the pipelined batch", pp.returncode == 0, pp.returncode)
+
 p.stdin.close()
 p.wait(timeout=10)
 check("backend exits cleanly on EOF", p.returncode == 0, p.returncode)

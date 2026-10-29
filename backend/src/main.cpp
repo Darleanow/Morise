@@ -1,6 +1,10 @@
 #include "host.h"
 
 #include <csignal>
+#include <deque>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <cstring>
 #include <execinfo.h>
 #include <fcntl.h>
@@ -70,37 +74,82 @@ int main(int argc, char **argv)
     qdr::Host host(&app);
     writeLine({{QLatin1String("event"), QLatin1String("ready")}, {QLatin1String("qt"), QString::fromLatin1(qVersion())}});
 
-    // stdin is read on a helper thread; every request is executed on the Qt main thread.
-    std::thread reader([&app, &host] {
+    // stdin is read on a helper thread; every request is executed on the Qt main thread, one at a time. The engine spins
+    // the event loop while it works (to let Designer settle), which would otherwise start the next request in the middle of
+    // the current one: requests wait in a queue and only the outermost drain runs them.
+    struct Pending {
+        std::mutex lock;
+        std::deque<QByteArray> lines;
+    };
+    auto pending = std::make_shared<Pending>();
+    auto handleLine = [&host](const QByteArray &raw) {
+        std::strncpy(g_lastRequest, raw.constData(), sizeof g_lastRequest - 1);
+        QJsonParseError pe;
+        const QJsonDocument doc = QJsonDocument::fromJson(raw, &pe);
+        if (!doc.isObject()) {
+            writeLine({{QLatin1String("error"), QStringLiteral("invalid JSON: ") + pe.errorString()}});
+            return;
+        }
+        const QJsonObject req = doc.object();
+        QJsonObject resp{{QLatin1String("id"), req.value(QLatin1String("id"))}};
+        try {
+            QJsonObject result = host.handle(req.value(QLatin1String("method")).toString(),
+                                             req.value(QLatin1String("params")).toObject());
+            // Engine messages that would have been modal dialogs travel with the result.
+            if (!qdr::pendingMessages().isEmpty())
+                result.insert(QLatin1String("messages"), QJsonArray::fromStringList(qdr::pendingMessages()));
+            resp.insert(QLatin1String("result"), result);
+        } catch (const qdr::ProtocolError &e) {
+            resp.insert(QLatin1String("error"), e.message);
+        }
+        qdr::pendingMessages().clear();
+        writeLine(resp);
+    };
+    auto draining = std::make_shared<bool>(false);
+    auto drain = [pending, draining, handleLine] {
+        if (*draining)
+            return; // a request is running: the outer drain picks this one up afterwards
+        *draining = true;
+        struct Reset { bool *flag; ~Reset() { *flag = false; } } reset{draining.get()};
+        for (;;) {
+            QByteArray raw;
+            {
+                std::lock_guard<std::mutex> g(pending->lock);
+                if (pending->lines.empty())
+                    return;
+                raw = std::move(pending->lines.front());
+                pending->lines.pop_front();
+            }
+            handleLine(raw);
+        }
+    };
+    std::thread reader([&app, pending, draining, drain] {
         std::string line;
         while (std::getline(std::cin, line)) {
-            QMetaObject::invokeMethod(&app, [&host, raw = QByteArray::fromStdString(line)] {
-                std::strncpy(g_lastRequest, raw.constData(), sizeof g_lastRequest - 1);
-                QJsonParseError pe;
-                const QJsonDocument doc = QJsonDocument::fromJson(raw, &pe);
-                if (!doc.isObject()) {
-                    writeLine({{QLatin1String("error"), QStringLiteral("invalid JSON: ") + pe.errorString()}});
-                    return;
-                }
-                const QJsonObject req = doc.object();
-                QJsonObject resp{{QLatin1String("id"), req.value(QLatin1String("id"))}};
-                try {
-                    QJsonObject result = host.handle(req.value(QLatin1String("method")).toString(),
-                                                     req.value(QLatin1String("params")).toObject());
-                    // Engine messages that would have been modal dialogs travel with the result.
-                    if (!qdr::pendingMessages().isEmpty())
-                        result.insert(QLatin1String("messages"), QJsonArray::fromStringList(qdr::pendingMessages()));
-                    resp.insert(QLatin1String("result"), result);
-                } catch (const qdr::ProtocolError &e) {
-                    resp.insert(QLatin1String("error"), e.message);
-                }
-                qdr::pendingMessages().clear();
-                writeLine(resp);
-            }, Qt::QueuedConnection);
+            {
+                std::lock_guard<std::mutex> g(pending->lock);
+                pending->lines.push_back(QByteArray::fromStdString(line));
+            }
+            QMetaObject::invokeMethod(&app, drain, Qt::QueuedConnection);
         }
         // EOF: the extension closed our stdin. Exit immediately: normal QApplication/FormEditor
         // teardown segfaults (known issue, see poc_main.cpp).
-        QMetaObject::invokeMethod(&app, [] { std::fflush(stdout); std::_Exit(0); }, Qt::QueuedConnection);
+        // Requests that arrived before the EOF are still answered first.
+        auto leave = std::make_shared<std::function<void()>>();
+        *leave = [pending, draining, leave] {
+            bool busy = *draining;
+            {
+                std::lock_guard<std::mutex> g(pending->lock);
+                busy = busy || !pending->lines.empty();
+            }
+            if (busy) {
+                QTimer::singleShot(5, *leave);
+                return;
+            }
+            std::fflush(stdout);
+            std::_Exit(0);
+        };
+        QMetaObject::invokeMethod(&app, *leave, Qt::QueuedConnection);
     });
     reader.detach();
     return app.exec();
