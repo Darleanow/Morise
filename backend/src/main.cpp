@@ -25,9 +25,15 @@ static void onCrash(int sig)
         (void)!write(g_crashFd, head, sizeof head - 1);
         (void)!write(g_crashFd, g_lastRequest, strnlen(g_lastRequest, sizeof g_lastRequest));
         (void)!write(g_crashFd, "\n", 1);
-        void *frames[48];
-        const int n = backtrace(frames, 48);
-        backtrace_symbols_fd(frames, n, g_crashFd);
+        // A runaway recursion has thousands of frames: keep the top (where it died) and the bottom (what started it).
+        static void *frames[8192];
+        const int n = backtrace(frames, 8192);
+        const int top = n < 30 ? n : 30, bottom = n < 60 ? 0 : 30;
+        backtrace_symbols_fd(frames, top, g_crashFd);
+        if (bottom > 0) {
+            (void)!write(g_crashFd, "... (frames skipped) ...\n", 25);
+            backtrace_symbols_fd(frames + n - bottom, bottom, g_crashFd);
+        }
     }
     signal(sig, SIG_DFL);
     raise(sig);
@@ -37,8 +43,18 @@ int main(int argc, char **argv)
 {
     if (const char *log = std::getenv("QDR_CRASH_LOG")) {
         g_crashFd = open(log, O_WRONLY | O_CREAT | O_APPEND, 0644);
-        signal(SIGSEGV, onCrash);
-        signal(SIGABRT, onCrash);
+        // A stack overflow (runaway recursion in the engine) needs a stack of its own to report from.
+        static char altStack[64 * 1024];
+        stack_t ss{};
+        ss.ss_sp = altStack;
+        ss.ss_size = sizeof altStack;
+        sigaltstack(&ss, nullptr);
+        struct sigaction sa{};
+        sa.sa_handler = onCrash;
+        sa.sa_flags = SA_ONSTACK;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGSEGV, &sa, nullptr);
+        sigaction(SIGABRT, &sa, nullptr);
     }
     qputenv("QT_QPA_PLATFORM", qgetenv("QT_QPA_PLATFORM").isEmpty() ? "offscreen" : qgetenv("QT_QPA_PLATFORM"));
     // Snapshot pixels must map 1:1 to widget coordinates regardless of the user's shell

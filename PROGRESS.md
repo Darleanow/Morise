@@ -50,3 +50,8 @@ The test numbers below were true at the time of writing; the commands that produ
   running request there). Found and fixed this way: reparenting a free widget into a laid-out container (stack overflow, seed 63)
   and pasting a dock widget into a plain form (seed 78). The old seed 92 crash did not reproduce again on 300, 600, 1200 and 9000
   operations (hypothesis: it was the same family as seed 63; not proven).
+- Known engine crash (fuzz seed 123, reproduced in 3 operations, stack overflow inside `ReparentWidgetCommand::redo`): add a tab
+  widget inside a tool box page, move or reparent it out of the tool box, then reparent the tool box into that tab widget.
+  Not reproducible when the tab widget was never inside the tool box. Using the engine's drop instead of the reparent command
+  recurses the same way, so the cause is in the engine's state, not in this call. Not fixed; the extension reports the stack in
+  its log (`backend-crash.log`) and restarts on demand.

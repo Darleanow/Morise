@@ -130,7 +130,7 @@ for rnd in range(rounds):
                 req = ("redo", {})
             elif k == "prop" and names:
                 req = ("setProperty", dict(name=rng.choice(names), property=rng.choice(["toolTip", "enabled", "windowTitle", "text", "minimumSize", "font", "sizePolicy", "alignment", "styleSheet"]),
-                       value=rng.choice(["x", True, False, [1, 2], {"family": "Sans", "pointSize": 11, "bold": True}, {"h": "Fixed", "v": "Expanding", "hs": 1, "vs": 1}, ["AlignLeft"], "color: red;"])))
+                       value=rng.choice(["x", True, False, [1, 2], {"family": "Sans", "pointSize": 11, "bold": True}, {"h": "Fixed", "v": "Expanding", "hs": 1, "vs": 1}, ["AlignLeft"], "color: red;", {"translatable": False, "comment": "c"}, {"translatable": True, "disambiguation": "d", "text": "t"}])))
             elif k == "reparent" and len(snap["objects"]) > 2 and free:
                 o = rng.choice(free); req = ("reparent", dict(parent=rng.choice(names), items=[dict(name=o["name"], rect=[rng.randint(0, 200), rng.randint(0, 150), o["w"], o["h"]])]))
             elif k == "grid" and names:
