@@ -57,7 +57,7 @@ QJsonObject Host::preview(const QJsonObject &p)
     } else if (dark) {
         w->setPalette(pal);
     }
-    const qreal scale = qBound(1.0, p.value(QLatin1String("scale")).toDouble(1.0), 4.0);
+    const qreal scale = qBound(0.25, p.value(QLatin1String("scale")).toDouble(1.0), 4.0);
     w->resize(fw->mainContainer()->size());
     w->ensurePolished();
     // Keep it: the page can now click, type and scroll in it (previewEvent) until it stops the preview.

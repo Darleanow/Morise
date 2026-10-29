@@ -55,6 +55,9 @@ check("undo restores value", text == "OK", text)
 call("redo", docId="d1")
 s = call("setProperty", docId="d1", name="okButton", property="text", value="Valider")["result"]
 
+half = call("view", docId="d1", scale=0.5)["result"]
+check("render below 1x keeps the logical size and a half-size image", half["dpr"] == 0.5 and half["width"] == 320 and int.from_bytes(base64.b64decode(half["png"])[16:20], "big") == half["width"] // 2, (half["dpr"], half["width"]))
+call("view", docId="d1", scale=1)
 s = call("select", docId="d1", names=["okButton"])["result"]
 check("selection reported", s["selection"] == ["okButton"], s["selection"])
 o = names["okButton"]

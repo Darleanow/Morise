@@ -90,7 +90,7 @@ QJsonObject Host::handle(const QString &method, const QJsonObject &p)
     if (method == QLatin1String("connections")) return connections(p);
     if (method == QLatin1String("view")) {
         QDesignerFormWindowInterface *fw = form(p);
-        m_scales.insert(fw, qBound(1.0, p.value(QLatin1String("scale")).toDouble(1.0), 4.0));
+        m_scales.insert(fw, qBound(0.25, p.value(QLatin1String("scale")).toDouble(1.0), 4.0));
         return snapshot(fw);
     }
     if (method == QLatin1String("addWidget")) return addWidget(p);
