@@ -69,7 +69,7 @@ async function check(label, fn) {
         case 'addMenu': snap = await client.request('addMenu', { ...d, title: m.title }); break;
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
-        case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text }); break;
+        case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;
         case 'setContents': snap = await client.request('setContents', { ...d, name: m.name, contents: m.contents }); break;
         case 'setItems': snap = await client.request('setItems', { ...d, name: m.name, items: m.items }); break;
         case 'moveWidget': snap = await client.request('moveWidget', { ...d, name: m.name, x: m.x, y: m.y, side: m.side }); break;
@@ -903,6 +903,16 @@ async function check(label, fn) {
     await shot('e2e-preview-live2');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('.popup.preview').count(), 0);
+  });
+  await check('tasks: the context menu offers the engine tasks, Morph into changes the class', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10)), { button: 'right' });
+    await page.waitForSelector('.menu');
+    await page.locator('.menu-item', { hasText: 'Widget tasks' }).hover();
+    await page.locator('.menu-item', { hasText: 'Morph into' }).hover();
+    await page.locator('.menu-item', { hasText: 'QCheckBox' }).click(); await settle();
+    assert.equal((await obj('okButton')).class, 'QCheckBox');
   });
   await check('no uncaught page errors', async () => assert.deepEqual(pageErrors, []));
 

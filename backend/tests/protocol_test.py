@@ -492,6 +492,19 @@ check("a combo box opens its list over the preview", f3 != f2)
 check("the preview is stopped on request", "error" not in call("previewStop", docId="lv1") and "error" in call("previewEvent", docId="lv1", kind="move", x=1, y=1))
 check("backend still alive after the preview", "result" in call("snapshot", docId="lv1"))
 
+# the engine's task menu: entries that need no dialog are offered, sub menus included (Morph into)
+call("open", docId="tk1", xml=lay)
+tasks = call("describe", docId="tk1", name="okButton")["result"]["tasks"]
+morph = next((t for t in tasks if t["text"] == "Morph into"), None)
+check("a push button offers 'Morph into' with the classes it can become", morph is not None and "QCheckBox" in [c["text"] for c in morph["children"]], [t["text"] for t in tasks])
+check("entries that open a dialog are not offered", not any(t["text"].endswith("...") for t in tasks))
+target = next(c for c in morph["children"] if c["text"] == "QCheckBox")
+r = call("taskAction", docId="tk1", name="okButton", path=[morph["index"], target["index"]])
+check("morphing a push button into a check box works and is undoable", "error" not in r and next(o for o in r["result"]["objects"] if o["name"] == "okButton")["class"] == "QCheckBox")
+call("undo", docId="tk1")
+check("the morph is one undo step", next(o for o in call("snapshot", docId="tk1")["result"]["objects"] if o["name"] == "okButton")["class"] == "QPushButton")
+check("a bad task path is refused", "error" in call("taskAction", docId="tk1", name="okButton", path=[99, 99]))
+
 pal2 = call("palette")["result"]["categories"]
 lab = next((c["index"], w["index"]) for c in pal2 for w in c["widgets"] if w["name"] == "Label")
 call("open", docId="ly2", xml=open(os.path.join(HERE, "..", "testdata", "free.ui"), encoding="utf-8").read())

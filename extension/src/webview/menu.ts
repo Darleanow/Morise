@@ -1,4 +1,4 @@
-import type { ActionName } from '../protocol';
+import type { ActionName, TaskItem } from '../protocol';
 import * as actions from './actions';
 import { $, el, icon } from './dom';
 import { byName, primarySelection, rootObject } from './geometry';
@@ -174,6 +174,13 @@ export function objectMenu(rename: () => void): MenuItem[] {
         children: ALIGNMENTS.map((d) => ({ label: d.label, icon: d.icon, disabled: targets.length < d.needs, run: () => runAlignment(d.op) })),
     });
     items.push({ separator: true }, act('raise'), act('lower'), act('selectAll'));
+    if (o && S.code && !multi && S.code.name === o.name && (S.code.tasks?.length ?? 0) > 0) {
+        const taskItems = (list: TaskItem[], path: number[]): MenuItem[] => list.map((t) => ({
+            label: t.text, icon: t.checkable ? (t.checked ? 'check' : 'blank') : undefined, disabled: !t.enabled && !t.children,
+            ...(t.children ? { children: taskItems(t.children, [...path, t.index]) } : { run: () => send({ type: 'taskAction', name: o.name, path: [...path, t.index] }) }),
+        }));
+        items.push({ separator: true }, { label: 'Widget tasks', icon: 'wand', children: taskItems(S.code.tasks ?? [], []) });
+    }
     if (o && S.code && !multi) {
         const name = o.name;
         const cls = S.code.class;

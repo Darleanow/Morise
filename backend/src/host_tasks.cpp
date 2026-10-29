@@ -27,6 +27,34 @@ QJsonObject Host::taskActions(const QJsonObject &p)
     return {{QLatin1String("actions"), out}};
 }
 
+/// A task menu as a tree of what can be run without a dialog (the engine's "..." entries open modal boxes).
+static QJsonArray taskTreeOf(const QList<QAction *> &acts)
+{
+    QJsonArray out;
+    for (int i = 0; i < acts.size(); ++i) {
+        QAction *a = acts.at(i);
+        const QString text = a->text().remove(QLatin1Char('&'));
+        if (a->isSeparator() || text.isEmpty() || text.endsWith(QLatin1String("...")) || text.endsWith(QChar(0x2026)))
+            continue;
+        QJsonObject o{{QLatin1String("index"), i}, {QLatin1String("text"), text}, {QLatin1String("enabled"), a->isEnabled()},
+                      {QLatin1String("checkable"), a->isCheckable()}, {QLatin1String("checked"), a->isChecked()}};
+        if (QMenu *m = a->menu()) {
+            const QJsonArray kids = taskTreeOf(m->actions());
+            if (kids.isEmpty())
+                continue;
+            o.insert(QLatin1String("children"), kids);
+        }
+        out.append(o);
+    }
+    return out;
+}
+
+QJsonArray Host::taskTree(QWidget *w) const
+{
+    auto *tm = taskMenuOf(w);
+    return tm ? taskTreeOf(tm->taskActions()) : QJsonArray();
+}
+
 QJsonObject Host::taskAction(const QJsonObject &p)
 {
     QDesignerFormWindowInterface *fw = form(p);
@@ -35,6 +63,26 @@ QJsonObject Host::taskAction(const QJsonObject &p)
     if (!tm)
         throw ProtocolError{QStringLiteral("this widget has no task menu")};
     const auto acts = tm->taskActions();
+    // A path walks into sub menus: [index of the entry, index inside its menu, ...].
+    if (const QJsonArray path = p.value(QLatin1String("path")).toArray(); !path.isEmpty()) {
+        QAction *a = nullptr;
+        QList<QAction *> level = acts;
+        for (const QJsonValue &step : path) {
+            const int k = step.toInt(-1);
+            if (k < 0 || k >= level.size())
+                throw ProtocolError{QStringLiteral("task action unavailable")};
+            a = level.at(k);
+            level = a->menu() ? a->menu()->actions() : QList<QAction *>();
+        }
+        if (!a || a->isSeparator() || !a->isEnabled() || a->menu())
+            throw ProtocolError{QStringLiteral("task action unavailable")};
+        m_core->formWindowManager()->setActiveFormWindow(fw);
+        fw->clearSelection(false);
+        fw->selectWidget(w, true);
+        a->trigger();
+        nameUnnamedWidgets(fw);
+        return snapshot(fw);
+    }
     int i = p.value(QLatin1String("index")).toInt(-1);
     // By caption, so the page does not depend on how the engine numbers a menu that changes with the form.
     if (const QString text = p.value(QLatin1String("text")).toString(); !text.isEmpty()) {

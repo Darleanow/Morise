@@ -428,7 +428,8 @@ QJsonObject Host::describe(const QJsonObject &p)
     const int dbIndex = db->indexOfObject(w);
     return {{QLatin1String("name"), idOf(w)},
             {QLatin1String("class"), dbIndex >= 0 ? db->item(dbIndex)->name() : QString::fromUtf8(mo->className())},
-            {QLatin1String("hierarchy"), chain}, {QLatin1String("signals"), signalsArr}, {QLatin1String("slots"), slotsArr}};
+            {QLatin1String("hierarchy"), chain}, {QLatin1String("signals"), signalsArr}, {QLatin1String("slots"), slotsArr},
+            {QLatin1String("tasks"), taskTree(w)}};
 }
 
 QJsonObject Host::connections(const QJsonObject &p)

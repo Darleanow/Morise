@@ -44,6 +44,9 @@ export interface MethodInfo {
     owner: string;
 }
 
+/** One entry of the engine's task menu for a widget (Morph into, Size Constraints...). */
+export interface TaskItem { index: number; text: string; enabled: boolean; checkable: boolean; checked: boolean; children?: TaskItem[] }
+
 export interface DescribeResult {
     name: string;
     /** Class as recorded in the .ui (e.g. QPushButton). */
@@ -51,6 +54,8 @@ export interface DescribeResult {
     hierarchy: string[];
     signals: MethodInfo[];
     slots: MethodInfo[];
+    /** What the engine's task menu offers without opening a dialog. */
+    tasks?: TaskItem[];
 }
 
 export interface ConnectionInfo {
@@ -207,7 +212,7 @@ export interface BackendMethods {
     addMenu: { params: { docId: string; title: string }; result: Snapshot };
     addMenuEntry: { params: { docId: string; menu: string; text?: string; separator?: boolean }; result: Snapshot };
     removeMenuEntry: { params: { docId: string; menu: string; index?: number }; result: Snapshot };
-    taskAction: { params: { docId: string; name: string; text: string }; result: Snapshot };
+    taskAction: { params: { docId: string; name: string; text?: string; path?: number[] }; result: Snapshot };
     setContents: { params: { docId: string; name: string; contents: GridContents }; result: Snapshot };
     setItems: { params: { docId: string; name: string; items: string[] }; result: Snapshot };
     moveWidget: { params: { docId: string; name: string; x: number; y: number; side?: Side }; result: Snapshot };
@@ -269,7 +274,7 @@ export type WebviewToHost =
     | { type: 'addMenu'; title: string }
     | { type: 'addMenuEntry'; menu: string; text?: string; separator?: boolean }
     | { type: 'removeMenuEntry'; menu: string; index?: number }
-    | { type: 'taskAction'; name: string; text: string }
+    | { type: 'taskAction'; name: string; text?: string; path?: number[] }
     | { type: 'setContents'; name: string; contents: GridContents }
     | { type: 'setItems'; name: string; items: string[] }
     | { type: 'moveWidget'; name: string; x: number; y: number; side?: Side }

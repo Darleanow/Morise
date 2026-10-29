@@ -310,6 +310,7 @@ private:
 
     /// Designer registers its own task menus under an internal id, not the public extension id.
     QDesignerTaskMenuExtension *taskMenuOf(QWidget *w) const;
+    QJsonArray taskTree(QWidget *w) const;
 
     QJsonObject taskActions(const QJsonObject &p);
 

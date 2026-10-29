@@ -48,7 +48,13 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'removeMenuEntry':
             return typeof m.menu === 'string' && (m.index === undefined || Number.isInteger(m.index)) ? { type: 'removeMenuEntry', menu: m.menu, ...(m.index !== undefined ? { index: m.index as number } : {}) } : undefined;
         case 'taskAction':
-            return typeof m.name === 'string' && typeof m.text === 'string' && m.text.length > 0 && m.text.length < 80 ? { type: 'taskAction', name: m.name, text: m.text } : undefined;
+            if (typeof m.name !== 'string') {
+                return undefined;
+            }
+            if (Array.isArray(m.path)) {
+                return m.path.length > 0 && m.path.length <= 6 && m.path.every((n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) < 500) ? { type: 'taskAction', name: m.name, path: m.path as number[] } : undefined;
+            }
+            return typeof m.text === 'string' && m.text.length > 0 && m.text.length < 80 ? { type: 'taskAction', name: m.name, text: m.text } : undefined;
         case 'setContents': {
             const c = m.contents as Record<string, unknown> | undefined;
             const strs = (a: unknown) => Array.isArray(a) && a.length <= 5000 && a.every((x) => typeof x === 'string');
