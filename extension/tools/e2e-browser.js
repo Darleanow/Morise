@@ -905,6 +905,7 @@ async function check(label, fn) {
     await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
     await page.locator('button', { hasText: 'Add a resource file' }).click(); await settle();
     assert.ok(await page.locator('.resource-file', { hasText: 'res.qrc' }).count(), 'the resource file is listed');
+    assert.equal(await page.locator('.thumb-cell img').count(), 2, 'the images are shown as thumbnails');
     await page.locator('#inspector button.tab[title="Properties"]').click(); await settle();
     await page.locator('button[title^="Choose from the form"]').click();
     await page.locator('.menu-item', { hasText: ':/icons/save.png' }).click(); await settle();

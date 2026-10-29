@@ -424,3 +424,8 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 
 .style-status.ok { color: var(--vscode-testing-iconPassed, #388a34); }
 .style-status.bad { color: var(--vscode-errorForeground); }
+
+.thumb-grid { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 8px; }
+.thumb-cell { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 2px; background: var(--vscode-input-background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--vscode-foreground); }
+.thumb-cell:hover { border-color: var(--vscode-focusBorder); }
+.thumb-cell img { max-width: 32px; max-height: 32px; image-rendering: auto; }

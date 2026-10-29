@@ -72,6 +72,15 @@ function resourceList(info: NonNullable<typeof S.formInfo>): HTMLElement {
             button(`Remove ${f.path}`, icon('trash'), () => send({ type: 'removeResource', path: f.path }), 'icon-btn')));
         for (const pre of f.prefixes) {
             box.append(el('div', { className: 'resource-prefix dim' }, `:${pre.prefix}  ·  ${pre.files.length} files`));
+            const grid = el('div', { className: 'thumb-grid' });
+            pre.files.forEach((file, i) => {
+                const path = `:${pre.prefix.endsWith('/') ? pre.prefix : pre.prefix + '/'}${file}`.replace(/^:\/\//, ':/');
+                const cell = el('button', { type: 'button', className: 'thumb-cell', title: `${path} (click to copy)` },
+                    pre.thumbs[i] ? el('img', { src: pre.thumbs[i], alt: '', draggable: false }) : icon('file'));
+                cell.addEventListener('click', () => send({ type: 'copyText', text: path }));
+                grid.append(cell);
+            });
+            box.append(grid);
         }
     }
     const add = el('button', { type: 'button', className: 'add-dynamic' }, icon('add'), 'Add a resource file (.qrc)…');

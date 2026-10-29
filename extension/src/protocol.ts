@@ -118,7 +118,7 @@ export interface ActionTarget { name: string; kind: 'menu' | 'toolbar'; title: s
 
 export interface ActionInfo { name: string; text: string; separator: boolean; checkable: boolean; shortcut: string; hasIcon: boolean; usedIn: string[] }
 
-export interface ResourceFile { path: string; exists: boolean; prefixes: { prefix: string; files: string[] }[] }
+export interface ResourceFile { path: string; exists: boolean; prefixes: { prefix: string; files: string[]; /** Small data URIs aligned with files, empty for what is not an image. */ thumbs: string[] }[] }
 
 export interface PreviewResult {
     png: string;

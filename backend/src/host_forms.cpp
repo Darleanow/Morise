@@ -406,20 +406,35 @@ QJsonObject describeQrc(const QString &path)
     if (exists) {
         QXmlStreamReader xml(&f);
         QString prefix;
-        QJsonArray files;
+        QJsonArray files, thumbs;
+        int shown = 0; // thumbnails are capped: a big resource file must not make every refresh slow
+        const QDir dir = QFileInfo(path).absoluteDir();
         bool inFile = false;
         while (!xml.atEnd() && !xml.hasError()) {
             xml.readNext();
             if (xml.isStartElement() && xml.name() == QLatin1String("qresource")) {
                 prefix = xml.attributes().value(QLatin1String("prefix")).toString();
                 files = QJsonArray();
+                thumbs = QJsonArray();
             } else if (xml.isStartElement() && xml.name() == QLatin1String("file")) {
                 const QString alias = xml.attributes().value(QLatin1String("alias")).toString();
                 const QString text = xml.readElementText();
                 files.append(alias.isEmpty() ? text : alias);
+                QString thumb;
+                if (shown < 120) {
+                    QImage img(dir.absoluteFilePath(text));
+                    if (!img.isNull()) {
+                        ++shown;
+                        QBuffer buf;
+                        buf.open(QIODevice::WriteOnly);
+                        img.scaled(32, 32, Qt::KeepAspectRatio, Qt::SmoothTransformation).save(&buf, "PNG");
+                        thumb = QStringLiteral("data:image/png;base64,") + QString::fromLatin1(buf.data().toBase64());
+                    }
+                }
+                thumbs.append(thumb);
                 inFile = true;
             } else if (xml.isEndElement() && xml.name() == QLatin1String("qresource")) {
-                prefixes.append(QJsonObject{{QLatin1String("prefix"), prefix}, {QLatin1String("files"), files}});
+                prefixes.append(QJsonObject{{QLatin1String("prefix"), prefix}, {QLatin1String("files"), files}, {QLatin1String("thumbs"), thumbs}});
             }
         }
         Q_UNUSED(inFile);
