@@ -51,7 +51,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 | `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (250 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
-| `cd extension && npm test` | 107 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
+| `cd extension && npm test` | 108 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
 | `cd extension && npm run test:integration` | Real VS Code 1.105.1 (downloaded): custom editor, dirty state, undo/redo, save, external change, add/move/delete, a resize gesture as one native undo step, and connections/promotion/layout properties saved and accepted by `uic`. Needs a display (WSLg works) and no `ELECTRON_RUN_AS_NODE` in the environment |
 
 ## What the editor does today
@@ -179,7 +179,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** dragging an action onto a tool bar and reordering its entries (the engine's commands for them are not exported; actions are placed from the Form tab instead), action groups (`QActionGroup`), menus in the outline.
+- **Not implemented yet:** dragging an action onto a tool bar and reordering its entries (the engine's commands for them are not exported; actions are placed from the Form tab instead), action groups (`QActionGroup`).
 - **Rulers** (command `> rulers`) show form pixels along the top and left edges; they are not draggable guides.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go

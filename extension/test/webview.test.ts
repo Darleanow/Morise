@@ -1056,6 +1056,19 @@ describe('webview page', () => {
             assert.deepEqual(sent.find((m) => m.type === 'inspect'), { type: 'inspect', name: 'actionOpen' });
         });
 
+        it('the outline lists the menus with their entries, and a menu opens its menu bar', () => {
+            const info = { grid: [10, 10], layoutDefault: [null, null], author: '', comment: '', exportMacro: '', pixmapFunction: '', includeHints: [], resourceFiles: [], resources: [], customSlots: [], customSignals: [],
+                actionTargets: [{ name: 'menuFile', kind: 'menu', title: 'File' }, { name: 'mainToolBar', kind: 'toolbar', title: 'Tools' }],
+                actions: [{ name: 'actionNew', text: 'New', separator: false, checkable: false, shortcut: '', hasIcon: false, usedIn: ['menuFile'] }] };
+            const s = tree();
+            post({ snapshot: { ...s, objects: [...s.objects, obj({ name: 'menuBar', class: 'QMenuBar', parent: 'Form', x: 0, y: 0, w: 100, h: 20 })] }, formInfo: info } as never);
+            const rows = () => $$('.tree-row').map((r) => r.dataset.name);
+            assert.deepEqual(rows().slice(-5), ['menus', 'menuFile', 'actionNew', 'actions', 'actionNew']);
+            sent.length = 0;
+            ($$('.tree-row').find((r) => r.dataset.name === 'menuFile') as HTMLElement).click();
+            assert.deepEqual(sent.find((m) => m.type === 'inspect'), { type: 'inspect', name: 'menuBar' });
+        });
+
         it('the outline filter keeps ancestors of matches', () => {
             post({ snapshot: tree() });
             const f = $('#outline-filter') as HTMLInputElement;

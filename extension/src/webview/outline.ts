@@ -16,6 +16,8 @@ interface Node {
     /** Label and class for the rows that are not widgets (the actions group and its entries). */
     text?: string;
     meta?: string;
+    /** What a click opens in the inspector when that is not the row's own name (a menu opens its menu bar). */
+    target?: string;
     children: Node[];
     parent: Node | null;
 }
@@ -58,6 +60,19 @@ function build(): Node[] {
         return node;
     };
     const roots = (kids.get(null) ?? []).map((r) => widgetNode(r, null));
+    const menus = (S.formInfo?.actionTargets ?? []).filter((t) => t.kind === 'menu');
+    const bar = s.objects.find((o) => o.class.endsWith('MenuBar'));
+    if (menus.length > 0 && bar) {
+        const group: Node = { key: 'g:menus', kind: 'group', text: 'menus', meta: String(menus.length), children: [], parent: null };
+        for (const m of menus) {
+            const node: Node = { key: `m:${m.name}`, kind: 'action', text: m.name, meta: m.title, target: bar.name, children: [], parent: group };
+            for (const a of (S.formInfo?.actions ?? []).filter((x) => x.usedIn.includes(m.name))) {
+                node.children.push({ key: `m:${m.name}:${a.name}`, kind: 'action', text: a.name, meta: a.text, children: [], parent: node });
+            }
+            group.children.push(node);
+        }
+        roots.push(group);
+    }
     const acts = (S.formInfo?.actions ?? []).filter((a) => !a.separator);
     if (acts.length > 0) {
         const group: Node = { key: 'g:actions', kind: 'group', text: 'actions', meta: String(acts.length), children: [], parent: null };
@@ -101,7 +116,7 @@ function flatten(nodes: Node[], q: string): { node: Node; depth: number }[] {
 
 function selectNode(n: Node, additive = false): void {
     if (n.kind === 'action') {
-        send({ type: 'inspect', name: n.text ?? '' });
+        send({ type: 'inspect', name: n.target ?? n.text ?? '' });
         return;
     }
     if (n.kind === 'group') {
@@ -157,7 +172,7 @@ export function renderOutline(): void {
         const isSel = node.kind === 'widget' ? selected.has(nodeName(node)) : node.kind !== 'group' && S.propertiesFor === nodeName(node);
         const hasKids = node.children.length > 0;
         const open = q !== '' || !collapsed.has(node.key);
-        const glyph = node.kind === 'layout' ? icon('layout') : node.kind === 'group' ? icon('zap') : node.kind === 'action' ? icon('symbol-event') : node.obj ? classGlyph(node.obj) : icon('symbol-field');
+        const glyph = node.kind === 'layout' ? icon('layout') : node.kind === 'group' ? icon(node.key === 'g:menus' ? 'menu' : 'zap') : node.kind === 'action' ? icon('symbol-event') : node.obj ? classGlyph(node.obj) : icon('symbol-field');
         const chevron = hasKids
             ? el('span', { className: 'twisty' }, icon(open ? 'chevron-down' : 'chevron-right'))
             : el('span', { className: 'twisty leaf' });
