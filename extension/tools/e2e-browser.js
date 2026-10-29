@@ -72,6 +72,7 @@ async function check(label, fn) {
         case 'addMenuEntry': snap = await client.request('addMenuEntry', { ...d, menu: m.menu, text: m.text, separator: m.separator }); break;
         case 'addAction': snap = await client.request('addAction', { ...d, text: m.text, checkable: m.checkable, shortcut: m.shortcut }); break;
         case 'useAction': snap = await client.request('useAction', { ...d, target: m.target, action: m.action, separator: m.separator, remove: m.remove }); break;
+        case 'saveImage': return;
         case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
         case 'removeMenuEntry': snap = await client.request('removeMenuEntry', { ...d, menu: m.menu, index: m.index }); break;
         case 'taskAction': snap = await client.request('taskAction', { ...d, name: m.name, text: m.text, path: m.path }); break;

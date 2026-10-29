@@ -52,6 +52,7 @@ export function buildCommands(): Command[] {
         { id: 'rename', label: 'Rename the selected object', icon: 'edit', shortcut: 'F2', enabled: !!sel, run: openRename },
         { id: 'edit-text', label: 'Edit the text of the selected widget', icon: 'symbol-string', shortcut: 'Enter', enabled: editableText(), run: editText },
         { id: 'select-parent', label: parent ? `Select the parent (${parent.name})` : 'Select the parent', icon: 'arrow-up', shortcut: 'Ctrl+\u2191', enabled: !!parent, run: () => parent && send({ type: 'selectNames', names: [parent.name] }) },
+        { id: 'save-image', label: 'Save the form as an image (PNG)', keywords: 'export screenshot picture png', icon: 'device-camera', run: () => send({ type: 'saveImage' }) },
         { id: 'preview', label: 'Preview the form', keywords: 'run test style dark', icon: 'open-preview', shortcut: 'Ctrl+R', run: openPreview },
         { id: 'connect-mode', label: S.mode === 'connect' ? 'Leave connect mode' : 'Connect signals and slots (drag between widgets)', keywords: 'signal slot', icon: 'plug', shortcut: 'F4', run: toggleConnectMode },
         { id: 'new-connection', label: 'New signal/slot connection\u2026', keywords: 'signal slot connect', icon: 'add', enabled: true, run: () => void openConnectDialog(sel && sel.parent !== null ? { sender: sel.name } : {}) },

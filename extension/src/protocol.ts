@@ -288,6 +288,7 @@ export type WebviewToHost =
     /** Search the workspace for text (e.g. `ui->okButton`). */
     | { type: 'findInCode'; query: string }
     | { type: 'copyText'; text: string }
+    | { type: 'saveImage' }
     /** Abort the gesture in progress: undo what the live preview already applied. */
     | { type: 'cancelGesture' }
     | { type: 'setGeometries'; items: { name: string; rect: number[] }[] }

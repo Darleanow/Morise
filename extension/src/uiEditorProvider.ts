@@ -492,6 +492,28 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             case 'findInCode':
                 await vscode.commands.executeCommand('workbench.action.findInFiles', { query: msg.query, triggerSearch: true, isRegex: false, matchWholeWord: false, isCaseSensitive: true });
                 return;
+            case 'saveImage': {
+                // The runtime render (no grid, no handles) at twice the size, like Designer's "Save Form as Image".
+                let png: Buffer;
+                try {
+                    const r = await client.request('preview', { docId: doc.docId, scale: 2 });
+                    png = Buffer.from(r.png, 'base64');
+                } finally {
+                    await client.request('previewStop', { docId: doc.docId }).catch(() => undefined);
+                }
+                const base = doc.uri.path.replace(/^.*\//, '').replace(/\.ui$/i, '') || 'form';
+                const target = await vscode.window.showSaveDialog({
+                    defaultUri: doc.uri.scheme === 'file' ? vscode.Uri.file(doc.uri.fsPath.replace(/\.ui$/i, '') + '.png') : undefined,
+                    saveLabel: 'Save form image',
+                    filters: { 'PNG image': ['png'] },
+                    title: `Save ${base} as an image`,
+                });
+                if (target) {
+                    await vscode.workspace.fs.writeFile(target, png);
+                    vscode.window.setStatusBarMessage(`Saved ${target.fsPath}`, 3000);
+                }
+                return;
+            }
             case 'copyText':
                 await vscode.env.clipboard.writeText(msg.text);
                 vscode.window.setStatusBarMessage(`Copied: ${msg.text.length > 60 ? msg.text.slice(0, 57) + '...' : msg.text}`, 2500);

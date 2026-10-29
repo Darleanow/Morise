@@ -102,6 +102,11 @@ describe('parseWebviewMessage', () => {
         assert.deepEqual(parseWebviewMessage({ type: 'gesture', phase: 'begin', label: 'Resize x' }), { type: 'gesture', phase: 'begin', label: 'Resize x' });
         assert.deepEqual(parseWebviewMessage({ type: 'findInCode', query: 'ui->ok' }), { type: 'findInCode', query: 'ui->ok' });
         assert.deepEqual(parseWebviewMessage({ type: 'copyText', text: 'x' }), { type: 'copyText', text: 'x' });
+        assert.deepEqual(parseWebviewMessage({ type: 'saveImage' }), { type: 'saveImage' });
+        assert.deepEqual(parseWebviewMessage({ type: 'addAction', text: 'Save', checkable: true }), { type: 'addAction', text: 'Save', checkable: true });
+        assert.equal(parseWebviewMessage({ type: 'addAction', text: '  ' }), undefined);
+        assert.deepEqual(parseWebviewMessage({ type: 'useAction', target: 'menuFile', action: 'actionNew', remove: true }), { type: 'useAction', target: 'menuFile', action: 'actionNew', remove: true });
+        assert.equal(parseWebviewMessage({ type: 'useAction', target: 'menuFile' }), undefined);
         assert.deepEqual(parseWebviewMessage({ type: 'cancelGesture' }), { type: 'cancelGesture' });
         const items = [{ name: 'a', rect: [1, 2, 3, 4] }];
         assert.deepEqual(parseWebviewMessage({ type: 'setGeometries', items }), { type: 'setGeometries', items });
