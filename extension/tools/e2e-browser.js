@@ -934,6 +934,33 @@ async function check(label, fn) {
     await page.locator('#toolbar button[title^="Undo"]').first().click(); await settle();
     assert.deepEqual(await order(), ['Alpha', 'Beta']);
   });
+  await check('drag an action from the Form tab onto a tool bar of the canvas, and onto the menu bar for a menu choice', async () => {
+    await open('mainwindow.ui');
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Create Menu Bar' });
+    await client.request('addMenu', { docId, title: 'File' });
+    await client.request('taskAction', { docId, name: 'MainWindow', text: 'Add Tool Bar' });
+    await page.mouse.click(...(await at(60, 150))); await settle();
+    await page.locator('#inspector button.tab[title="Form"]').click(); await settle();
+    const text = page.locator('.action-new input[aria-label="Text of the new action"]');
+    await text.fill('Dragged'); await text.press('Enter'); await settle();
+    const snap = await backendNow();
+    const tbar = snap.objects.find((o) => o.class.endsWith('ToolBar'));
+    const mbar = snap.objects.find((o) => o.class.endsWith('MenuBar'));
+    assert.ok(tbar && mbar, 'a tool bar and a menu bar exist');
+    const row = page.locator('.action-row', { hasText: 'Dragged' });
+    const drop = async (o) => {
+      const [x, y] = await at(o.x + 8, o.y + Math.max(2, Math.floor(o.h / 2)));
+      await row.dragTo(page.locator('#form'), { targetPosition: { x: x - (await page.locator('#form').boundingBox()).x, y: y - (await page.locator('#form').boundingBox()).y } });
+      await settle();
+    };
+    await drop(tbar);
+    assert.ok((await row.textContent()).includes('in toolBar'), 'the tool bar took the action: ' + (await row.textContent()));
+    await page.locator('#toolbar button[title^="Undo"]').first().click(); await settle();
+    assert.ok((await row.textContent()).includes('unused'), 'undo takes it out');
+    await drop(mbar);
+    await page.locator('.menu-item', { hasText: 'Add to File' }).click(); await settle();
+    assert.ok((await row.textContent()).includes('in menuFile'), 'the chosen menu took the action: ' + (await row.textContent()));
+  });
   await check('action groups: created in the Form tab, an action put in it and taken out, removed, and undo restores', async () => {
     await open('mainwindow.ui');
     await client.request('taskAction', { docId, name: 'MainWindow', text: 'Create Menu Bar' });
@@ -984,6 +1011,26 @@ async function check(label, fn) {
     assert.equal(await page.locator('.action-row', { hasText: 'Save As' }).count(), 0, 'removed');
     await page.locator('button[title^="Undo ("]').click(); await settle();
     assert.equal(await page.locator('.action-row', { hasText: 'Save As' }).count(), 1, 'undo restores it');
+  });
+  await check('preview: a tool tip appears once the pointer rests on a widget that has one, and goes when it moves', async () => {
+    await open('interactive.ui');
+    const snap = await backendNow();
+    const target = snap.objects.find((o) => o.class === 'QPushButton' || o.class === 'QCheckBox');
+    assert.ok(target, 'a widget to hover');
+    await client.request('setProperty', { docId, name: target.name, property: 'toolTip', value: 'A helpful tip' });
+    await page.keyboard.press('Control+r'); await page.waitForSelector('.popup.preview .preview-img');
+    const img = page.locator('.preview-img');
+    await page.waitForFunction(() => document.querySelector('.preview-img')?.getAttribute('src')?.startsWith('data:image/png'));
+    const box = await img.boundingBox();
+    const k = box.width / snap.width;
+    await page.mouse.move(box.x + (target.x + target.w / 2) * k, box.y + (target.y + target.h / 2) * k); await page.waitForTimeout(300);
+    const hovered = await img.getAttribute('src');
+    await page.waitForFunction((b) => document.querySelector('.preview-img').getAttribute('src') !== b, hovered, { timeout: 4000 });
+    const tip = await img.getAttribute('src');
+    assert.notEqual(tip, hovered, 'the tool tip is drawn');
+    await page.mouse.move(box.x + 2, box.y + 2);
+    await page.waitForFunction((b) => document.querySelector('.preview-img').getAttribute('src') !== b, tip, { timeout: 4000 });
+    await page.keyboard.press('Escape');
   });
   await check('preview: the form is live, a click checks a box, typing fills a field, a combo opens and selects', async () => {
     await open('interactive.ui');

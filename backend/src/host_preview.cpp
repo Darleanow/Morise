@@ -1,6 +1,8 @@
 #include "host.h"
 
 #include <QPainter>
+#include <QToolTip>
+#include <QHelpEvent>
 
 namespace qdr {
 
@@ -86,6 +88,13 @@ QJsonObject Host::previewFrame(const QString &docId, const QSize &size) const
         QPainter painter(&px);
         pop->render(&painter, pop->pos() - s.root->mapToGlobal(QPoint(0, 0)));
     }
+    // A tool tip is a window of its own: draw it over the form where it would appear.
+    for (QWidget *w : QApplication::topLevelWidgets()) {
+        if (w->isVisible() && QLatin1String(w->metaObject()->className()) == QLatin1String("QTipLabel")) {
+            QPainter painter(&px);
+            w->render(&painter, w->pos() - s.root->mapToGlobal(QPoint(0, 0)));
+        }
+    }
     QByteArray png;
     QBuffer buf(&png);
     buf.open(QIODevice::WriteOnly);
@@ -169,7 +178,22 @@ QJsonObject Host::previewEvent(const QJsonObject &p)
         QCoreApplication::sendEvent(target, &ev);
     };
 
-    if (type == QLatin1String("press") || type == QLatin1String("dblclick")) {
+    if (type != QLatin1String("tick") && s.tip) {
+        QToolTip::hideText(); // the engine only fades it after 300 ms: close it now so the next picture is clean
+        for (QWidget *w : QApplication::topLevelWidgets())
+            if (w->isVisible() && QLatin1String(w->metaObject()->className()) == QLatin1String("QTipLabel"))
+                w->close();
+        s.tip = false;
+    }
+    if (type == QLatin1String("tick")) {
+        // Time passes in the form (cursor blink, animations), and a tool tip shows once the pointer has rested.
+        if (!s.tip && s.hover && s.still.isValid() && s.still.elapsed() >= 600) {
+            const QPoint local = s.hover->mapFromGlobal(s.lastGlobal);
+            QHelpEvent help(QEvent::ToolTip, local, s.lastGlobal);
+            QCoreApplication::sendEvent(s.hover, &help);
+            s.tip = QToolTip::isVisible();
+        }
+    } else if (type == QLatin1String("press") || type == QLatin1String("dblclick")) {
         QPoint local;
         QWidget *t = targetAt(&local);
         s.pressed = t;
@@ -199,6 +223,8 @@ QJsonObject Host::previewEvent(const QJsonObject &p)
             s.hover = t;
         }
         sendMouse(QEvent::MouseMove, t, local);
+        s.still.restart();
+        s.lastGlobal = global;
     } else if (type == QLatin1String("wheel")) {
         QPoint local;
         QWidget *t = targetAt(&local);

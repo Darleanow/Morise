@@ -134,7 +134,7 @@ export interface PreviewResult {
 
 /** One mouse, wheel or key event of the page for the live preview. Coordinates are form pixels. */
 export interface PreviewInput {
-    kind: 'press' | 'release' | 'dblclick' | 'move' | 'wheel' | 'keydown' | 'keyup';
+    kind: 'press' | 'release' | 'dblclick' | 'move' | 'wheel' | 'keydown' | 'keyup' | 'tick';
     x?: number;
     y?: number;
     /** 0 left, 1 middle, 2 right. */

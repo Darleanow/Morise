@@ -48,7 +48,7 @@ The backend path defaults to `../backend/build/designer_backend`; override with 
 
 | Command | What it covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (269 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
+| `python3 -I backend/tests/protocol_test.py` | Backend protocol end to end (272 checks: every property kind, multi-edit, layouts, batch geometry, reparenting, preview, pages, tab order, promotion, form settings, dynamic properties, connections, gestures, scroll area drops, messages, close cycles, save, `uic`) |
 | `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S] [--skip-corpus]` | Robustness: loads the `.ui` corpus, round-trips every property of every widget (about 32k on 90 documents), then replays N random operations (fuzz) and reports any backend crash with the operation log |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` under a directory without edits and compares `uic` output |
 | `cd extension && npm test` | 110 Node tests: client against the real backend, message validation, the whole webview in jsdom (structure, security, gestures, inspector, code snippets, panels) |
@@ -181,7 +181,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 
 ## Known limits (verified or observed, not guesses)
 
-- **Not implemented yet:** dragging an action onto a tool bar or a menu on the canvas (the engine's commands for them are not exported). Actions are placed from the Form tab, and the entries of a menu or tool bar are reordered there with arrows (small undo commands of ours; the saved `.ui` keeps the new order and passes `uic`).
+- **Actions on the canvas:** an action row of the Form tab can be dragged onto a tool bar (it is added) or onto the menu bar (a small menu asks which menu). Dragging entries around inside a tool bar or menu on the canvas is not implemented (the engine's commands for it are not exported); the entries of a menu or tool bar are reordered in the Form tab with arrows (small undo commands of ours; the saved `.ui` keeps the new order and passes `uic`).
 - **Rulers** (command `> rulers`) show form pixels along the top and left edges; they are not draggable guides.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
@@ -191,7 +191,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Connections** are created by driving the engine's own signal/slot editor with synthesised mouse events and
   answering its connect dialog from the page's choice; this relies on Designer's internal widget names
   (`signalList`, `slotList`) and is pinned to Qt 6.11.3.
-- **Preview** forwards mouse, wheel and keyboard to a form the backend keeps alive offscreen and sends back pictures. Hover states are reproduced (a move over a button redraws it); caret blink, tooltips, drag and drop and menus opened by the application are not.
+- **Preview** forwards mouse, wheel and keyboard to a form the backend keeps alive offscreen and sends back pictures. Hover states, the caret blink and tool tips (shown after the pointer rests for 0.6 s, drawn over the form) are reproduced; drag and drop and menus opened by the application are not.
 - **Round trip fidelity:** on the 84 `.ui` files of qttools, all load and all saved files are accepted by `uic`.
   Without any edit, 28 give the same `uic` output (the 44 counted earlier used a looser comparison) and 56 differ.
   The differing lines of all 56 were grouped by pattern, not read file by file: spacer variable names

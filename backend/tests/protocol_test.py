@@ -653,6 +653,17 @@ _h0 = call("preview", docId="hv", style="Fusion", scale=1)["result"]["png"]
 _h1 = call("previewEvent", docId="hv", kind="move", x=_ok["x"] + _ok["w"] // 2, y=_ok["y"] + _ok["h"] // 2, button=0, mods=0)["result"]["png"]
 check("moving over a button changes the preview (hover)", _h1 != _h0)
 check("leaving the button restores the preview", call("previewEvent", docId="hv", kind="move", x=1, y=1, button=0, mods=0)["result"]["png"] == _h0)
+call("setProperty", docId="hv", name="okButton", property="toolTip", value="Confirm the form")
+call("previewStop", docId="hv")
+_hp = call("preview", docId="hv", style="Fusion", scale=1)["result"]["png"]
+_cx, _cy = _ok["x"] + _ok["w"] // 2, _ok["y"] + _ok["h"] // 2
+_hv = call("previewEvent", docId="hv", kind="move", x=_cx, y=_cy, button=0, mods=0)["result"]["png"]
+check("a tick right after a move shows no tool tip yet", call("previewEvent", docId="hv", kind="tick", x=0, y=0, button=0, mods=0)["result"]["png"] == _hv)
+import time as _t
+_t.sleep(0.7)
+_tip = call("previewEvent", docId="hv", kind="tick", x=0, y=0, button=0, mods=0)["result"]["png"]
+check("after the pointer rests, a tick draws the tool tip", _tip != _hv)
+check("moving hides the tool tip again", call("previewEvent", docId="hv", kind="move", x=_cx + 1, y=_cy, button=0, mods=0)["result"]["png"] == _hv)
 call("previewStop", docId="hv")
 
 # a menu created in one form must not leave a popup that swallows the next preview's clicks

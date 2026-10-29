@@ -77,6 +77,7 @@
 #include <QLineEdit>
 #include <QEnterEvent>
 #include <QPointer>
+#include <QElapsedTimer>
 #include <QActionGroup>
 #include <memory>
 #include <QWheelEvent>
@@ -404,6 +405,9 @@ private:
         QPointer<QWidget> focus;
         QPointer<QWidget> hover;
         qreal scale = 1;
+        QElapsedTimer still; // since the pointer last moved: a tool tip appears after it rests
+        QPoint lastGlobal;
+        bool tip = false;
     };
     QHash<QString, PreviewSession> m_previews;
 };

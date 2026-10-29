@@ -1,3 +1,4 @@
+import { ACTION_MIME, draggedAction } from './actiondrop';
 import type { ActionInfo } from '../protocol';
 import { $, button, el, icon } from './dom';
 import { byName } from './geometry';
@@ -204,6 +205,14 @@ function actionList(info: NonNullable<typeof S.formInfo>): HTMLElement {
             el('span', { className: 'dim action-meta' }, [a.shortcut, a.usedIn.length > 0 ? `in ${a.usedIn.join(', ')}` : 'unused'].filter(Boolean).join('  ·  ')),
             placeButton(a, info),
             button(`Remove ${a.name}`, icon('trash'), () => send({ type: 'removeAction', name: a.name }), 'icon-btn'));
+        row.draggable = true;
+        row.addEventListener('dragstart', (ev) => {
+            draggedAction.name = a.name;
+            ev.dataTransfer?.setData(ACTION_MIME, a.name);
+            if (ev.dataTransfer) {
+                ev.dataTransfer.effectAllowed = 'copy';
+            }
+        });
         const open = () => send({ type: 'inspect', name: a.name });
         row.addEventListener('click', (ev) => {
             if (!(ev.target as HTMLElement).closest('button')) {

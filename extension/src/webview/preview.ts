@@ -49,12 +49,20 @@ export function openPreview(): void {
         el('div', { className: 'preview-body' }, el('div', { className: 'preview-frame' }, image)),
         footer(el('span', { className: 'dim' }, 'Interactive: click, type, scroll and drag in the form as in the application. Pop-ups are drawn over it.'), el('span', { className: 'spacer' }), secondaryButton('Refresh', request), primaryButton('Close', close)),
     ], 'preview', () => {
+        window.clearInterval(tickTimer);
         popup = undefined;
         image = undefined;
         pending = [];
         send({ type: 'previewStop' });
     });
     request();
+    // Time passes in the form too: the caret blinks and a tool tip appears once the pointer rests.
+    window.clearInterval(tickTimer);
+    tickTimer = window.setInterval(() => {
+        if (popup && !inFlight && pending.length === 0) {
+            push({ kind: 'tick' });
+        }
+    }, 400);
 }
 
 export function onPreview(result: PreviewResult, style: string, dark: boolean): void {
@@ -63,6 +71,7 @@ export function onPreview(result: PreviewResult, style: string, dark: boolean): 
     if (!popup || !image || !styleSelect) {
         return;
     }
+    lastPng = result.png;
     image.src = `data:image/png;base64,${result.png}`;
     image.style.width = `${result.width}px`;
     image.style.height = `${result.height}px`;
@@ -77,6 +86,8 @@ export function onPreview(result: PreviewResult, style: string, dark: boolean): 
 // ---- live input: the page forwards the mouse and keyboard to the form the engine keeps alive ------------
 
 let pending: PreviewInput[] = [];
+let tickTimer: number | undefined;
+let lastPng = '';
 let inFlight = false;
 
 function flush(): void {
@@ -100,7 +111,9 @@ function push(ev: PreviewInput): void {
 /** A picture arrived for an input event: show it and send the next one. */
 export function onPreviewFrame(result: PreviewResult): void {
     inFlight = false;
-    if (popup && image) {
+    // A picture identical to the last one (an idle tick) must not make the image reload.
+    if (popup && image && result.png !== lastPng) {
+        lastPng = result.png;
         image.src = `data:image/png;base64,${result.png}`;
     }
     flush();

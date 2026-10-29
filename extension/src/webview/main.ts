@@ -1,5 +1,6 @@
 import type { ActionName, HostToWebview } from '../protocol';
 import * as actions from './actions';
+import './actiondrop';
 import { alignable } from './align';
 import { cancelGesture, fitZoom, flushPendingMenu, frameArrived, gestureActive, initGlobalCanvas, onZoomChange, renderCanvas, requestScale, setMode, setSpaceDown, setZoom, stepZoom } from './canvas';
 import { buildCommands } from './commands';

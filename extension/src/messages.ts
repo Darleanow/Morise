@@ -100,7 +100,7 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
         case 'previewStop':
             return { type: 'previewStop' };
         case 'previewEvent': {
-            const kinds = ['press', 'release', 'dblclick', 'move', 'wheel', 'keydown', 'keyup'];
+            const kinds = ['press', 'release', 'dblclick', 'move', 'wheel', 'keydown', 'keyup', 'tick'];
             const num = (v: unknown) => v === undefined || (typeof v === 'number' && Number.isFinite(v));
             if (typeof m.kind !== 'string' || !kinds.includes(m.kind) || !num(m.x) || !num(m.y) || !num(m.button) || !num(m.mods) || !num(m.dx) || !num(m.dy)
                 || (m.key !== undefined && (typeof m.key !== 'string' || m.key.length > 20))) {
