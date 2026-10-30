@@ -77,6 +77,7 @@ async function check(label, fn) {
         case 'moveEntry': snap = await client.request('moveEntry', { ...d, target: m.target, from: m.from, to: m.to }); break;
         case 'actionGroup': snap = await client.request('actionGroup', { ...d, name: m.name, remove: m.remove, action: m.action, group: m.group }); break;
         case 'saveImage': return;
+        case 'audit': await post({ type: 'auditResult', xml: (await client.request('contents', { docId })).xml }); return;
         case 'compare': {
           // stands in for the host: the file as opened plays the committed version
           const scratch = docId + '-cmp';
@@ -1209,6 +1210,15 @@ async function check(label, fn) {
     assert.match(await page.locator('.cmp-changed').first().textContent(), /okButton[\s\S]*text: OK \u2192 Valider/);
     await shot('e2e-compare');
     await page.keyboard.press('Escape');
+  });
+  await check('audit: the form check reads the real saved XML and selecting a finding selects the widget', async () => {
+    await open('sample.ui');
+    await page.keyboard.press('/'); await page.locator('.qa-input').fill('>check the form'); await page.keyboard.press('Enter');
+    await page.waitForSelector('.popup.audit .cmp-change');
+    const texts = await page.locator('.audit-list .cmp-change').allTextContents();
+    assert.ok(texts.some((t) => /nameEdit[\s\S]*no label/.test(t)), texts.join(' | '));
+    await page.locator('.audit-list .cmp-change', { hasText: 'nameEdit' }).first().click(); await settle();
+    assert.deepEqual((await backendNow()).selection, ['nameEdit']);
   });
   await check('keyboard: Delete, arrows and shortcuts typed in a field never act on the form', async () => {
     await open('rich.ui');

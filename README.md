@@ -71,6 +71,7 @@ A floating bar on the selection offers only the actions that are currently possi
 - **Search everything** (`/` or double-click the canvas): type a word to find widgets to add, objects of the form and commands in one list; `>` limits it to commands, `@` jumps to an object, `:` jumps to a property of the selection.
 - **Style sheet editor:** coloured source, completion of Qt style sheet properties, pseudo-states, sub-controls and colours, snippets, and a Live mode that paints the form while you type (Cancel puts it back with no undo entry left).
 - **Compare with the last commit** (`> compare`): reads `git show HEAD:<file>`, draws the committed form next to the current one (swipe, fade or side by side) and lists what was added, removed or changed per object; a click selects the object. Needs git on the PATH and a file known to git.
+- **Form check** (`> check the form`, toolbar when wide): reads the saved XML and lists buttons without text, fields with no label (buddy) or accessible name, buddies that do not exist, repeated Alt mnemonics and action shortcuts, widgets missing from the tab order and default object names. A click selects the widget.
 - **Align** (left, centres, right, top, bottom), **Distribute** horizontally/vertically and **Same width/height/size**,
   from the toolbar, the context menu or the floating bar: one undo step each. One widget aligns to its parent,
   several to the bounds of the selection; sizes follow the first selected widget.

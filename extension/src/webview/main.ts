@@ -18,6 +18,7 @@ import { initOutline, refreshOutlineHover, renderOutline } from './outline';
 import { initPalette, learnIcons, renderPalette } from './palette';
 import { anyPopupOpen } from './popup';
 import { onPreview, onPreviewFrame, openPreview, refreshPreviewSoon } from './preview';
+import { onAuditResult } from './audit';
 import { onCompareResult } from './compare';
 import { onStyleSheetCheck } from './dialogs';
 import { closeQuickAdd, openQuickAdd, quickAddOpen } from './quickadd';
@@ -266,6 +267,9 @@ window.addEventListener('message', (ev: MessageEvent<HostToWebview>) => {
             break;
         case 'preview':
             onPreview(msg.result, msg.style, msg.dark);
+            break;
+        case 'auditResult':
+            onAuditResult(msg.xml);
             break;
         case 'compareResult':
             onCompareResult(msg.result);

@@ -313,6 +313,8 @@ export type WebviewToHost =
     | { type: 'saveImage' }
     /** Ask for the committed (git HEAD) version of the file, drawn and as XML, to compare with. */
     | { type: 'compare' }
+    /** Ask for the form's XML to look for accessibility and naming problems. */
+    | { type: 'audit' }
     | { type: 'checkStyleSheet'; text: string }
     /** Abort the gesture in progress: undo what the live preview already applied. */
     | { type: 'cancelGesture' }
@@ -375,6 +377,7 @@ export type HostToWebview =
     | { type: 'describeResult'; name: string; result: DescribeResult | null }
     | { type: 'styleSheetCheck'; text: string; valid: boolean }
     | { type: 'compareResult'; result: CompareResult }
+    | { type: 'auditResult'; xml: string }
     | { type: 'history'; items: string[]; index: number }
     | { type: 'error'; message: string }
     | { type: 'backendStatus'; text: string };

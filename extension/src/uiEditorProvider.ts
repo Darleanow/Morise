@@ -576,6 +576,11 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 }
                 return;
             }
+            case 'audit': {
+                const { xml } = await client.request('contents', { docId: doc.docId });
+                this.post(doc, panel, { type: 'auditResult', xml });
+                return;
+            }
             case 'compare': {
                 const result = await this.compareWithHead(doc, client);
                 this.post(doc, panel, { type: 'compareResult', result });

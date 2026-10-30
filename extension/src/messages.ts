@@ -34,6 +34,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return { type: 'saveImage' };
         case 'compare':
             return { type: 'compare' };
+        case 'audit':
+            return { type: 'audit' };
         case 'copyText':
             return typeof m.text === 'string' && m.text.length <= 20000 ? { type: 'copyText', text: m.text } : undefined;
         case 'gesture':

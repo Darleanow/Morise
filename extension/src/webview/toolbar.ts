@@ -2,6 +2,8 @@ import type { ActionName } from '../protocol';
 import * as actions from './actions';
 import { ALIGNMENTS, alignable, runAlignment } from './align';
 import { renderOverlay, setMode } from './canvas';
+import { requestAudit } from './audit';
+import { requestCompare } from './compare';
 import { $, button, el, icon } from './dom';
 import { hooks } from './hooks';
 import { formSizeMenu, openMenu } from './menu';
@@ -68,7 +70,9 @@ export function buildToolbar(): void {
     connect.setAttribute('aria-pressed', 'false');
     const previewBtn = button('Preview the form as the application will show it (Ctrl+R)', icon('open-preview'), () => hooks.openPreview(), 'tb');
     previewBtn.dataset.preview = '1';
-    toolbar.append(connect, previewBtn, sep());
+    const compareBtn = button('Compare with the last git commit', icon('git-compare'), () => requestCompare(), 'tb opt');
+    const auditBtn = button('Check the form: labels, accessible names, shortcuts, tab order', icon('checklist'), () => requestAudit(), 'tb opt');
+    toolbar.append(connect, previewBtn, compareBtn, auditBtn, sep());
 
     const layouts = button('Show layout outlines', icon('layout'), () => {
         prefs.showLayouts = !prefs.showLayouts;

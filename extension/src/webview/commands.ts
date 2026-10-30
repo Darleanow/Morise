@@ -1,6 +1,7 @@
 import * as actions from './actions';
 import { ALIGNMENTS, alignable, runAlignment } from './align';
 import { fitZoom, setZoom, stepZoom } from './canvas';
+import { requestAudit } from './audit';
 import { requestCompare } from './compare';
 import { openConnectDialog } from './connectdialog';
 import { openHelp } from './help';
@@ -55,6 +56,7 @@ export function buildCommands(): Command[] {
         { id: 'edit-text', label: 'Edit the text of the selected widget', icon: 'symbol-string', shortcut: 'Enter', enabled: editableText(), run: editText },
         { id: 'select-parent', label: parent ? `Select the parent (${parent.name})` : 'Select the parent', icon: 'arrow-up', shortcut: 'Ctrl+\u2191', enabled: !!parent, run: () => parent && send({ type: 'selectNames', names: [parent.name] }) },
         { id: 'save-image', label: 'Save the form as an image (PNG)', keywords: 'export screenshot picture png', icon: 'device-camera', run: () => send({ type: 'saveImage' }) },
+        { id: 'audit', label: 'Check the form: labels, accessible names, shortcuts, tab order', keywords: 'accessibility a11y lint warnings buddy mnemonic', icon: 'checklist', run: requestAudit },
         { id: 'compare', label: 'Compare with the last commit (git)', keywords: 'diff history changes version head', icon: 'git-compare', run: requestCompare },
         { id: 'preview', label: 'Preview the form', keywords: 'run test style dark', icon: 'open-preview', shortcut: 'Ctrl+R', run: openPreview },
         { id: 'connect-mode', label: S.mode === 'connect' ? 'Leave connect mode' : 'Connect signals and slots (drag between widgets)', keywords: 'signal slot', icon: 'plug', shortcut: 'F4', run: toggleConnectMode },

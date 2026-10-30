@@ -495,3 +495,7 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .cmp-side { display: flex; gap: 16px; align-items: flex-start; }
 .cmp-side figure { margin: 0; }
 .cmp-side figcaption { font-size: 11px; opacity: .7; padding-top: 4px; }
+.popup.audit { width: min(640px, 94vw); }
+.audit-list { width: auto; border-right: 0; max-height: 60vh; }
+.audit-warning .codicon { color: var(--vscode-editorWarning-foreground, #cca700); }
+.audit-info .codicon { color: var(--vscode-editorInfo-foreground, #3794ff); }
