@@ -451,7 +451,6 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .ruler line { opacity: .55; }
 .ov.entry-drop { background: var(--vscode-focusBorder, #007fd4); pointer-events: none; z-index: 5; }
 .qa-head { padding: 6px 14px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
-.pill-hint { color: var(--vscode-charts-yellow, #e5c07b); }
 /* style sheet editor: the form stays visible behind a see-through scrim */
 .scrim:has(.popup.style-editor) { background: transparent; justify-content: flex-end; align-items: flex-end; padding: 0 16px 36px 16px; }
 .popup.style-editor { width: min(480px, 94vw); }

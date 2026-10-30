@@ -69,7 +69,6 @@ A floating bar on the selection offers only the actions that are currently possi
   edges and centres, with red guides; Alt bypasses both; Esc cancels. A drag is one undo step.
 - Dropping widgets on another container reparents them (keeping their place on screen).
 - **Search everything** (`/` or double-click the canvas): type a word to find widgets to add, objects of the form and commands in one list; `>` limits it to commands, `@` jumps to an object, `:` jumps to a property of the selection.
-- **Best fit layout:** when a container or several widgets are selected, a wand button (and the command `> lay out`) reads how they are arranged on screen and applies the matching layout: horizontal, vertical, form (label + field rows) or grid.
 - **Style sheet editor:** coloured source, completion of Qt style sheet properties, pseudo-states, sub-controls and colours, snippets, and a Live mode that paints the form while you type (Cancel puts it back with no undo entry left).
 - **Compare with the last commit** (`> compare`): reads `git show HEAD:<file>`, draws the committed form next to the current one (swipe, fade or side by side) and lists what was added, removed or changed per object; a click selects the object. Needs git on the PATH and a file known to git.
 - **Align** (left, centres, right, top, bottom), **Distribute** horizontally/vertically and **Same width/height/size**,

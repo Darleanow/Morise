@@ -13,7 +13,6 @@ import { byName, primarySelection } from './geometry';
 import { focusProperty, setTab } from './inspector';
 import { togglePanel } from './splitter';
 import { prefs, S, savePrefs, send } from './state';
-import { currentSuggestion, runSmartLayout } from './smartlayout';
 import { toggleConnectMode } from './toolbar';
 
 export interface WindowPart { text: string; label: string; icon: string; enabled: boolean; run: () => void }
@@ -48,8 +47,6 @@ export function buildCommands(): Command[] {
         out.push({ id: `action.${a.action}`, label: a.label, icon: a.icon, shortcut: a.shortcut, enabled: actions.isEnabled(a.action), run: () => actions.run(a.action) });
     }
     out.push({ id: 'duplicate', label: 'Duplicate', icon: 'files', shortcut: 'Ctrl+D', enabled: actions.isEnabled('copy'), run: () => actions.duplicate() });
-    const hint = currentSuggestion();
-    out.push({ id: 'smart-layout', label: hint ? `Lay out ${hint.label} (best fit)` : 'Lay out automatically (best fit)', keywords: 'auto smart suggest grid form horizontal vertical', icon: 'wand', enabled: !!hint, run: runSmartLayout });
     for (const d of ALIGNMENTS) {
         out.push({ id: `align.${d.op}`, label: d.label, keywords: 'align distribute size', icon: d.icon, enabled: targets.length >= d.needs, run: () => runAlignment(d.op) });
     }
