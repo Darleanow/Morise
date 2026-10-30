@@ -57,3 +57,10 @@ The test numbers below were true at the time of writing; the commands that produ
   Not reproducible when the tab widget was never inside the tool box. Using the engine's drop instead of the reparent command
   recurses the same way, so the cause is in the engine's state, not in this call. Not fixed; the extension reports the stack in
   its log (`backend-crash.log`) and restarts on demand.
+
+## Session notes: new features, refactor, self test
+
+- New: unified search (`@` objects, `:` properties), live style sheet editor, compare with the last git commit, form check (accessibility and naming). The "best fit layout" idea was built then removed on request.
+- Refactor: `host_forms.cpp` split into menus, actions, resources and methods files; overlay drawing moved out of `canvas.ts`; git reading moved to `gitCompare.ts` with its own test.
+- Bug found by hand testing a login dialog built from scratch through the protocol: a second connection to a form whose layout leaves no free spot failed, because the drop landed on the caption of the first connection. The point picker now avoids drawn connections and their captions (`host_connections.cpp`), with a protocol test.
+- Self test results: protocol 275, Node 116, e2e 0 failures, corpus 35 659 round trips 0 refused, fuzz seeds 4242/99/123 (3000, 7950, 4983 ops) 0 problems, corpus-ui 95 forms 0 problems, VS Code integration 9 ok. Hand built forms (a login dialog, a main window with menus, tabs, table, combo) pass `uic` C++ and Python, compile as C++ headers with g++, and a second save is byte identical.
