@@ -1,12 +1,13 @@
 import { TEMPLATES, classNameFor, templateXml } from './templates';
 import { randomBytes, randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { BackendClient } from './backendClient';
 import { parseWebviewMessage } from './messages';
 import { pageBody } from './pageBody';
-import type { LocaleChoices, ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
+import type { CompareResult, LocaleChoices, ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
 
 export const VIEW_TYPE = 'qtDesignerRevamped.uiEditor';
 
@@ -263,6 +264,43 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
 
     private async readFile(uri: vscode.Uri): Promise<string> {
         return decoder.decode(await vscode.workspace.fs.readFile(uri));
+    }
+
+    /** Draws the last committed version of the file (git HEAD) and returns both versions as normalised XML. */
+    private async compareWithHead(doc: UiDocument, client: BackendClient): Promise<CompareResult> {
+        if (doc.uri.scheme !== 'file') {
+            return { ok: false, error: 'Only files on disk can be compared with git.' };
+        }
+        const file = doc.uri.fsPath;
+        const committed = await new Promise<{ text?: string; error?: string }>((resolve) => {
+            execFile('git', ['show', `HEAD:./${path.basename(file)}`], { cwd: path.dirname(file), maxBuffer: 64 * 1024 * 1024, encoding: 'utf8' }, (err, stdout, stderr) => {
+                if (!err) {
+                    resolve({ text: stdout });
+                } else if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+                    resolve({ error: 'git is not installed or not on the PATH.' });
+                } else if (/not a git repository/i.test(stderr)) {
+                    resolve({ error: 'This file is not in a git repository.' });
+                } else if (/exists on disk, but not in|does not exist in|unknown revision|bad revision|ambiguous argument|invalid object name/i.test(stderr)) {
+                    resolve({ error: 'This file has no committed version yet.' });
+                } else {
+                    resolve({ error: stderr.trim().split('\n')[0] || 'git could not read the committed file.' });
+                }
+            });
+        });
+        if (committed.text === undefined) {
+            return { ok: false, error: committed.error ?? 'No committed version.' };
+        }
+        const scratch = `${doc.docId}-compare`;
+        try {
+            const snap = await client.request('open', { docId: scratch, xml: committed.text });
+            const base = await client.request('contents', { docId: scratch });
+            const current = await client.request('contents', { docId: doc.docId });
+            return { ok: true, ref: 'HEAD', png: snap.png, width: snap.width, height: snap.height, dpr: snap.dpr, baseXml: base.xml, currentXml: current.xml };
+        } catch (e) {
+            return { ok: false, error: `The committed version cannot be opened: ${e instanceof Error ? e.message : String(e)}` };
+        } finally {
+            await client.request('close', { docId: scratch }).catch(() => undefined);
+        }
     }
 
     private async openInBackend(doc: UiDocument, xml: string): Promise<void> {
@@ -550,6 +588,11 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                     await vscode.workspace.fs.writeFile(target, png);
                     vscode.window.setStatusBarMessage(`Saved ${target.fsPath}`, 3000);
                 }
+                return;
+            }
+            case 'compare': {
+                const result = await this.compareWithHead(doc, client);
+                this.post(doc, panel, { type: 'compareResult', result });
                 return;
             }
             case 'copyText':

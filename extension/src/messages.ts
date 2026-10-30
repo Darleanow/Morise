@@ -32,6 +32,8 @@ export function parseWebviewMessage(raw: unknown): WebviewToHost | undefined {
             return typeof m.text === 'string' && m.text.length <= 200000 ? { type: 'checkStyleSheet', text: m.text } : undefined;
         case 'saveImage':
             return { type: 'saveImage' };
+        case 'compare':
+            return { type: 'compare' };
         case 'copyText':
             return typeof m.text === 'string' && m.text.length <= 20000 ? { type: 'copyText', text: m.text } : undefined;
         case 'gesture':

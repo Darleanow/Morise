@@ -68,6 +68,10 @@ A floating bar on the selection offers only the actions that are currently possi
   and bottom edges with the layouts reflowing live. Snapping goes to Designer's grid *and* to neighbouring widgets'
   edges and centres, with red guides; Alt bypasses both; Esc cancels. A drag is one undo step.
 - Dropping widgets on another container reparents them (keeping their place on screen).
+- **Search everything** (`/` or double-click the canvas): type a word to find widgets to add, objects of the form and commands in one list; `>` limits it to commands, `@` jumps to an object, `:` jumps to a property of the selection.
+- **Best fit layout:** when a container or several widgets are selected, a wand button (and the command `> lay out`) reads how they are arranged on screen and applies the matching layout: horizontal, vertical, form (label + field rows) or grid.
+- **Style sheet editor:** coloured source, completion of Qt style sheet properties, pseudo-states, sub-controls and colours, snippets, and a Live mode that paints the form while you type (Cancel puts it back with no undo entry left).
+- **Compare with the last commit** (`> compare`): reads `git show HEAD:<file>`, draws the committed form next to the current one (swipe, fade or side by side) and lists what was added, removed or changed per object; a click selects the object. Needs git on the PATH and a file known to git.
 - **Align** (left, centres, right, top, bottom), **Distribute** horizontally/vertically and **Same width/height/size**,
   from the toolbar, the context menu or the floating bar: one undo step each. One widget aligns to its parent,
   several to the bounds of the selection; sizes follow the first selected widget.
@@ -214,7 +218,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Teardown:** closing a document is done properly (50 open/edit/close cycles, 192 kB RSS growth). Destroying
   `QApplication`/`FormEditor` at process exit still segfaults, so the backend exits with `_Exit` on stdin EOF.
 - **Not verified:** hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
-- **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only; no `.vsix` is produced yet.
+- **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only. `npm run package` in `extension/` produces `qt-designer-revamped-linux-x64.vsix` (uses vsce 2.32 with a small `File` polyfill so it runs on Node 18).
 - **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
   VS Code theme variables are used.
 - **Licenses:** `lib/` is LGPL-3/GPL; `components/` is GPL-3 with Qt exception. Linking them makes the backend

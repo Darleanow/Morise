@@ -240,6 +240,31 @@ describe('webview page', () => {
         check([['QPushButton', 'QPushButton'], ['QPushButton', 'QPushButton']], 'layoutGrid');
     });
 
+    it('compares with the last commit: lists what changed and selects an object from the list', () => {
+        const ui = (text: string, extra = '') => `<?xml version="1.0"?><ui version="4.0"><class>F</class><widget class="QWidget" name="F"><property name="geometry"><rect><x>0</x><y>0</y><width>200</width><height>100</height></rect></property><widget class="QPushButton" name="ok"><property name="text"><string>${text}</string></property></widget>${extra}</widget><connections/></ui>`;
+        post({ snapshot: snap({ objects: [obj({ name: 'F', class: 'QWidget', parent: null, x: 0, y: 0, w: 200, h: 100 }), obj({ name: 'ok', class: 'QPushButton', parent: 'F', x: 0, y: 0, w: 50, h: 20 })] }), palette });
+        post({ type: 'compareResult', result: { ok: true, ref: 'HEAD', png: PNG, width: 200, height: 100, dpr: 1, baseXml: ui('OK', '<widget class="QLabel" name="old"/>'), currentXml: ui('Valider', '<widget class="QCheckBox" name="fresh"/>') } });
+        const rows = [...dom.window.document.querySelectorAll('.cmp-change')].map((r) => r.textContent ?? '');
+        assert.ok(rows.some((r) => r.includes('ok') && r.includes('text: OK \u2192 Valider')), rows.join('|'));
+        assert.ok(rows.some((r) => r.includes('fresh') && r.includes('QCheckBox')));
+        assert.ok(rows.some((r) => r.includes('old')));
+        assert.ok($('.cmp-added') && $('.cmp-removed') && $('.cmp-changed'));
+        assert.match($('.popup.compare .popup-head')?.textContent ?? '', /1 added \u00b7 1 removed \u00b7 1 changed/);
+        ($('.cmp-slider') as HTMLInputElement).value = '20';
+        ($('.cmp-slider') as HTMLInputElement).dispatchEvent(new dom.window.Event('input'));
+        assert.equal(($('.cmp-layer') as HTMLElement).style.clipPath, 'inset(0 0 0 20%)');
+        sent.length = 0;
+        ([...dom.window.document.querySelectorAll('.cmp-change')].find((r) => r.textContent?.includes('Valider')) as HTMLElement).click();
+        assert.deepEqual(sent.at(-1), { type: 'selectNames', names: ['ok'] });
+        assert.equal($('.popup.compare'), null);
+    });
+
+    it('compare reports a missing commit as a message instead of failing', () => {
+        post({ snapshot: snap(), palette });
+        post({ type: 'compareResult', result: { ok: false, error: 'This file has no committed version yet.' } });
+        assert.match($('#toasts, .toast')?.textContent ?? dom.window.document.body.textContent ?? '', /no committed version/);
+    });
+
     it('rename validates C++ identifiers and duplicates before sending anything', () => {
         post({ snapshot: snap({ selection: ['b'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'b', class: 'QPushButton', parent: 'Form', x: 10, y: 10, w: 50, h: 20 }), obj({ name: 'taken', class: 'QLabel', parent: 'Form', x: 70, y: 10, w: 50, h: 20 })] }) });
         sent.length = 0;

@@ -472,3 +472,27 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .qss-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 14px 0; }
 .qss-chips .chip { padding: 1px 8px; font-size: 11px; }
 .qss-live { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+/* comparison with the last commit */
+.popup.compare { width: min(1100px, 96vw); max-height: 88vh; display: flex; flex-direction: column; }
+.scrim:has(.popup.compare) { padding-top: 5vh; }
+.cmp-body { display: flex; min-height: 0; flex: 1; }
+.cmp-list { width: 300px; flex: none; overflow: auto; border-right: 1px solid var(--border); max-height: 66vh; }
+.cmp-change { display: flex; gap: 8px; padding: 6px 12px; align-items: flex-start; }
+.cmp-change[tabindex="0"] { cursor: pointer; }
+.cmp-change[tabindex="0"]:hover { background: var(--vscode-list-hoverBackground); }
+.cmp-added .codicon { color: var(--vscode-gitDecoration-addedResourceForeground, #81b88b); }
+.cmp-removed .codicon { color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39); }
+.cmp-changed .codicon { color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d); }
+.cmp-text { min-width: 0; overflow-wrap: anywhere; }
+.cmp-line { font-size: 11px; }
+.cmp-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cmp-right .qss-chips { padding-bottom: 8px; }
+.cmp-slider { flex: 1; min-width: 120px; }
+.chip.on { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+.cmp-view { overflow: auto; padding: 12px; max-height: 60vh; }
+.cmp-stage img { display: block; max-width: none; }
+.cmp-holder { position: relative; }
+.cmp-layer { position: absolute; inset: 0; }
+.cmp-side { display: flex; gap: 16px; align-items: flex-start; }
+.cmp-side figure { margin: 0; }
+.cmp-side figcaption { font-size: 11px; opacity: .7; padding-top: 4px; }

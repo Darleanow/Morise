@@ -229,6 +229,11 @@ export interface PropertiesResult {
     properties: PropertyInfo[];
 }
 
+/** The last committed version of the form next to the one being edited. */
+export type CompareResult =
+    | { ok: true; ref: string; png: string; width: number; height: number; dpr: number; baseXml: string; currentXml: string }
+    | { ok: false; error: string };
+
 /** Backend request methods and their result types. */
 export interface BackendMethods {
     open: { params: { docId: string; xml: string; path?: string }; result: Snapshot };
@@ -306,6 +311,8 @@ export type WebviewToHost =
     | { type: 'findInCode'; query: string }
     | { type: 'copyText'; text: string }
     | { type: 'saveImage' }
+    /** Ask for the committed (git HEAD) version of the file, drawn and as XML, to compare with. */
+    | { type: 'compare' }
     | { type: 'checkStyleSheet'; text: string }
     /** Abort the gesture in progress: undo what the live preview already applied. */
     | { type: 'cancelGesture' }
@@ -367,6 +374,7 @@ export type HostToWebview =
     | { type: 'previewFrame'; result: PreviewResult }
     | { type: 'describeResult'; name: string; result: DescribeResult | null }
     | { type: 'styleSheetCheck'; text: string; valid: boolean }
+    | { type: 'compareResult'; result: CompareResult }
     | { type: 'history'; items: string[]; index: number }
     | { type: 'error'; message: string }
     | { type: 'backendStatus'; text: string };
