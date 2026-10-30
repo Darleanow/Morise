@@ -62,10 +62,29 @@ QJsonObject Host::connectWidgets(const QJsonObject &p)
     // Existing connections anchor at the widget centre: grabbing there would drag that anchor instead of
     // starting a new connection, so pick a spot in the widget that no anchor occupies.
     QList<QPoint> anchors;
+    QList<QLineF> lines; // the drawn connections: a press or release close to one grabs it instead of the widget
     for (int i = 0; i < edit->connectionCount(); ++i) {
-        anchors << edit->connection(i)->endPointPos(qdesigner_internal::CETypes::EndPoint::Source)
-                << edit->connection(i)->endPointPos(qdesigner_internal::CETypes::EndPoint::Target);
+        const QPoint s = edit->connection(i)->endPointPos(qdesigner_internal::CETypes::EndPoint::Source);
+        const QPoint t = edit->connection(i)->endPointPos(qdesigner_internal::CETypes::EndPoint::Target);
+        anchors << s << t;
+        lines << QLineF(s, t);
     }
+    auto nearLine = [&lines, edit](const QPoint &g) {
+        // The drawn connection includes its two caption labels (signal and slot names), which grab the mouse too.
+        for (int i = 0; i < edit->connectionCount(); ++i)
+            for (const QPoint &o : {QPoint(0, 0), QPoint(10, 0), QPoint(-10, 0), QPoint(0, 8), QPoint(0, -8)})
+                if (edit->connection(i)->contains(g + o))
+                    return true;
+        for (const QLineF &l : lines) {
+            const QPointF d = l.p2() - l.p1();
+            const qreal len2 = d.x() * d.x() + d.y() * d.y();
+            const qreal u = len2 == 0 ? 0 : std::clamp(((g.x() - l.p1().x()) * d.x() + (g.y() - l.p1().y()) * d.y()) / len2, 0.0, 1.0);
+            const QPointF c = l.p1() + d * u;
+            if (QLineF(c, QPointF(g)).length() < 14)
+                return true;
+        }
+        return false;
+    };
     auto pointOf = [&](QWidget *w) {
         const QRect r = w->rect().adjusted(3, 3, -3, -3);
         QList<QPoint> candidates{r.center()};
@@ -90,7 +109,7 @@ QJsonObject Host::connectWidgets(const QJsonObject &p)
             if (!r.contains(c))
                 continue;
             const QPoint g = edit->mapFromGlobal(w->mapToGlobal(c));
-            const bool taken = std::any_of(anchors.cbegin(), anchors.cend(), [&](const QPoint &a2) { return (a2 - g).manhattanLength() < 16; });
+            const bool taken = nearLine(g) || std::any_of(anchors.cbegin(), anchors.cend(), [&](const QPoint &a2) { return (a2 - g).manhattanLength() < 16; });
             if (!taken)
                 return g;
         }

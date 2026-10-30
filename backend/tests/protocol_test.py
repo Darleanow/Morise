@@ -742,6 +742,14 @@ n0 = h["index"]
 call("undo", docId="r2")
 check("history position follows undo", call("history", docId="r2")["result"]["index"] == n0 - 1)
 
+# a form whose layout leaves no free spot: several connections to the form itself must all be created
+tight = """<?xml version="1.0" encoding="UTF-8"?><ui version="4.0"><class>T</class><widget class="QDialog" name="T"><property name="geometry"><rect><x>0</x><y>0</y><width>300</width><height>160</height></rect></property>
+<layout class="QVBoxLayout" name="v"><item><widget class="QPushButton" name="a"><property name="text"><string>A</string></property></widget></item><item><widget class="QPushButton" name="b"><property name="text"><string>B</string></property></widget></item><item><widget class="QPushButton" name="c"><property name="text"><string>C</string></property></widget></item></layout></widget><resources/><connections/></ui>"""
+call("open", docId="tight", xml=tight)
+made = [call("connect", docId="tight", sender=n, signal="clicked()", receiver="T", slot=sl) for n, sl in (("a", "accept()"), ("b", "reject()"), ("c", "close()"))]
+check("three connections to a form packed by its layout are all created", all("result" in m for m in made), [m.get("error") for m in made])
+check("and all three are saved", call("contents", docId="tight")["result"]["xml"].count("<connection>") == 3)
+
 # closing documents really destroys them: no crash over many cycles, and memory stays bounded
 def rss_kb():
     with open(f"/proc/{p.pid}/status") as fh:
