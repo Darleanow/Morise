@@ -165,9 +165,13 @@ describe('webview page', () => {
     // ------------------------------------------------------------------ toolbar and keyboard
     it('toolbar buttons mirror the engine action state and never allow deleting the form', () => {
         post({ snapshot: snap({ selection: ['Form'], actions: { delete: true, layoutGrid: true } }) });
-        assert.equal(($('button[data-action=delete]') as HTMLButtonElement).disabled, true, 'form is not deletable');
         assert.equal(($('button[data-action=layoutGrid]') as HTMLButtonElement).disabled, false);
-        assert.equal(($('button[data-action=copy]') as HTMLButtonElement).disabled, true);
+        ($('button[title^="More"]') as HTMLButtonElement).click();
+        const rowOf = (t: string) => $$('.menu-item').find((r) => r.textContent?.includes(t)) as HTMLElement;
+        assert.ok(rowOf('Delete').classList.contains('disabled'), 'form is not deletable');
+        assert.ok(rowOf('Copy').classList.contains('disabled'));
+        assert.ok(rowOf('Compare with the last git commit'));
+        dom.window.document.body.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         ($('button[data-action=layoutGrid]') as HTMLButtonElement).click();
         assert.deepEqual(sent.at(-1), { type: 'action', action: 'layoutGrid' });
     });
@@ -459,12 +463,26 @@ describe('webview page', () => {
         });
     });
 
+    /** Property groups start folded (only the essentials are open): unfold them all so a test can reach any editor. */
+    const expandGroups = () => {
+        for (let guard = 0; guard < 20; guard++) {
+            const closed = $$('#props .group').find((g) => g.getAttribute('aria-expanded') === 'false');
+            if (!closed) {
+                return;
+            }
+            closed.click();
+        }
+    };
+
     // ------------------------------------------------------------------ inspector
     describe('inspector', () => {
-        const withProps = (properties: PropertyInfo[], extra: Partial<StateIn> = {}) => post({
-            snapshot: snap({ selection: ['okButton'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'okButton', class: 'QPushButton', parent: 'Form', x: 9, y: 9, w: 100, h: 22 })] }),
-            propertiesFor: 'okButton', properties: { class: 'QPushButton', properties }, code: describeOk, ...extra,
-        });
+        const withProps = (properties: PropertyInfo[], extra: Partial<StateIn> = {}) => {
+            post({
+                snapshot: snap({ selection: ['okButton'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'okButton', class: 'QPushButton', parent: 'Form', x: 9, y: 9, w: 100, h: 22 })] }),
+                propertiesFor: 'okButton', properties: { class: 'QPushButton', properties }, code: describeOk, ...extra,
+            });
+            expandGroups();
+        };
 
         it('edits properties through typed controls and sends exactly what changed', () => {
             withProps([
@@ -848,10 +866,13 @@ describe('webview page', () => {
     });
 
     describe('property editors', () => {
-        const withProps = (properties: PropertyInfo[], extra: Partial<StateIn> = {}) => post({
-            snapshot: snap({ selection: ['w'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'w', class: 'QLabel', parent: 'Form', x: 10, y: 10, w: 100, h: 22 })] }),
-            propertiesFor: 'w', properties: { class: 'QLabel', properties }, ...extra,
-        });
+        const withProps = (properties: PropertyInfo[], extra: Partial<StateIn> = {}) => {
+            post({
+                snapshot: snap({ selection: ['w'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'w', class: 'QLabel', parent: 'Form', x: 10, y: 10, w: 100, h: 22 })] }),
+                propertiesFor: 'w', properties: { class: 'QLabel', properties }, ...extra,
+            });
+            expandGroups();
+        };
         const change = (el: HTMLElement) => el.dispatchEvent(new dom.window.Event('change'));
 
         it('alignment is two rows of buttons that replace only their own axis', () => {

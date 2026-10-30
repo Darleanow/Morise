@@ -25,7 +25,11 @@ const panels: Record<RightTab, HTMLElement> = {
     form: $('panel-form'),
 };
 
-const collapsedGroups = new Set<string>();
+/** Groups the user opened or closed by hand; the others follow the default (only Essentials and groups holding a change are open). */
+const toggledGroups = new Set<string>();
+/** The properties people reach for first, in this order: they sit together at the top, the rest is folded away by class. */
+const ESSENTIALS = ['objectName', 'text', 'title', 'windowTitle', 'placeholderText', 'currentText', 'plainText', 'html', 'toolTip', 'icon', 'enabled', 'checkable', 'checked', 'readOnly', 'echoMode', 'value', 'minimum', 'maximum', 'currentIndex', 'orientation', 'geometry', 'alignment', 'styleSheet'];
+const ESSENTIAL_GROUP = 'Essentials';
 const openOwners = new Set<string>();
 let connectionsOfSelection = true;
 
@@ -176,10 +180,10 @@ function groupHeader(key: string, open: boolean, count: number): HTMLElement {
     const head = el('div', { className: 'group', role: 'button', tabIndex: 0 }, icon(open ? 'chevron-down' : 'chevron-right'), key, el('span', { className: 'dim count' }, String(count)));
     head.setAttribute('aria-expanded', String(open));
     const toggle = () => {
-        if (collapsedGroups.has(key)) {
-            collapsedGroups.delete(key);
+        if (toggledGroups.has(key)) {
+            toggledGroups.delete(key);
         } else {
-            collapsedGroups.add(key);
+            toggledGroups.add(key);
         }
         renderProperties();
     };
@@ -272,12 +276,26 @@ export function renderProperties(): void {
         return;
     }
     const groups = new Map<string, PropertyInfo[]>();
+    const essentials = new Map<string, PropertyInfo>();
     for (const p of props.properties) {
         if ((q && !p.name.toLowerCase().includes(q)) || (prefs.changedOnly && !p.changed)) {
             continue;
         }
+        if (!p.dynamic && ESSENTIALS.includes(p.name)) {
+            essentials.set(p.name, p);
+            continue;
+        }
         const key = p.dynamic ? 'Dynamic properties' : (p.group || 'General');
         groups.set(key, [...(groups.get(key) ?? []), p]);
+    }
+    if (essentials.size > 0) {
+        // Essentials first, in a fixed order; the classes follow from the most specific one to QObject.
+        const first = new Map<string, PropertyInfo[]>([[ESSENTIAL_GROUP, ESSENTIALS.flatMap((n) => essentials.get(n) ?? [])]]);
+        const rest = [...groups].reverse();
+        groups.clear();
+        for (const [k, v] of [...first, ...rest]) {
+            groups.set(k, v);
+        }
     }
     const frag = document.createDocumentFragment();
     if (Array.isArray(props.items) && !q && !prefs.changedOnly) {
@@ -295,7 +313,8 @@ export function renderProperties(): void {
         frag.append(el('div', { className: 'group static' }, icon(c.kind === 'table' ? 'table' : 'list-tree'), 'Contents', el('span', { className: 'dim count' }, summary)), el('div', { className: 'items-editor' }, btn));
     }
     for (const [key, list] of groups) {
-        const open = q !== '' || prefs.changedOnly || !collapsedGroups.has(key);
+        const byDefault = key === ESSENTIAL_GROUP || props.isLayout === true || key === 'Dynamic properties' || list.some((p) => p.changed);
+        const open = q !== '' || prefs.changedOnly || byDefault !== toggledGroups.has(key);
         frag.append(groupHeader(key, open, list.length));
         if (!open) {
             continue;

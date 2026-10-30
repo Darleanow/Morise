@@ -50,6 +50,8 @@ async function check(label, fn) {
     if (wants.formInfo) extra.formInfo = await client.request('formInfo', { docId });
     const s = { ...snap }; delete s.messages;
     await post({ type: 'state', snapshot: s, properties, propertiesFor: name ?? null, palette: pal.categories, fonts: pal.fonts, locales: pal.locales, notices: snap.messages ?? [], code, connections, container, ...extra });
+    // The inspector folds its groups by default; the scenarios reach every editor, so unfold them.
+    if (!process.env.KEEP_FOLDED) await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 40)); for (let i = 0; i < 20; i++) { const g = Array.from(document.querySelectorAll('#props .group')).find((x) => x.getAttribute('aria-expanded') === 'false'); if (!g) return; g.click(); } });
   }
   const mutating = new Set(['view','selectNames','setProperty','resetProperty','addWidget','action','gesture','setGeometries','makeSubmenu','pickResource','removeResource','addMenu','addMenuEntry','removeMenuEntry','addAction','removeAction','useAction','actionGroup','moveEntry','setCustomMethods','taskAction','setContents','setItems','moveWidget','reparent','pageOp','setCurrentPage','setTabOrder','promote','demote','setFormInfo','addDynamicProperty','removeDynamicProperty','connect','disconnect']);
   async function handle(m) {
@@ -205,6 +207,23 @@ async function check(label, fn) {
   });
 
   // ---------------------------------------------------------------- free widgets
+  await open('free.ui');
+  for (const file of (process.env.STAB || 'free.ui').split(',')) {
+    await open(file);
+    await check('stability: selecting widgets never moves the form on screen (' + file + ')', async () => {
+      const before = await formBox();
+      const seen = [];
+      for (const o of snap.objects.filter((x) => x.kind === 'widget' || x.kind == null)) {
+        const [sx, sy] = await at(o.x + Math.min(6, o.w / 2), o.y + Math.min(6, o.h / 2));
+        await page.mouse.click(sx, sy);
+        await settle();
+        const b = await formBox();
+        if (process.env.STABSHOT) await shot('stab-' + file + '-' + o.name);
+        seen.push(`${o.name}:${Math.round(b.x - before.x)},${Math.round(b.y - before.y)},${Math.round(b.width - before.width)}`);
+        assert.ok(Math.abs(b.x - before.x) < 0.5 && Math.abs(b.y - before.y) < 0.5 && Math.abs(b.width - before.width) < 0.5, 'form moved after selecting ' + o.name + ' ' + seen.join(' '));
+      }
+    });
+  }
   await open('free.ui');
   await check('widget: drag moves a free widget, snapped to the grid', async () => {
     const b = snap.objects.find((o) => o.name === 'freeButton');

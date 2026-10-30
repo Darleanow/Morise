@@ -38,7 +38,8 @@ export function attach(node: HTMLElement, r: Rect, width: number, height = 22, m
         ? [above, ...(r.y * z < 70 ? [margin] : []), below, margin, inside]
         : big ? [above, inside, below] : [above, below, inside, below + height + 2];
     let top = candidates[0] as number;
-    const left = Math.max(0, r.x * z);
+    // Kept inside the form's width: a bar sticking out would add a scrollbar and make the centred form jump.
+    const left = Math.max(0, Math.min(r.x * z, (S.snapshot?.width ?? 0) * z - width));
     // The floating bar also keeps off the other widgets: it must never block a click on a neighbour.
     const sel = new Set(S.snapshot?.selection ?? []);
     const obstacles: Rect[] = mode === 'pill'

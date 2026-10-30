@@ -15,11 +15,9 @@ const toolbar = $<HTMLDivElement>('toolbar');
 let widthInput: HTMLInputElement;
 let heightInput: HTMLInputElement;
 
-const GROUPS: ActionName[][] = [
-    ['delete', 'cut', 'copy', 'paste'],
-    ['layoutHorizontal', 'layoutVertical', 'layoutGrid', 'layoutForm', 'breakLayout', 'adjustSize'],
-    ['raise', 'lower'],
-];
+/** What stays one click away: the layouts are the heart of the workflow. Everything else lives in the "more" menu (and in the context menu and keyboard). */
+const LAYOUTS: ActionName[] = ['layoutHorizontal', 'layoutVertical', 'layoutGrid', 'layoutForm', 'breakLayout'];
+const MORE: ActionName[][] = [['cut', 'copy', 'paste', 'delete'], ['adjustSize', 'raise', 'lower']];
 
 function applySize(w: number, h: number): void {
     const root = rootObject();
@@ -41,22 +39,13 @@ export function buildToolbar(): void {
     historyBtn.dataset.historyMenu = '1';
     toolbar.append(left, sep(), undo, redo, historyBtn, sep());
 
-    GROUPS.forEach((group, gi) => {
-        for (const a of group) {
-            const d = actions.ACTIONS[a];
-            const b = button(actions.title(a), icon(d.icon), () => actions.run(a), group.includes('raise') ? 'tb opt' : 'tb');
-            b.dataset.action = a;
-            b.disabled = true;
-            toolbar.append(b);
-        }
-        if (gi < GROUPS.length - 1) {
-            const sp = sep();
-            if (gi === GROUPS.length - 2) {
-                sp.classList.add('opt');
-            }
-            toolbar.append(sp);
-        }
-    });
+    for (const a of LAYOUTS) {
+        const b = button(actions.title(a), icon(actions.ACTIONS[a].icon), () => actions.run(a), 'tb');
+        b.dataset.action = a;
+        b.disabled = true;
+        toolbar.append(b);
+    }
+    toolbar.append(sep());
     const align = button('Align, distribute and match sizes', icon('align-left'), () => {
         const r = align.getBoundingClientRect();
         const targets = alignable();
@@ -70,9 +59,7 @@ export function buildToolbar(): void {
     connect.setAttribute('aria-pressed', 'false');
     const previewBtn = button('Preview the form as the application will show it (Ctrl+R)', icon('open-preview'), () => hooks.openPreview(), 'tb');
     previewBtn.dataset.preview = '1';
-    const compareBtn = button('Compare with the last git commit', icon('git-compare'), () => requestCompare(), 'tb opt');
-    const auditBtn = button('Check the form: labels, accessible names, shortcuts, tab order', icon('checklist'), () => requestAudit(), 'tb opt');
-    toolbar.append(connect, previewBtn, compareBtn, auditBtn, sep());
+    toolbar.append(connect, previewBtn, sep());
 
     const layouts = button('Show layout outlines', icon('layout'), () => {
         prefs.showLayouts = !prefs.showLayouts;
@@ -104,8 +91,22 @@ export function buildToolbar(): void {
         widthInput, el('span', { className: 'dim' }, '×'), heightInput, presets, sep());
 
     const commandsBtn = button('Search commands (>)', icon('terminal'), () => hooks.openCommands(), 'tb');
-    const helpBtn = button('Keyboard and mouse shortcuts (?)', icon('question'), () => hooks.openHelp(), 'tb');
-    toolbar.append(commandsBtn, helpBtn);
+    const more = button('More: clipboard, order, git compare, form check, help', icon('ellipsis'), () => {
+        const r = more.getBoundingClientRect();
+        const entries = MORE.flatMap((group, i) => [
+            ...(i > 0 ? [{ separator: true }] : []),
+            ...group.map((a) => ({ label: actions.title(a), icon: actions.ACTIONS[a].icon, disabled: !actions.isEnabled(a), run: () => actions.run(a) })),
+        ]);
+        openMenu(r.left, r.bottom + 2, [
+            ...entries,
+            { separator: true },
+            { label: 'Compare with the last git commit', icon: 'git-compare', run: () => requestCompare() },
+            { label: 'Check the form', icon: 'checklist', run: () => requestAudit() },
+            { separator: true },
+            { label: 'Keyboard and mouse shortcuts', icon: 'question', shortcut: '?', run: () => hooks.openHelp() },
+        ]);
+    }, 'tb');
+    toolbar.append(commandsBtn, more);
     const right = button('Toggle inspector', icon('layout-sidebar-right'), () => togglePanel('right'), 'tb');
     right.dataset.panel = 'right';
     toolbar.append(right);

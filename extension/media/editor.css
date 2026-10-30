@@ -90,7 +90,7 @@ input[type=checkbox] { margin: 0; accent-color: var(--vscode-focusBorder); }
 .size-input { width: 62px; text-align: right; }
 
 /* The workspace is deliberately a different shade from the editor so the form reads as an object on a canvas. */
-#viewport { position: relative; flex: 1; min-height: 0; overflow: auto; display: flex; padding: 36px 48px 48px 36px; background: color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-foreground)); }
+#viewport { position: relative; scrollbar-gutter: stable both-edges; flex: 1; min-height: 0; overflow: auto; display: flex; padding: 36px 48px 48px 36px; background: color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-foreground)); }
 #box { margin: auto; flex: none; position: relative; }
 #stage { position: absolute; inset: 0; box-shadow: 0 0 0 1px var(--vscode-widget-border, rgba(128,128,128,.4)), 0 8px 24px rgba(0,0,0,.3); background: #f0f0f0; }
 #form { display: block; user-select: none; -webkit-user-drag: none; }
