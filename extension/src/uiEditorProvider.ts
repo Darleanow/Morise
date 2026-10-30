@@ -1,10 +1,10 @@
 import { TEMPLATES, classNameFor, templateXml } from './templates';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { execFile } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { BackendClient } from './backendClient';
+import { readCommitted } from './gitCompare';
 import { parseWebviewMessage } from './messages';
 import { pageBody } from './pageBody';
 import type { CompareResult, LocaleChoices, ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
@@ -272,21 +272,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             return { ok: false, error: 'Only files on disk can be compared with git.' };
         }
         const file = doc.uri.fsPath;
-        const committed = await new Promise<{ text?: string; error?: string }>((resolve) => {
-            execFile('git', ['show', `HEAD:./${path.basename(file)}`], { cwd: path.dirname(file), maxBuffer: 64 * 1024 * 1024, encoding: 'utf8' }, (err, stdout, stderr) => {
-                if (!err) {
-                    resolve({ text: stdout });
-                } else if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-                    resolve({ error: 'git is not installed or not on the PATH.' });
-                } else if (/not a git repository/i.test(stderr)) {
-                    resolve({ error: 'This file is not in a git repository.' });
-                } else if (/exists on disk, but not in|does not exist in|unknown revision|bad revision|ambiguous argument|invalid object name/i.test(stderr)) {
-                    resolve({ error: 'This file has no committed version yet.' });
-                } else {
-                    resolve({ error: stderr.trim().split('\n')[0] || 'git could not read the committed file.' });
-                }
-            });
-        });
+        const committed = await readCommitted(file);
         if (committed.text === undefined) {
             return { ok: false, error: committed.error ?? 'No committed version.' };
         }

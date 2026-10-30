@@ -12,5 +12,5 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true
   },
-  "include": ["src/extension.ts", "src/backendClient.ts", "src/uiEditorProvider.ts", "src/protocol.ts", "src/messages.ts", "src/pageBody.ts", "test/**/*.ts", "test-integration/**/*.ts"]
+  "include": ["src/extension.ts", "src/backendClient.ts", "src/uiEditorProvider.ts", "src/protocol.ts", "src/messages.ts", "src/pageBody.ts", "src/gitCompare.ts", "test/**/*.ts", "test-integration/**/*.ts"]
 }
