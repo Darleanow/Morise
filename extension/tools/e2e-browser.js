@@ -1303,6 +1303,43 @@ async function check(label, fn) {
     await page.keyboard.press('Enter'); await settle();
     assert.equal(await page.locator('.ruler').count(), 0);
   });
+  await check('rulers: a guide pulled out of the ruler is drawn, widgets snap to it, and dragging it out of the form removes it', async () => {
+    await open('free.ui');
+    await page.keyboard.press('>');
+    await page.keyboard.type('rulers');
+    await page.keyboard.press('Enter'); await settle();
+    const form = await formBox();
+    const k = form.width / snap.width;
+    const rt = await page.locator('.ruler-top').boundingBox();
+    // pull a horizontal guide from the top ruler down to y = 107 (form pixels)
+    if (process.env.DEBUG_PAGE) console.log('HIT', await page.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e && (e.tagName + '.' + e.className + ' <' + (e.parentElement?.className ?? '')); }, [rt.x + 150, rt.y + rt.height / 2]), JSON.stringify(rt));
+    await page.mouse.move(rt.x + 150, rt.y + rt.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(rt.x + 150, form.y + 107 * k, { steps: 6 });
+    await page.mouse.up(); await settle();
+    assert.equal(await page.locator('.user-guide.y').count(), 1);
+    const gy = await page.locator('.user-guide.y').evaluate((n) => parseFloat(n.style.top));
+    assert.ok(Math.abs(gy / k - 107) < 1.5, 'guide at ' + gy / k);
+    // move the free button so its top lands about 3px from the guide: it jumps onto it
+    const b = snap.objects.find((o) => o.name === 'freeButton');
+    const [sx, sy] = await at(b.x + 30, b.y + 15);
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    await page.mouse.move(sx + 5, sy + (110 - b.y), { steps: 6 });
+    await page.mouse.up(); await settle();
+    const moved = (await backendNow()).objects.find((x) => x.name === 'freeButton');
+    assert.equal(moved.y, 107, 'snapped to the guide');
+    // drag the grip out of the form: gone
+    const grip = await page.locator('.ruler-left .guide-grip').boundingBox();
+    await page.mouse.move(grip.x + 3, grip.y + 3);
+    await page.mouse.down();
+    await page.mouse.move(grip.x + 3, form.y - 30, { steps: 5 });
+    await page.mouse.up(); await settle();
+    assert.equal(await page.locator('.user-guide').count(), 0);
+    await page.keyboard.press('>');
+    await page.keyboard.type('rulers');
+    await page.keyboard.press('Enter'); await settle();
+  });
   await check('toolbar sweep: every enabled button reacts to a real mouse click', async () => {
     await open('rich.ui');
     const go = await obj('go');

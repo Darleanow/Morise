@@ -186,11 +186,11 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 ## Known limits (verified or observed, not guesses)
 
 - **Actions on the canvas:** an action row of the Form tab can be dragged onto a tool bar (it is added) or onto the menu bar (a small menu asks which menu). The entries of a tool bar are reordered by dragging them along the bar (a blue line shows where one lands; Escape cancels). Entries of a menu, which is only drawn while open, and of the menu bar are not draggable on the canvas; every menu and tool bar can be reordered in the Form tab with arrows (small undo commands of ours; the saved `.ui` keeps the new order and passes `uic`).
-- **Rulers** (command `> rulers`) show form pixels along the top and left edges; they are not draggable guides.
+- **Rulers** (command `> rulers`) show form pixels along the top and left edges. Drag from a ruler to pull a guide into the form: moves and resizes snap to it (Alt bypasses), a grip on the ruler moves it again, and dropping it outside the form or double-clicking the grip removes it. Guides live in the editor session only; they are not written to the `.ui`.
 - **Why geometry instead of mouse replay:** Designer starts a `QDrag` (`QDesignerMimeData::execDrag`) when a
   widget is dragged, which runs a nested event loop; replaying that headless was judged unsafe, so moves go
   through the same `SetPropertyCommand` Designer itself uses for resizing.
-- **Property editors:** palettes and a few exotic types are shown read-only. String edits keep Designer's
+- **Property editors:** palettes are edited by role; a few exotic types are still shown read-only. String edits keep Designer's
   translatable/comment metadata. Icons are stored as the path you chose (Designer saves it relative to the `.ui`).
 - **Connections** are created by driving the engine's own signal/slot editor with synthesised mouse events and
   answering its connect dialog from the page's choice; this relies on Designer's internal widget names

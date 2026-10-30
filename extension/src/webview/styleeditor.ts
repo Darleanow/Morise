@@ -153,10 +153,11 @@ export function openStyleEditor(title: string, current: string, commit: (value: 
     live.setAttribute('aria-label', 'Show the result on the form while typing');
     const liveLabel = el('label', { className: 'qss-live', title: canGoLive ? 'Apply the sheet to the form as you type' : 'Live mode needs a single selected widget' }, live, 'Live');
 
-    // Whether the first live edit will merge into the previous undo entry (same property on the same object).
-    const mergesIntoPrevious = (S.snapshot?.undoText ?? '').includes(`'styleSheet' of '${S.propertiesFor ?? ''}'`);
+    // Live edits merge into one undo entry; they merge into the previous one instead when it is the same property of the same object.
+    const startIndex = S.snapshot?.undoIndex ?? 0;
     let liveApplied = false;
     let applied = false;
+    let closed = false;
     let sent = current;
     let timer: number | undefined;
     let items: string[] = [];
@@ -199,7 +200,8 @@ export function openStyleEditor(title: string, current: string, commit: (value: 
     const check = () => {
         const text = ta.value;
         void checkStyleSheet(text).then((valid) => {
-            if (ta.value !== text) {
+            // The answer can arrive after the box was closed: it must not apply anything then.
+            if (closed || ta.value !== text) {
                 return;
             }
             status.textContent = text.trim() === '' ? '' : valid ? 'Valid style sheet' : 'Invalid style sheet';
@@ -250,18 +252,20 @@ export function openStyleEditor(title: string, current: string, commit: (value: 
     });
     // Closing the box any way but Apply undoes what live mode did.
     const revert = () => {
+        closed = true;
+        window.clearTimeout(timer);
         if (applied || !liveApplied) {
             return;
         }
-        if (mergesIntoPrevious) {
-            commit(current);
+        const added = (S.snapshot?.undoIndex ?? 0) - startIndex;
+        if (added > 0) {
+            send(added > 1 ? { type: 'undo', steps: added } : { type: 'undo' });
         } else {
-            send({ type: 'undo' });
+            commit(current); // merged into an earlier entry: put the old value back
         }
     };
     const applyAndClose = () => {
         applied = true;
-        window.clearTimeout(timer);
         popup.close();
         if (ta.value !== sent) {
             commit(ta.value);

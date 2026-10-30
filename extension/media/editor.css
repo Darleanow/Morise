@@ -444,7 +444,7 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .icon-btn.on { color: var(--vscode-textLink-foreground); }
 
 /* ---- rulers ---- */
-.ruler { position: absolute; pointer-events: none; font: 9px var(--vscode-font-family, sans-serif); color: var(--vscode-descriptionForeground); background: var(--vscode-editorWidget-background, rgba(128,128,128,.12)); }
+.ruler { position: absolute; pointer-events: auto; font: 9px var(--vscode-font-family, sans-serif); color: var(--vscode-descriptionForeground); background: var(--vscode-editorWidget-background, rgba(128,128,128,.12)); }
 .ruler-top { left: 0; top: -19px; height: 18px; }
 .ruler-left { top: 0; left: -19px; width: 18px; }
 .ruler svg { display: block; overflow: visible; }
@@ -506,3 +506,16 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .audit-list { width: auto; border-right: 0; max-height: 60vh; }
 .audit-warning .codicon { color: var(--vscode-editorWarning-foreground, #cca700); }
 .audit-info .codicon { color: var(--vscode-editorInfo-foreground, #3794ff); }
+
+/* guides pulled out of the rulers */
+.ruler-top { cursor: row-resize; }
+.ruler-left { cursor: col-resize; }
+.user-guides { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.user-guide { position: absolute; background: var(--vscode-charts-blue, #1a85ff); opacity: .8; }
+.user-guide.x { top: 0; bottom: 0; width: 1px; }
+.user-guide.y { left: 0; right: 0; height: 1px; }
+.guide-grip { position: absolute; z-index: 2; width: 7px; height: 7px; background: var(--vscode-charts-blue, #1a85ff); }
+.guide-grip.x { bottom: 0; }
+.guide-grip.y { right: 0; }
+.ruler-top .guide-grip { cursor: col-resize; }
+.ruler-left .guide-grip { cursor: row-resize; }

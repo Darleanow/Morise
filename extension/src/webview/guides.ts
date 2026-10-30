@@ -1,5 +1,6 @@
 import { el } from './dom';
 import { byName, type Rect } from './geometry';
+import { userGuides } from './rulers';
 import { prefs, S } from './state';
 import { placed, zoom } from './view';
 
@@ -8,11 +9,12 @@ const SNAP_PX = 5;
 
 /** Aligns the moving edges to the edges and centres of sibling widgets that are close enough. */
 export function snapToSiblings(r: Rect, exclude: Set<string>, parent: string | null, edges: { l: boolean; r: boolean; t: boolean; b: boolean; move: boolean }): Rect {
-    if (!prefs.snapToWidgets) {
+    const pulled = prefs.rulers ? userGuides : { x: [], y: [] };
+    if (!prefs.snapToWidgets && pulled.x.length + pulled.y.length === 0) {
         return r;
     }
     const thr = SNAP_PX / zoom();
-    const sibs = (S.snapshot?.objects ?? []).filter((o) => o.parent === parent && o.parent !== null && !exclude.has(o.name));
+    const sibs = !prefs.snapToWidgets ? [] : (S.snapshot?.objects ?? []).filter((o) => o.parent === parent && o.parent !== null && !exclude.has(o.name));
     let { x, y, w, h } = r;
     const near = (v: number, cands: number[]): number | undefined => {
         let best: number | undefined;
@@ -23,8 +25,8 @@ export function snapToSiblings(r: Rect, exclude: Set<string>, parent: string | n
         }
         return best;
     };
-    const xs = sibs.flatMap((o) => [o.x, o.x + o.w / 2, o.x + o.w]);
-    const ys = sibs.flatMap((o) => [o.y, o.y + o.h / 2, o.y + o.h]);
+    const xs = [...sibs.flatMap((o) => [o.x, o.x + o.w / 2, o.x + o.w]), ...pulled.x];
+    const ys = [...sibs.flatMap((o) => [o.y, o.y + o.h / 2, o.y + o.h]), ...pulled.y];
     if (edges.move) {
         const dxs = [near(x, xs), near(x + w / 2, xs), near(x + w, xs)].map((c, i) => (c === undefined ? undefined : c - (x + (w / 2) * i)));
         const dys = [near(y, ys), near(y + h / 2, ys), near(y + h, ys)].map((c, i) => (c === undefined ? undefined : c - (y + (h / 2) * i)));

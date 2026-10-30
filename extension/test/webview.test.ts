@@ -998,9 +998,36 @@ describe('webview page', () => {
             post({ type: 'styleSheetCheck', text: ta.value, valid: true });
             await new Promise((r) => setTimeout(r, 0));
             assert.deepEqual(sent.at(-1), { type: 'setProperty', name: 'w', property: 'styleSheet', value: 'QPushButton { color: red; }' });
+            post({ snapshot: snap({ selection: ['w'], undoIndex: 1, undoCount: 1, canUndo: true }), propertiesFor: 'w', properties: { class: 'QLabel', properties: [prop('styleSheet', { value: 'QPushButton { color: red; }' })] } });
             sent.length = 0;
             key('Escape', {}, ta);
             assert.deepEqual(sent.at(-1), { type: 'undo' });
+        });
+
+        it('a style sheet check that answers after Cancel applies nothing, and Cancel puts back a merged value', async () => {
+            withProps([prop('styleSheet', { value: 'color: red;' })]);
+            ($('button[aria-label^="Edit styleSheet"]') as HTMLElement).click();
+            let ta = $('.qss-input') as HTMLTextAreaElement;
+            ta.value = 'color: blue;';
+            ta.dispatchEvent(new dom.window.Event('input'));
+            await new Promise((r) => setTimeout(r, 300));
+            sent.length = 0;
+            ($$('.popup .btn').find((b) => b.textContent === 'Cancel') as HTMLElement).click();
+            post({ type: 'styleSheetCheck', text: 'color: blue;', valid: true });
+            await new Promise((r) => setTimeout(r, 0));
+            assert.equal(sent.filter((m) => m.type === 'setProperty').length, 0, 'nothing is applied after the box closed');
+            // live edit that merged into an earlier entry (the undo index did not move): Cancel restores the old value
+            withProps([prop('styleSheet', { value: 'color: red;' })]);
+            ($('button[aria-label^="Edit styleSheet"]') as HTMLElement).click();
+            ta = $('.qss-input') as HTMLTextAreaElement;
+            ta.value = 'color: green;';
+            ta.dispatchEvent(new dom.window.Event('input'));
+            await new Promise((r) => setTimeout(r, 300));
+            post({ type: 'styleSheetCheck', text: 'color: green;', valid: true });
+            await new Promise((r) => setTimeout(r, 0));
+            sent.length = 0;
+            ($$('.popup .btn').find((b) => b.textContent === 'Cancel') as HTMLElement).click();
+            assert.deepEqual(sent.at(-1), { type: 'setProperty', name: 'w', property: 'styleSheet', value: 'color: red;' });
         });
 
         it('with several widgets selected, an edit names them all', () => {
