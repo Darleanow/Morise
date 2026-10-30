@@ -894,10 +894,35 @@ describe('webview page', () => {
         it('long text opens a larger editor and sends the result', () => {
             withProps([prop('styleSheet', { value: 'color: red;' })]);
             ($('button[aria-label^="Edit styleSheet"]') as HTMLElement).click();
-            const ta = $('.big-text') as HTMLTextAreaElement;
+            const ta = $('.qss-input') as HTMLTextAreaElement;
             ta.value = 'color: blue;\nfont-weight: bold;';
             ($('.popup .btn.primary') as HTMLElement).click();
             assert.deepEqual(sent.at(-1), { type: 'setProperty', name: 'w', property: 'styleSheet', value: 'color: blue;\nfont-weight: bold;' });
+        });
+
+        it('the style sheet editor colours the source, completes, applies live and undoes on cancel', async () => {
+            withProps([prop('styleSheet', { value: '' })]);
+            ($('button[aria-label^="Edit styleSheet"]') as HTMLElement).click();
+            const ta = $('.qss-input') as HTMLTextAreaElement;
+            ta.value = 'QPushButton:ho';
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            ta.dispatchEvent(new dom.window.Event('input'));
+            assert.ok($('.qss-mirror .qss-selector'), 'selectors are coloured');
+            assert.equal($('.qss-suggest .qa-item')?.textContent, ':hover');
+            key('Tab', {}, ta);
+            assert.equal(ta.value, 'QPushButton:hover');
+            ta.value = 'QPushButton { color: red; }';
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            ta.dispatchEvent(new dom.window.Event('input'));
+            assert.ok($('.qss-mirror .qss-property'));
+            sent.length = 0;
+            await new Promise((r) => setTimeout(r, 300));
+            post({ type: 'styleSheetCheck', text: ta.value, valid: true });
+            await new Promise((r) => setTimeout(r, 0));
+            assert.deepEqual(sent.at(-1), { type: 'setProperty', name: 'w', property: 'styleSheet', value: 'QPushButton { color: red; }' });
+            sent.length = 0;
+            key('Escape', {}, ta);
+            assert.deepEqual(sent.at(-1), { type: 'undo' });
         });
 
         it('with several widgets selected, an edit names them all', () => {

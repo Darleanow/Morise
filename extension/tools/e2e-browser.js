@@ -1166,11 +1166,26 @@ async function check(label, fn) {
     const ok = await obj('okButton');
     await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
     await page.locator('button[title^="Edit styleSheet"]').click();
-    const ta = page.locator('textarea.big-text');
+    const ta = page.locator('textarea.qss-input');
     await ta.fill('QPushButton { color: red;'); await page.waitForSelector('.style-status.bad');
     await ta.fill('color: red;'); await page.waitForSelector('.style-status.ok');
     assert.match(await page.locator('.style-status').textContent(), /Valid/);
     await page.keyboard.press('Escape');
+  });
+  await check('style sheet: live mode paints the form while typing and Cancel puts it back', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
+    const before = (await backendNow()).undoIndex;
+    await page.locator('button[title^="Edit styleSheet"]').click();
+    const ta = page.locator('textarea.qss-input');
+    await ta.fill('QPushButton { background-color: #ff0000; }');
+    await page.waitForSelector('.style-status.ok'); await settle(); await new Promise((r) => setTimeout(r, 500));
+    assert.equal((await prop('okButton', 'styleSheet')).value, 'QPushButton { background-color: #ff0000; }', 'applied while typing');
+    await shot('e2e-style-live');
+    await page.locator('.popup .btn', { hasText: 'Cancel' }).click(); await settle();
+    assert.equal((await prop('okButton', 'styleSheet')).value, '', 'Cancel restored the form');
+    assert.equal((await backendNow()).undoIndex, before, 'and left no undo entry');
   });
   await check('keyboard: Delete, arrows and shortcuts typed in a field never act on the form', async () => {
     await open('rich.ui');

@@ -4,6 +4,7 @@ import { classGlyph, renderOverlay } from './canvas';
 import { openConnectDialog } from './connectdialog';
 import { openMenu } from './menu';
 import { openAddDynamicProperty, openPrompt, openTextEditor } from './dialogs';
+import { openStyleEditor } from './styleeditor';
 import { openGridEditor } from './gridedit';
 import { editorFor, isBlock, type EditorContext } from './editors';
 import { renderFormTab } from './formtab';
@@ -137,7 +138,12 @@ const context: EditorContext = {
         }
     },
     multiline(p, current) {
-        openTextEditor(`${S.propertiesFor ?? ''} · ${p.name}`, current, (v) => context.commit(p, v), p.name === 'styleSheet');
+        const title = `${S.propertiesFor ?? ''} \u00b7 ${p.name}`;
+        if (p.name === 'styleSheet') {
+            openStyleEditor(title, current, (v) => context.commit(p, v), targetNames().length === 1);
+        } else {
+            openTextEditor(title, current, (v) => context.commit(p, v), false);
+        }
     },
     rerender: () => renderProperties(),
     menu(anchor, items) {

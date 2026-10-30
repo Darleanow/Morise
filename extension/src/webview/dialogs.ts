@@ -12,7 +12,7 @@ export function onStyleSheetCheck(text: string, valid: boolean): void {
     styleChecks.delete(text);
 }
 
-function checkStyleSheet(text: string): Promise<boolean> {
+export function checkStyleSheet(text: string): Promise<boolean> {
     return new Promise((resolve) => {
         styleChecks.set(text, resolve);
         send({ type: 'checkStyleSheet', text });

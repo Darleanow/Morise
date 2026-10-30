@@ -452,3 +452,23 @@ textarea.inplace { padding: 4px 6px; resize: none; }
 .ov.entry-drop { background: var(--vscode-focusBorder, #007fd4); pointer-events: none; z-index: 5; }
 .qa-head { padding: 6px 14px 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 .pill-hint { color: var(--vscode-charts-yellow, #e5c07b); }
+/* style sheet editor: the form stays visible behind a see-through scrim */
+.scrim:has(.popup.style-editor) { background: transparent; justify-content: flex-end; align-items: flex-end; padding: 0 16px 36px 16px; }
+.popup.style-editor { width: min(480px, 94vw); }
+.qss-wrap { position: relative; margin: 8px 14px 14px; height: 30vh; border: 1px solid var(--border); border-radius: 4px; background: var(--vscode-input-background); }
+.qss-mirror, .qss-input { position: absolute; inset: 0; margin: 0; padding: 8px; box-sizing: border-box; font: 12px/1.5 var(--vscode-editor-font-family, monospace); white-space: pre; overflow: auto; tab-size: 4; border: 0; }
+.qss-mirror { pointer-events: none; color: var(--vscode-input-foreground); scrollbar-width: none; }
+.qss-input { background: transparent; color: transparent; caret-color: var(--vscode-input-foreground); resize: none; outline: none; }
+.qss-input::selection { background: var(--vscode-editor-selectionBackground); color: transparent; }
+.qss-comment { color: var(--vscode-editorLineNumber-foreground); font-style: italic; }
+.qss-string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+.qss-selector { color: var(--vscode-symbolIcon-classForeground, #4ec9b0); }
+.qss-property { color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe); }
+.qss-value { color: var(--vscode-foreground); }
+.qss-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+.qss-punct { opacity: .65; }
+.qss-suggest { position: absolute; left: 8px; bottom: 8px; min-width: 200px; max-height: 40%; overflow: auto; z-index: 2; background: var(--vscode-editorSuggestWidget-background, var(--vscode-editorWidget-background)); border: 1px solid var(--vscode-editorSuggestWidget-border, var(--border)); border-radius: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.qss-suggest[hidden] { display: none; }
+.qss-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 14px 0; }
+.qss-chips .chip { padding: 1px 8px; font-size: 11px; }
+.qss-live { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
