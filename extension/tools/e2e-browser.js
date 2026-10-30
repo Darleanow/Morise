@@ -77,6 +77,16 @@ async function check(label, fn) {
         case 'moveEntry': snap = await client.request('moveEntry', { ...d, target: m.target, from: m.from, to: m.to }); break;
         case 'actionGroup': snap = await client.request('actionGroup', { ...d, name: m.name, remove: m.remove, action: m.action, group: m.group }); break;
         case 'saveImage': return;
+        case 'compare': {
+          // stands in for the host: the file as opened plays the committed version
+          const scratch = docId + '-cmp';
+          const first = await client.request('open', { docId: scratch, xml: committedXml });
+          const baseXml = (await client.request('contents', { docId: scratch })).xml;
+          await client.request('close', { docId: scratch });
+          const currentXml = (await client.request('contents', { docId })).xml;
+          await post({ type: 'compareResult', result: { ok: true, ref: 'HEAD', png: first.png, width: first.width, height: first.height, dpr: first.dpr, baseXml, currentXml } });
+          return;
+        }
         case 'checkStyleSheet': await post({ type: 'styleSheetCheck', text: m.text, valid: (await client.request('checkStyleSheet', { text: m.text })).valid }); return;
         case 'setCustomMethods': snap = await client.request('setCustomMethods', { ...d, slots: m.slots, signals: m.signals }); break;
         case 'removeAction': snap = await client.request('removeAction', { ...d, name: m.name }); break;
@@ -117,9 +127,11 @@ async function check(label, fn) {
   const backendNow = async () => client.request('snapshot', { docId });
   const settle = async () => { await queue; await page.waitForTimeout(60); await queue; };
 
+  let committedXml = '';
   async function open(file) {
     docId = 'e2e' + (++docN);
-    snap = await client.request('open', { docId, xml: fs.readFileSync(path.join(ROOT, 'backend/testdata', file), 'utf8') });
+    committedXml = fs.readFileSync(path.join(ROOT, 'backend/testdata', file), 'utf8');
+    snap = await client.request('open', { docId, xml: committedXml });
     sent = [];
     const css = fs.readFileSync(path.join(EXT, 'media/editor.css'), 'utf8');
     const js = fs.readFileSync(path.join(EXT, 'media/webview/main.js'), 'utf8');
@@ -1186,6 +1198,17 @@ async function check(label, fn) {
     await page.locator('.popup .btn', { hasText: 'Cancel' }).click(); await settle();
     assert.equal((await prop('okButton', 'styleSheet')).value, '', 'Cancel restored the form');
     assert.equal((await backendNow()).undoIndex, before, 'and left no undo entry');
+  });
+  await check('compare: the committed form is listed and drawn next to the current one', async () => {
+    await open('sample.ui');
+    const ok = await obj('okButton');
+    await page.mouse.click(...(await at(ok.x + 20, ok.y + 10))); await settle();
+    await page.locator('#inspector [data-prop=text] input').first().fill('Valider'); await page.keyboard.press('Enter'); await settle();
+    await page.keyboard.press('/'); await page.locator('.qa-input').fill('>compare'); await page.keyboard.press('Enter');
+    await page.waitForSelector('.popup.compare .cmp-changed');
+    assert.match(await page.locator('.cmp-changed').first().textContent(), /okButton[\s\S]*text: OK \u2192 Valider/);
+    await shot('e2e-compare');
+    await page.keyboard.press('Escape');
   });
   await check('keyboard: Delete, arrows and shortcuts typed in a field never act on the form', async () => {
     await open('rich.ui');

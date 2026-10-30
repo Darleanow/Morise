@@ -9,7 +9,6 @@ type Mode = 'swipe' | 'fade' | 'side';
 const GLYPH = { added: 'diff-added', removed: 'diff-removed', changed: 'diff-modified' } as const;
 
 export function requestCompare(): void {
-    toast('Reading the committed version…');
     send({ type: 'compare' });
 }
 
