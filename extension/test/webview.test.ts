@@ -165,6 +165,19 @@ describe('webview page', () => {
     });
 
     // ------------------------------------------------------------------ toolbar and keyboard
+    it('the status bar points at the next step: a form without layout offers to lay it out', () => {
+        post({ snapshot: snap({
+            selection: ['Form'],
+            objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'a', class: 'QPushButton', parent: 'Form', x: 9, y: 9, w: 100, h: 22 }), obj({ name: 'b', class: 'QPushButton', parent: 'Form', x: 9, y: 60, w: 100, h: 22 })],
+        }) });
+        assert.ok($('#next.warn'), 'a warning for the missing layout');
+        ($('#next .next-fix') as HTMLButtonElement).click();
+        assert.deepEqual(sent.slice(-2), [{ type: 'selectNames', names: ['Form'] }, { type: 'action', action: 'layoutGrid' }]);
+        post({ snapshot: snap({ selection: ['a'], objects: [obj({ name: 'Form', class: 'QWidget', parent: null, x: 0, y: 0, w: 320, h: 200 }), obj({ name: 'a', class: 'QPushButton', parent: 'Form', x: 9, y: 9, w: 100, h: 22 })] }) });
+        assert.equal($('#next.warn'), null);
+        assert.match($('#next')?.textContent ?? '', /F2 renames/);
+    });
+
     it('layout keys run the engine actions, and a mouse click teaches the key once', () => {
         post({ snapshot: snap({ selection: ['Form'], actions: { layoutGrid: true, layoutHorizontal: true } }) });
         key('g');

@@ -28,6 +28,7 @@ export function pageBody(): string {
     </div>
     <div id="statusbar">
       <nav id="crumbs" aria-label="Selection path"></nav>
+      <span id="next"></span>
       <span id="geom"></span>
       <span id="hint"></span>
       <div id="zoom" role="group" aria-label="Zoom"></div>

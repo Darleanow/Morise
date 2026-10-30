@@ -134,6 +134,13 @@ input[type=checkbox] { margin: 0; accent-color: var(--vscode-focusBorder); }
 .crumb.current { opacity: 1; font-weight: 600; }
 #geom, #hint { opacity: .85; font-variant-numeric: tabular-nums; white-space: nowrap; }
 #hint { opacity: .6; }
+#next { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto; opacity: .75; overflow: hidden; }
+#next .next-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#next .codicon { font-size: 13px; }
+#next.warn { opacity: 1; color: var(--vscode-charts-orange, #d18616); }
+.next-fix { flex: none; height: 20px; padding: 0 8px; border: none; border-radius: 3px; font: inherit; font-size: 11px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+.next-fix:hover { background: var(--vscode-button-hoverBackground, var(--vscode-button-background)); }
+@container (max-width: 640px) { #next { display: none; } }
 #zoom { display: flex; align-items: center; gap: 2px; flex: none; }
 #zoom .level { min-width: 46px; justify-content: center; font-variant-numeric: tabular-nums; }
 

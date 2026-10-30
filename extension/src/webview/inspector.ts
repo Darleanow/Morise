@@ -28,7 +28,7 @@ const panels: Record<RightTab, HTMLElement> = {
 /** Groups the user opened or closed by hand; the others follow the default (only Essentials and groups holding a change are open). */
 const toggledGroups = new Set<string>();
 /** The properties people reach for first, in this order: they sit together at the top, the rest is folded away by class. */
-const ESSENTIALS = ['objectName', 'text', 'title', 'windowTitle', 'placeholderText', 'currentText', 'plainText', 'html', 'toolTip', 'icon', 'enabled', 'checkable', 'checked', 'readOnly', 'echoMode', 'value', 'minimum', 'maximum', 'currentIndex', 'orientation', 'geometry', 'alignment', 'styleSheet'];
+const ESSENTIALS = ['objectName', 'text', 'title', 'windowTitle', 'placeholderText', 'currentText', 'plainText', 'toolTip', 'enabled', 'value', 'minimum', 'maximum', 'currentIndex', 'geometry', 'styleSheet'];
 const ESSENTIAL_GROUP = 'Essentials';
 const openOwners = new Set<string>();
 let connectionsOfSelection = true;

@@ -1,10 +1,12 @@
 import { $, button, dims, el, icon } from './dom';
 import { fitZoom, setZoom, stepZoom } from './canvas';
 import { byName, primarySelection, rootObject, selectedObject } from './geometry';
+import { nextStep } from './nextstep';
 import { prefs, S, send } from './state';
 
 const crumbs = $<HTMLElement>('crumbs');
 const geom = $('geom');
+const next = $('next');
 const zoomBar = $<HTMLDivElement>('zoom');
 
 export function renderStatus(): void {
@@ -12,8 +14,12 @@ export function renderStatus(): void {
     crumbs.replaceChildren();
     if (!s) {
         geom.textContent = '';
+        next.replaceChildren();
         return;
     }
+    const step = nextStep();
+    next.className = step?.warn ? 'warn' : '';
+    next.replaceChildren(...(step ? [icon(step.warn ? 'warning' : 'lightbulb'), el('span', { className: 'next-text' }, step.text), ...(step.fix ? [button(step.fix.label, step.fix.label, step.fix.run, 'next-fix')] : [])] : []));
     const sel = selectedObject() ?? primarySelection();
     const chain = [] as NonNullable<typeof sel>[];
     for (let o = sel ?? rootObject(); o; o = byName(o.parent)) {
