@@ -133,6 +133,8 @@ describe('webview page', () => {
 
     it('palette: searches, groups, adds on double click and remembers recents', () => {
         post({ snapshot: snap(), palette });
+        assert.equal($$('.pal-item').length, 2, 'only the everyday categories start open');
+        $$('.pal-cat').find((c) => c.textContent?.includes('Containers'))?.click();
         assert.equal($$('.pal-item').length, 3);
         const f = $('#palette-filter') as HTMLInputElement;
         f.value = 'qgroup'; f.dispatchEvent(new dom.window.Event('input'));
@@ -163,6 +165,17 @@ describe('webview page', () => {
     });
 
     // ------------------------------------------------------------------ toolbar and keyboard
+    it('layout keys run the engine actions, and a mouse click teaches the key once', () => {
+        post({ snapshot: snap({ selection: ['Form'], actions: { layoutGrid: true, layoutHorizontal: true } }) });
+        key('g');
+        assert.deepEqual(sent.at(-1), { type: 'action', action: 'layoutGrid' });
+        assert.equal($$('.toast').length, 0, 'the keyboard needs no tip');
+        ($('button[data-action=layoutHorizontal]') as HTMLButtonElement).click();
+        assert.match($('.toast')?.textContent ?? '', /press H/);
+        ($('button[data-action=layoutHorizontal]') as HTMLButtonElement).click();
+        assert.equal($$('.toast').length, 1, 'the tip is shown once');
+    });
+
     it('toolbar buttons mirror the engine action state and never allow deleting the form', () => {
         post({ snapshot: snap({ selection: ['Form'], actions: { delete: true, layoutGrid: true } }) });
         assert.equal(($('button[data-action=layoutGrid]') as HTMLButtonElement).disabled, false);

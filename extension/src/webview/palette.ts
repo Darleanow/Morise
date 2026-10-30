@@ -7,6 +7,9 @@ import { classIcons, prefs, S, savePrefs } from './state';
 const paletteEl = $<HTMLDivElement>('palette');
 const filterEl = $<HTMLInputElement>('palette-filter');
 const collapsed = new Set<number>();
+/** Only the categories used all the time start open; the rest is one click (or the / search) away. */
+const OPEN_AT_START = new Set(['Layouts', 'Buttons', 'Input Widgets']);
+let folded = false;
 
 export function learnIcons(): void {
     classIcons.clear();
@@ -49,6 +52,14 @@ function item(w: PaletteWidget, category: number): HTMLElement {
 }
 
 export function renderPalette(): void {
+    if (!folded && S.palette.length > 0) {
+        folded = true;
+        for (const c of S.palette) {
+            if (!OPEN_AT_START.has(c.name)) {
+                collapsed.add(c.index);
+            }
+        }
+    }
     const q = filterEl.value.trim().toLowerCase();
     const frag = document.createDocumentFragment();
     const section = (key: number, label: string, glyphName: string, widgets: { w: PaletteWidget; category: number }[]) => {

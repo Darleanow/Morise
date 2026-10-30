@@ -17,16 +17,16 @@ export const ACTIONS: Record<ActionName, ActionDef> = {
     copy: { action: 'copy', icon: 'copy', label: 'Copy', shortcut: 'Ctrl+C' },
     paste: { action: 'paste', icon: 'clippy', label: 'Paste', shortcut: 'Ctrl+V' },
     selectAll: { action: 'selectAll', icon: 'list-selection', label: 'Select All', shortcut: 'Ctrl+A' },
-    raise: { action: 'raise', icon: 'arrow-up', label: 'Bring to Front' },
-    lower: { action: 'lower', icon: 'arrow-down', label: 'Send to Back' },
-    layoutHorizontal: { action: 'layoutHorizontal', icon: 'split-horizontal', label: 'Lay Out Horizontally' },
-    layoutVertical: { action: 'layoutVertical', icon: 'split-vertical', label: 'Lay Out Vertically' },
-    layoutGrid: { action: 'layoutGrid', icon: 'table', label: 'Lay Out in a Grid' },
-    layoutForm: { action: 'layoutForm', icon: 'list-flat', label: 'Lay Out in a Form Layout' },
+    raise: { action: 'raise', icon: 'arrow-up', label: 'Bring to Front', shortcut: ']' },
+    lower: { action: 'lower', icon: 'arrow-down', label: 'Send to Back', shortcut: '[' },
+    layoutHorizontal: { action: 'layoutHorizontal', icon: 'split-horizontal', label: 'Lay Out Horizontally', shortcut: 'H' },
+    layoutVertical: { action: 'layoutVertical', icon: 'split-vertical', label: 'Lay Out Vertically', shortcut: 'V' },
+    layoutGrid: { action: 'layoutGrid', icon: 'table', label: 'Lay Out in a Grid', shortcut: 'G' },
+    layoutForm: { action: 'layoutForm', icon: 'list-flat', label: 'Lay Out in a Form Layout', shortcut: 'F' },
     layoutSplitHorizontal: { action: 'layoutSplitHorizontal', icon: 'split-horizontal', label: 'Lay Out Horizontally in a Splitter' },
     layoutSplitVertical: { action: 'layoutSplitVertical', icon: 'split-vertical', label: 'Lay Out Vertically in a Splitter' },
-    breakLayout: { action: 'breakLayout', icon: 'debug-disconnect', label: 'Break Layout' },
-    adjustSize: { action: 'adjustSize', icon: 'screen-full', label: 'Adjust Size' },
+    breakLayout: { action: 'breakLayout', icon: 'debug-disconnect', label: 'Break Layout', shortcut: 'B' },
+    adjustSize: { action: 'adjustSize', icon: 'screen-full', label: 'Adjust Size', shortcut: 'J' },
     simplifyLayout: { action: 'simplifyLayout', icon: 'wand', label: 'Simplify Layout' },
 };
 
@@ -39,9 +39,23 @@ export function isEnabled(a: ActionName): boolean {
     return !(a === 'delete' && onlyFormSelected());
 }
 
-export function run(a: ActionName): void {
+const coached = new Set<ActionName>();
+
+/** A mouse click on something that has a key: say the key once, so the mouse is needed less each time. */
+function coach(a: ActionName): void {
+    const d = ACTIONS[a];
+    if (d.shortcut && !coached.has(a)) {
+        coached.add(a);
+        toast(`Tip: press ${d.shortcut} for “${d.label}”`, { ms: 2600 });
+    }
+}
+
+export function run(a: ActionName, fromKeyboard = false): void {
     if (!isEnabled(a)) {
         return;
+    }
+    if (!fromKeyboard) {
+        coach(a);
     }
     const count = S.snapshot?.selection.length ?? 0;
     send({ type: 'action', action: a });

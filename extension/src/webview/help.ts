@@ -11,6 +11,8 @@ const SHORTCUTS: { title: string; rows: [string, string][] }[] = [
     { title: 'Edit', rows: [
         ['/', 'add a widget by name'], ['>', 'run a command'], ['Enter / double-click', 'edit the text in place'], ['F2', 'rename the object'],
         ['Ctrl+C / X / V', 'copy, cut, paste'], ['Ctrl+D', 'duplicate'], ['Delete', 'delete'], ['Ctrl+Z / Ctrl+Shift+Z', 'undo, redo (VS Code)'] ] },
+    { title: 'Layout', rows: [
+        ['H / V / G / F', 'lay out horizontally, vertically, in a grid, in a form'], ['B', 'break the layout'], ['J', 'adjust size'], [']  /  [', 'bring to front / send to back'] ] },
     { title: 'View', rows: [
         ['Ctrl + wheel, Ctrl +/\u2212', 'zoom'], ['Ctrl+0', 'fit the form'], ['Ctrl+1', 'zoom to 100%'], ['Space + drag, middle button', 'pan'],
         ['Ctrl+R', 'preview the form'], ['F4', 'connect mode (drag between widgets)'], ['?', 'this list'] ] },

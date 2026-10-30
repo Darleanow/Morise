@@ -115,7 +115,10 @@ document.addEventListener('keydown', (ev) => {
     const mod = ev.ctrlKey || ev.metaKey;
     const k = ev.key.toLowerCase();
     let action: ActionName | undefined;
-    if ((ev.key === 'Delete' || ev.key === 'Backspace') && !mod && !onlyFormSelected()) {
+    const layoutKeys: Record<string, ActionName> = { h: 'layoutHorizontal', v: 'layoutVertical', g: 'layoutGrid', f: 'layoutForm', b: 'breakLayout', j: 'adjustSize', ']': 'raise', '[': 'lower' };
+    if (!mod && !ev.altKey && !inPanel && layoutKeys[k]) {
+        action = layoutKeys[k];
+    } else if ((ev.key === 'Delete' || ev.key === 'Backspace') && !mod && !onlyFormSelected()) {
         action = 'delete';
     } else if (mod && k === 'c') {
         action = 'copy';
@@ -129,7 +132,7 @@ document.addEventListener('keydown', (ev) => {
     if (action) {
         if (actions.isEnabled(action)) {
             ev.preventDefault();
-            actions.run(action);
+            actions.run(action, true);
         }
         return;
     }
