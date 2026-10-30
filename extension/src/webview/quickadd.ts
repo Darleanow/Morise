@@ -22,7 +22,7 @@ function score(e: Entry, q: string): number {
     return e.categoryName.toLowerCase().includes(q) ? 10 : 0;
 }
 
-/** Typo tolerant match: whole word and prefix beat substring, which beats letters in order. */
+/** Match score: the whole label, a prefix of it or of a word, then any substring; letters scattered in order do not count. */
 function fuzzy(haystack: string, label: string, q: string): number {
     const h = haystack.toLowerCase();
     const l = label.toLowerCase();
@@ -30,12 +30,7 @@ function fuzzy(haystack: string, label: string, q: string): number {
     if (l.startsWith(q)) return 85;
     if (h.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) return 70;
     if (h.includes(q)) return 50;
-    let at = 0;
-    for (const ch of q) {
-        at = h.indexOf(ch, at) + 1;
-        if (at === 0) return 0;
-    }
-    return 15;
+    return 0;
 }
 
 export function quickAddOpen(): boolean {

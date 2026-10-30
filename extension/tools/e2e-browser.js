@@ -1211,12 +1211,29 @@ async function check(label, fn) {
     await shot('e2e-compare');
     await page.keyboard.press('Escape');
   });
+  await check('search: one box finds widgets, objects and commands, with @ and : prefixes', async () => {
+    await open('sample.ui');
+    await page.keyboard.press('/'); await page.locator('.qa-input').fill('button'); await settle();
+    await page.waitForSelector('.qa-head');
+    const heads = await page.locator('.qa-head').allTextContents();
+    assert.ok(heads.includes('Objects in this form'), heads.join(','));
+    await shot('e2e-search');
+    await page.locator('.qa-input').fill('@name'); await settle();
+    assert.equal(await page.locator('.qa-item.active .qa-name').textContent(), 'nameEdit');
+    await page.keyboard.press('Enter'); await settle();
+    assert.deepEqual((await backendNow()).selection, ['nameEdit']);
+    await page.keyboard.press('/'); await page.locator('.qa-input').fill(':placeholder'); await settle();
+    assert.equal(await page.locator('.qa-item.active .qa-name').textContent(), 'placeholderText');
+    await page.keyboard.press('Enter'); await settle();
+    assert.equal(await page.evaluate(() => document.activeElement?.closest('[data-prop]')?.getAttribute('data-prop')), 'placeholderText');
+  });
   await check('audit: the form check reads the real saved XML and selecting a finding selects the widget', async () => {
     await open('sample.ui');
     await page.keyboard.press('/'); await page.locator('.qa-input').fill('>check the form'); await page.keyboard.press('Enter');
     await page.waitForSelector('.popup.audit .cmp-change');
     const texts = await page.locator('.audit-list .cmp-change').allTextContents();
     assert.ok(texts.some((t) => /nameEdit[\s\S]*no label/.test(t)), texts.join(' | '));
+    await shot('e2e-audit');
     await page.locator('.audit-list .cmp-change', { hasText: 'nameEdit' }).first().click(); await settle();
     assert.deepEqual((await backendNow()).selection, ['nameEdit']);
   });
