@@ -243,6 +243,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
 
     async saveCustomDocument(doc: UiDocument, _cancellation: vscode.CancellationToken): Promise<void> {
         const save = async () => {
+            this.log.info(`saving ${path.basename(doc.uri.fsPath)}`);
             await this.writeTo(doc, doc.uri);
             const client = await this.ensureClient();
             doc.snapshot = await client.request('markSaved', { docId: doc.docId });
@@ -383,10 +384,16 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         doc.generation++;
     }
 
-    private async closeInBackend(doc: UiDocument): Promise<void> {
-        if (this.client?.running) {
-            await this.client.request('close', { docId: doc.docId }).catch(() => undefined);
-        }
+    /** Closes the document behind whatever it is still doing (a save VS Code has just asked for), never in the middle of it. */
+    private closeInBackend(doc: UiDocument): Promise<void> {
+        const run = doc.queue.then(async () => {
+            if (this.client?.running && doc.client === this.client) {
+                this.log.info(`closing ${path.basename(doc.uri.fsPath)} in the backend`);
+                await this.client.request('close', { docId: doc.docId }).catch(() => undefined);
+            }
+        });
+        doc.queue = run.catch(() => undefined);
+        return run;
     }
 
     /** Writes the engine's XML next to the target and renames it over, so a failure never leaves a half-written .ui. */
