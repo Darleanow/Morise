@@ -17,7 +17,7 @@ add_executable(designer_backend
     src/host_geometry.cpp src/host_preview.cpp src/host_tasks.cpp src/host_connections.cpp src/host_forms.cpp
     src/host_menus.cpp src/host_resources.cpp src/host_actions.cpp src/host_methods.cpp)
 # SetPropertyCommand and friends are exported by libQt6Designer but their header is not installed:
-# use the header from the Qt 6.11.3 sources vendored in this repository (same version, same ABI).
+# use the header from the Qt 6.12.0 sources vendored in this repository (same version, same ABI).
 target_include_directories(designer_backend PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/qttools/src/designer/src/lib/shared)
 target_link_libraries(designer_backend PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Xml Qt6::Designer Qt6::DesignerPrivate Qt6::DesignerComponentsPrivate Qt6::GuiPrivate)

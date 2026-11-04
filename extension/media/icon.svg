@@ -1,13 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <rect width="128" height="128" rx="20" fill="#14171c"/>
-  <g transform="translate(-4 0)">
-  <path fill="#f2efe8" d="M40 30h56v18H60v10h28v16H60v24H40z"/>
-  <rect x="32" y="22" width="72" height="84" fill="none" stroke="#ffb000" stroke-width="2.5"/>
-  <g fill="#14171c" stroke="#ffb000" stroke-width="2.5">
-    <rect x="28" y="18" width="8" height="8"/>
-    <rect x="100" y="18" width="8" height="8"/>
-    <rect x="28" y="102" width="8" height="8"/>
-    <rect x="100" y="102" width="8" height="8"/>
-  </g>
+  <g transform="translate(0 2)">
+  <path fill="#f2efe8" d="M26 50h26v22h24V50h26v52H26z"/>
+  <rect x="52" y="22" width="24" height="42" fill="#ffb000"/>
   </g>
 </svg>

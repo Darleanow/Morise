@@ -4,8 +4,8 @@
     {
       "label": "backend: build",
       "type": "shell",
-      "command": "cmake -S backend -B backend/build -G Ninja -DCMAKE_PREFIX_PATH=${env:HOME}/Qt/6.11.3/gcc_64 -DCMAKE_BUILD_TYPE=Release && cmake --build backend/build",
-      "options": { "env": { "PATH": "${env:HOME}/Qt/6.11.3/gcc_64/bin:${env:PATH}" } },
+      "command": "cmake -S backend -B backend/build -G Ninja -DCMAKE_PREFIX_PATH=${env:HOME}/Qt/6.12.0/gcc_64 -DCMAKE_BUILD_TYPE=Release && cmake --build backend/build",
+      "options": { "env": { "PATH": "${env:HOME}/Qt/6.12.0/gcc_64/bin:${env:PATH}" } },
       "presentation": { "reveal": "silent", "panel": "shared", "clear": true },
       "problemMatcher": "$gcc"
     },

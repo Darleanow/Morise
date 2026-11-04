@@ -9,7 +9,7 @@ import { TEMPLATES, classNameFor, templateXml } from '../src/templates';
 
 const root = path.resolve(__dirname, '..', '..', '..');
 const exe = path.join(root, 'backend', 'build', 'designer_backend');
-const uic = '/home/devel/Qt/6.11.3/gcc_64/libexec/uic';
+const uic = '/home/devel/Qt/6.12.0/gcc_64/libexec/uic';
 
 describe('new form templates', () => {
     it('turns what the user typed into a valid class name', () => {

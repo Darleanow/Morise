@@ -5,7 +5,7 @@ import base64, json, os, re, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 BACKEND = os.path.join(HERE, "..", "build", "designer_backend")
 SAMPLE = os.path.join(HERE, "..", "testdata", "sample.ui")
-QT = os.environ.get("QT_ROOT", "/home/devel/Qt/6.11.3/gcc_64")
+QT = os.environ.get("QT_ROOT", "/home/devel/Qt/6.12.0/gcc_64")
 env = dict(os.environ, QT_SCALE_FACTOR="1.75", LD_LIBRARY_PATH=QT + "/lib", QT_PLUGIN_PATH=QT + "/plugins")
 
 p = subprocess.Popen([BACKEND], stdin=subprocess.PIPE, stdout=subprocess.PIPE,

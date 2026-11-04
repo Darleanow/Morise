@@ -7,8 +7,8 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { TestApi } from '../src/extension';
 
-const VIEW_TYPE = 'formwright.uiEditor';
-const QT_ROOT = process.env.QT_ROOT ?? '/home/devel/Qt/6.11.3/gcc_64';
+const VIEW_TYPE = 'mortise.uiEditor';
+const QT_ROOT = process.env.QT_ROOT ?? '/home/devel/Qt/6.12.0/gcc_64';
 
 async function until<T>(label: string, fn: () => Promise<T | undefined | false> | T | undefined | false, timeoutMs = 20000): Promise<T> {
     const start = Date.now();
@@ -27,7 +27,7 @@ async function until<T>(label: string, fn: () => Promise<T | undefined | false> 
 const activeTab = () => vscode.window.tabGroups.activeTabGroup.activeTab;
 
 export async function run(): Promise<void> {
-    const ext = vscode.extensions.getExtension<TestApi>('darleanow.formwright');
+    const ext = vscode.extensions.getExtension<TestApi>('darleanow.mortise');
     assert.ok(ext, 'extension is discoverable');
     const api = await ext.activate();
 

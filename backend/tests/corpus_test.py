@@ -5,7 +5,7 @@ import base64, glob, json, os, random, select, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-QT = os.environ.get("QT_ROOT", "/home/devel/Qt/6.11.3/gcc_64")
+QT = os.environ.get("QT_ROOT", "/home/devel/Qt/6.12.0/gcc_64")
 BACKEND = os.path.join(HERE, "..", "build", "designer_backend")
 args = sys.argv[1:]
 FUZZ = int(args[args.index("--fuzz") + 1]) if "--fuzz" in args else 600

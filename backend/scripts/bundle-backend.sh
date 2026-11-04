@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Builds a self-contained backend folder: the executable, the Qt libraries it needs and the Qt plugins it loads.
-# Usage: bundle-backend.sh <output dir>   (Qt: QT_ROOT, default ~/Qt/6.11.3/gcc_64)
+# Usage: bundle-backend.sh <output dir>   (Qt: QT_ROOT, default ~/Qt/6.12.0/gcc_64)
 set -euo pipefail
 OUT="${1:?output directory}"
-QT="${QT_ROOT:-$HOME/Qt/6.11.3/gcc_64}"
+QT="${QT_ROOT:-$HOME/Qt/6.12.0/gcc_64}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="$HERE/build-relocatable"
 cmake -S "$HERE" -B "$BUILD" -G Ninja -DCMAKE_PREFIX_PATH="$QT" -DQDR_RELOCATABLE=ON -DQDR_TEST_PLUGIN=OFF >/dev/null

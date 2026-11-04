@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Round-trip every .ui under a directory through the real Designer engine (no edit),
 # then compare the uic output of original vs saved. Usage: roundtrip.sh <dir> <workdir>
-Q=/home/devel/Qt/6.11.3/gcc_64
+Q=/home/devel/Qt/6.12.0/gcc_64
 export LD_LIBRARY_PATH=$Q/lib QT_QPA_PLATFORM=offscreen QT_PLUGIN_PATH=$Q/plugins POC_RESIZE=1 POC_NOOP=1
 # Normalise only: include-guard names (temp file names) and enum qualification (X::Enum::V == X::V).
 norm() { grep -v '^\*\* Form generated\|^\*\* Created\|^#ifndef\|^#define\|^#endif' | sed -E 's/::[A-Za-z]+::([A-Za-z0-9_]+)/::\1/g'; }
