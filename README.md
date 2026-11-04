@@ -1,6 +1,6 @@
 <p align="center"><img src="extension/media/icon.png" width="96" alt=""></p>
 
-# Qt Designer Revamped
+# Formwright
 
 Edit Qt `.ui` files in a VS Code tab, driven by the **real Qt Designer form engine**
 (`libQt6Designer` + `libQt6DesignerComponents`), not a re-implementation.
@@ -44,7 +44,7 @@ Or skip all of that: open this repository's root folder in VS Code and press **F
 build the backend (configure and compile with CMake) and the extension first, then start the Extension
 Development Host with a sample form already open. Pick the configuration in the Run and Debug dropdown
 (`free.ui` for free-form editing, `sample.ui` for a layout, or an empty window). Ctrl+Shift+B runs the same build.
-The backend path defaults to `../backend/build/designer_backend`; override with `qtDesignerRevamped.backendPath`.
+The backend path defaults to `../backend/build/designer_backend`; override with `formwright.backendPath`.
 
 ## Tests
 
@@ -112,7 +112,7 @@ they are offered in the connection dialog, saved in the `.ui` (`<slots>`) and on
 form itself works even when its children cover it. **Style sheets** are validated live in the larger editor with Qt's own CSS
 parser. **Save as image** (command palette) writes the runtime render as a PNG.
 
-**New forms.** `Qt Designer: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer. A brand new empty `.ui` file (File > New File) offers the same templates when it is opened.
+**New forms.** `Formwright: New Form...` (command palette, or right-click a folder in the Explorer) offers Designer's templates (widget, dialogs with the buttons connected to `accept()`/`reject()`, dialog without buttons, main window), asks where to save it and opens it in the designer. A brand new empty `.ui` file (File > New File) offers the same templates when it is opened.
 
 **Translation data.** Every text property has a small globe button: mark a text as not translatable and give lupdate a disambiguation and a comment for the translator (saved as `notr`, `comment` and `extracomment`).
 
@@ -126,7 +126,7 @@ reset button goes back to the style). The locale has language and country lists.
 **Tabs.** Click a tab header (or a tool box page header) on the form to switch to that page; double-click it to rename it in place.
 
 **Custom widget plugins.** Qt Designer plugins (Qwt, KDE widgets, your own) are loaded from the folders listed in the
-`qtDesignerRevamped.pluginPaths` setting (each folder holds a `designer` directory, like `QT_PLUGIN_PATH`). They must be
+`formwright.pluginPaths` setting (each folder holds a `designer` directory, like `QT_PLUGIN_PATH`). They must be
 built for the same Qt version as the backend. Their widgets appear in the palette, in their own group. The build also
 produces a tiny demo plugin (`backend/testplugin`) that the tests use.
 
@@ -220,7 +220,7 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Teardown:** closing a document is done properly (50 open/edit/close cycles, 192 kB RSS growth). Destroying
   `QApplication`/`FormEditor` at process exit still segfaults, so the backend exits with `_Exit` on stdin EOF.
 - **Not verified:** hot-exit backup restore, the "changed on disk while dirty" prompt, Windows/macOS.
-- **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only. `npm run package` in `extension/` produces `qt-designer-revamped-linux-x64.vsix` (uses vsce 2.32 with a small `File` polyfill so it runs on Node 18).
+- **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only. `npm run package` in `extension/` produces `formwright-linux-x64.vsix` (uses vsce 2.32 with a small `File` polyfill so it runs on Node 18).
 - **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
   VS Code theme variables are used.
 

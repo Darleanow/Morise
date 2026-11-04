@@ -1,6 +1,6 @@
 # Third-party notices
 
-Qt Designer Revamped is licensed under `GPL-3.0-only WITH Qt-GPL-exception-1.0`, the open source license of the
+Formwright is licensed under `GPL-3.0-only WITH Qt-GPL-exception-1.0`, the open source license of the
 Qt Designer sources it builds on (see `LICENSE` and `LICENSES/`).
 
 ## Qt and Qt Designer

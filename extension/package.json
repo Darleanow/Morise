@@ -1,13 +1,13 @@
 {
-  "name": "qt-designer-revamped",
-  "displayName": "Qt Designer Revamped",
+  "name": "formwright",
+  "displayName": "Formwright",
   "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine: layouts, signals and slots, live preview, git compare.",
   "version": "0.1.0",
   "publisher": "darleanow",
   "license": "GPL-3.0-only WITH Qt-GPL-exception-1.0",
   "icon": "media/icon.png",
   "galleryBanner": {
-    "color": "#2a1d7a",
+    "color": "#14171c",
     "theme": "dark"
   },
   "categories": [
@@ -27,12 +27,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Darleanow/QtDesignerRevamped.git"
+    "url": "https://github.com/Darleanow/Formwright.git"
   },
   "bugs": {
-    "url": "https://github.com/Darleanow/QtDesignerRevamped/issues"
+    "url": "https://github.com/Darleanow/Formwright/issues"
   },
-  "homepage": "https://github.com/Darleanow/QtDesignerRevamped#readme",
+  "homepage": "https://github.com/Darleanow/Formwright#readme",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -41,8 +41,8 @@
   "contributes": {
     "customEditors": [
       {
-        "viewType": "qtDesignerRevamped.uiEditor",
-        "displayName": "Qt Designer",
+        "viewType": "formwright.uiEditor",
+        "displayName": "Formwright",
         "selector": [
           {
             "filenamePattern": "*.ui"
@@ -53,31 +53,31 @@
     ],
     "commands": [
       {
-        "command": "qtDesignerRevamped.newForm",
-        "title": "Qt Designer: New Form..."
+        "command": "formwright.newForm",
+        "title": "Formwright: New Form..."
       },
       {
-        "command": "qtDesignerRevamped.restartBackend",
-        "title": "Qt Designer: Restart Backend"
+        "command": "formwright.restartBackend",
+        "title": "Formwright: Restart Backend"
       },
       {
-        "command": "qtDesignerRevamped.openAsText",
-        "title": "Qt Designer: Open .ui as XML Text"
+        "command": "formwright.openAsText",
+        "title": "Formwright: Open .ui as XML Text"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "qtDesignerRevamped.newForm",
+          "command": "formwright.newForm",
           "when": "explorerResourceIsFolder",
           "group": "navigation@50"
         }
       ]
     },
     "configuration": {
-      "title": "Qt Designer Revamped",
+      "title": "Formwright",
       "properties": {
-        "qtDesignerRevamped.pluginPaths": {
+        "formwright.pluginPaths": {
           "type": "array",
           "items": {
             "type": "string"
@@ -85,7 +85,7 @@
           "default": [],
           "markdownDescription": "Folders that contain a `designer` directory with Qt Designer custom widget plugins (the same layout as `QT_PLUGIN_PATH`). The plugins must be built for the same Qt version as the backend. Restart the backend after changing it."
         },
-        "qtDesignerRevamped.backendPath": {
+        "formwright.backendPath": {
           "type": "string",
           "default": "",
           "markdownDescription": "Absolute path to the `designer_backend` executable. Empty uses `../backend/build/designer_backend` relative to the extension folder (development layout)."
@@ -99,7 +99,7 @@
     "test": "npm run build && node --test out/test/",
     "test:integration": "npm run build && node out/test-integration/run.js",
     "copy-assets": "node scripts/copy-assets.js",
-    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o qt-designer-revamped-linux-x64.vsix"
+    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o formwright-linux-x64.vsix"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

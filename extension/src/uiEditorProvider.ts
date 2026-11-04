@@ -9,7 +9,7 @@ import { parseWebviewMessage } from './messages';
 import { pageBody } from './pageBody';
 import type { CompareResult, LocaleChoices, ConnectionInfo, ContainerInfo, DescribeResult, FormInfo, HostToWebview, PaletteCategory, PropertiesResult, Snapshot, WebviewToHost } from './protocol';
 
-export const VIEW_TYPE = 'qtDesignerRevamped.uiEditor';
+export const VIEW_TYPE = 'formwright.uiEditor';
 
 const decoder = new TextDecoder('utf-8');
 const encoder = new TextEncoder();
@@ -56,7 +56,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
     // ---- backend lifecycle -------------------------------------------------------------
 
     private backendPath(): string {
-        const configured = vscode.workspace.getConfiguration('qtDesignerRevamped').get<string>('backendPath', '').trim();
+        const configured = vscode.workspace.getConfiguration('formwright').get<string>('backendPath', '').trim();
         if (configured) {
             return configured;
         }
@@ -72,9 +72,9 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         if (!this.clientStarting) {
             const exe = this.backendPath();
             if (!fs.existsSync(exe)) {
-                return Promise.reject(new Error(`Backend executable not found: ${exe}. Build it (see README) or set qtDesignerRevamped.backendPath.`));
+                return Promise.reject(new Error(`Backend executable not found: ${exe}. Build it (see README) or set formwright.backendPath.`));
             }
-            const pluginPaths = vscode.workspace.getConfiguration('qtDesignerRevamped').get<string[]>('pluginPaths', []).map((p) => p.trim()).filter(Boolean);
+            const pluginPaths = vscode.workspace.getConfiguration('formwright').get<string[]>('pluginPaths', []).map((p) => p.trim()).filter(Boolean);
             const crashLog = path.join(this.context.logUri.fsPath, 'backend-crash.log');
             fs.mkdirSync(this.context.logUri.fsPath, { recursive: true });
             const client = new BackendClient({ executable: exe, pluginPaths, crashLog });
@@ -93,7 +93,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 if (this.client === client) {
                     this.client = undefined;
                 }
-                this.broadcastAll({ type: 'backendStatus', text: 'The Qt backend stopped. Run "Qt Designer: Restart Backend". Unsaved changes in open editors are lost on restart.' });
+                this.broadcastAll({ type: 'backendStatus', text: 'The Qt backend stopped. Run "Formwright: Restart Backend". Unsaved changes in open editors are lost on restart.' });
             });
             this.clientStarting = client.start().then(({ qt }) => {
                 this.log.info(`backend ready, Qt ${qt}`);
@@ -178,7 +178,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             await this.openInBackend(doc, text);
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
-            void vscode.window.showErrorMessage(`Cannot open ${path.basename(uri.fsPath)} in Qt Designer: ${message}`, 'Open as XML Text').then((c) => {
+            void vscode.window.showErrorMessage(`Cannot open ${path.basename(uri.fsPath)} in Formwright: ${message}`, 'Open as XML Text').then((c) => {
                 if (c) {
                     void vscode.commands.executeCommand('vscode.openWith', uri, 'default');
                 }
@@ -313,7 +313,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             throw new Error('The backend returned an incomplete document; refusing to overwrite the file.');
         }
         if (warnings.length > 0) {
-            void vscode.window.showWarningMessage(`Qt Designer reported issues in ${path.basename(target.fsPath)}: ${warnings.join('; ')}`);
+            void vscode.window.showWarningMessage(`The Designer engine reported issues in ${path.basename(target.fsPath)}: ${warnings.join('; ')}`);
         }
         const tmp = target.with({ path: `${target.path}.${randomBytes(4).toString('hex')}.tmp` });
         await vscode.workspace.fs.writeFile(tmp, encoder.encode(xml));
@@ -797,7 +797,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="${codicons}" rel="stylesheet">
 <link href="${style}" rel="stylesheet">
-<title>Qt Designer</title>
+<title>Formwright</title>
 </head>
 <body>
 ${pageBody()}

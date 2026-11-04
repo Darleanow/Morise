@@ -28,7 +28,7 @@ export interface TestApi {
 }
 
 export function activate(context: vscode.ExtensionContext): TestApi {
-    const log = vscode.window.createOutputChannel('Qt Designer Revamped', { log: true });
+    const log = vscode.window.createOutputChannel('Formwright', { log: true });
     const provider = new UiEditorProvider(context, log);
 
     context.subscriptions.push(
@@ -38,9 +38,9 @@ export function activate(context: vscode.ExtensionContext): TestApi {
             webviewOptions: { retainContextWhenHidden: false },
             supportsMultipleEditorsPerDocument: true,
         }),
-        vscode.commands.registerCommand('qtDesignerRevamped.restartBackend', () => provider.restartBackend()),
-        vscode.commands.registerCommand('qtDesignerRevamped.newForm', (uri?: vscode.Uri) => newForm(uri && uri.scheme === 'file' ? uri : undefined)),
-        vscode.commands.registerCommand('qtDesignerRevamped.openAsText', (uri?: vscode.Uri) => {
+        vscode.commands.registerCommand('formwright.restartBackend', () => provider.restartBackend()),
+        vscode.commands.registerCommand('formwright.newForm', (uri?: vscode.Uri) => newForm(uri && uri.scheme === 'file' ? uri : undefined)),
+        vscode.commands.registerCommand('formwright.openAsText', (uri?: vscode.Uri) => {
             const target = uri ?? vscode.window.activeTextEditor?.document.uri;
             if (target) {
                 return vscode.commands.executeCommand('vscode.openWith', target, 'default');
