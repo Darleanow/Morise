@@ -1,7 +1,7 @@
 {
   "name": "morise",
   "displayName": "Morise",
-  "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine: layouts, signals and slots, live preview, git compare.",
+  "description": "Visual editor for Qt .ui form files.",
   "version": "0.1.0",
   "publisher": "darleanow",
   "license": "GPL-3.0-only WITH Qt-GPL-exception-1.0",
@@ -11,8 +11,7 @@
     "theme": "dark"
   },
   "categories": [
-    "Visual Previews",
-    "Programming Languages",
+    "Visualization",
     "Other"
   ],
   "keywords": [
