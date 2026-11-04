@@ -1,6 +1,6 @@
 {
-  "name": "mortise",
-  "displayName": "Mortise",
+  "name": "mortise-forms",
+  "displayName": "Mortise Forms",
   "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine: layouts, signals and slots, live preview, git compare.",
   "version": "0.1.0",
   "publisher": "darleanow",
@@ -42,7 +42,7 @@
     "customEditors": [
       {
         "viewType": "mortise.uiEditor",
-        "displayName": "Mortise",
+        "displayName": "Mortise Forms",
         "selector": [
           {
             "filenamePattern": "*.ui"
@@ -99,7 +99,7 @@
     "test": "npm run build && node --test out/test/",
     "test:integration": "npm run build && node out/test-integration/run.js",
     "copy-assets": "node scripts/copy-assets.js",
-    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o mortise-linux-x64.vsix"
+    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o mortise-forms-linux-x64.vsix"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

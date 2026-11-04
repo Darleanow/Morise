@@ -29,7 +29,7 @@ Independent project, not affiliated with The Qt Company. Built against Qt 6.12.0
 
 ## Install
 
-Build the `.vsix` (see below) and run `code --install-extension extension/mortise-linux-x64.vsix`.
+Build the `.vsix` (see below) and run `code --install-extension extension/mortise-forms-linux-x64.vsix`.
 
 ## Build from source
 
@@ -47,7 +47,7 @@ cd extension && npm install && npm run build
 
 Open the repository in VS Code and press F5 to start an Extension Development Host with a sample form. The backend path defaults to `backend/build/designer_backend` and can be set with `mortise.backendPath`. Designer plugins are loaded from the folders in `mortise.pluginPaths`; each folder holds a `designer` directory, like `QT_PLUGIN_PATH`, and the plugins must be built for the same Qt version.
 
-To package: `backend/scripts/bundle-backend.sh extension/bin` copies the backend with the Qt libraries it needs (about 78 MB, relocatable), then `npm run package` in `extension/` writes `mortise-linux-x64.vsix`.
+To package: `backend/scripts/bundle-backend.sh extension/bin` copies the backend with the Qt libraries it needs (about 78 MB, relocatable), then `npm run package` in `extension/` writes `mortise-forms-linux-x64.vsix`.
 
 ## How it works
 

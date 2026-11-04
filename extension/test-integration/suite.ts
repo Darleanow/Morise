@@ -27,7 +27,7 @@ async function until<T>(label: string, fn: () => Promise<T | undefined | false> 
 const activeTab = () => vscode.window.tabGroups.activeTabGroup.activeTab;
 
 export async function run(): Promise<void> {
-    const ext = vscode.extensions.getExtension<TestApi>('darleanow.mortise');
+    const ext = vscode.extensions.getExtension<TestApi>('darleanow.mortise-forms');
     assert.ok(ext, 'extension is discoverable');
     const api = await ext.activate();
 
