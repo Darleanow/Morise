@@ -5,6 +5,9 @@
 !LICENSES/**
 !THIRD-PARTY-NOTICES.md
 !out/src/**
-!media/**
+!media/icon.png
+!media/editor.css
+!media/codicons/**
+!media/webview/**
 !bin/**
 !node_modules/.keep
