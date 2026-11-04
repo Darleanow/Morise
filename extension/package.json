@@ -1,6 +1,6 @@
 {
-  "name": "mortise-forms",
-  "displayName": "Mortise Forms",
+  "name": "morise",
+  "displayName": "Morise",
   "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine: layouts, signals and slots, live preview, git compare.",
   "version": "0.1.0",
   "publisher": "darleanow",
@@ -27,12 +27,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Darleanow/Mortise.git"
+    "url": "https://github.com/Darleanow/Morise.git"
   },
   "bugs": {
-    "url": "https://github.com/Darleanow/Mortise/issues"
+    "url": "https://github.com/Darleanow/Morise/issues"
   },
-  "homepage": "https://github.com/Darleanow/Mortise#readme",
+  "homepage": "https://github.com/Darleanow/Morise#readme",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -41,8 +41,8 @@
   "contributes": {
     "customEditors": [
       {
-        "viewType": "mortise.uiEditor",
-        "displayName": "Mortise Forms",
+        "viewType": "morise.uiEditor",
+        "displayName": "Morise",
         "selector": [
           {
             "filenamePattern": "*.ui"
@@ -53,31 +53,31 @@
     ],
     "commands": [
       {
-        "command": "mortise.newForm",
-        "title": "Mortise: New Form..."
+        "command": "morise.newForm",
+        "title": "Morise: New Form..."
       },
       {
-        "command": "mortise.restartBackend",
-        "title": "Mortise: Restart Backend"
+        "command": "morise.restartBackend",
+        "title": "Morise: Restart Backend"
       },
       {
-        "command": "mortise.openAsText",
-        "title": "Mortise: Open .ui as XML Text"
+        "command": "morise.openAsText",
+        "title": "Morise: Open .ui as XML Text"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "mortise.newForm",
+          "command": "morise.newForm",
           "when": "explorerResourceIsFolder",
           "group": "navigation@50"
         }
       ]
     },
     "configuration": {
-      "title": "Mortise",
+      "title": "Morise",
       "properties": {
-        "mortise.pluginPaths": {
+        "morise.pluginPaths": {
           "type": "array",
           "items": {
             "type": "string"
@@ -85,7 +85,7 @@
           "default": [],
           "markdownDescription": "Folders that contain a `designer` directory with Qt Designer custom widget plugins (the same layout as `QT_PLUGIN_PATH`). The plugins must be built for the same Qt version as the backend. Restart the backend after changing it."
         },
-        "mortise.backendPath": {
+        "morise.backendPath": {
           "type": "string",
           "default": "",
           "markdownDescription": "Absolute path to the `designer_backend` executable. Empty uses `../backend/build/designer_backend` relative to the extension folder (development layout)."
@@ -99,7 +99,7 @@
     "test": "npm run build && node --test out/test/",
     "test:integration": "npm run build && node out/test-integration/run.js",
     "copy-assets": "node scripts/copy-assets.js",
-    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o mortise-forms-linux-x64.vsix"
+    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o morise-linux-x64.vsix"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

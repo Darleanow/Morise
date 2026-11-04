@@ -1,10 +1,10 @@
 <p align="center"><img src="extension/media/icon.png" width="96" alt=""></p>
 
-# Mortise
+# Morise
 
 Edit Qt `.ui` files in a VS Code tab, with the real Qt Designer form engine behind it.
 
-Mortise does not re-implement Designer. A small C++ backend loads `libQt6Designer` and `libQt6DesignerComponents`, renders the form with Qt and applies every edit through Designer's own commands. The saved file is what Designer would have written, and `uic` accepts it. The interface around it is a modern webview that follows your VS Code theme.
+Morise does not re-implement Designer. A small C++ backend loads `libQt6Designer` and `libQt6DesignerComponents`, renders the form with Qt and applies every edit through Designer's own commands. The saved file is what Designer would have written, and `uic` accepts it. The interface around it is a modern webview that follows your VS Code theme.
 
 Independent project, not affiliated with The Qt Company. Built against Qt 6.12.0. Linux x64 only for now.
 
@@ -29,7 +29,7 @@ Independent project, not affiliated with The Qt Company. Built against Qt 6.12.0
 
 ## Install
 
-Build the `.vsix` (see below) and run `code --install-extension extension/mortise-forms-linux-x64.vsix`.
+Build the `.vsix` (see below) and run `code --install-extension extension/morise-linux-x64.vsix`.
 
 ## Build from source
 
@@ -45,9 +45,9 @@ cmake --build backend/build
 cd extension && npm install && npm run build
 ```
 
-Open the repository in VS Code and press F5 to start an Extension Development Host with a sample form. The backend path defaults to `backend/build/designer_backend` and can be set with `mortise.backendPath`. Designer plugins are loaded from the folders in `mortise.pluginPaths`; each folder holds a `designer` directory, like `QT_PLUGIN_PATH`, and the plugins must be built for the same Qt version.
+Open the repository in VS Code and press F5 to start an Extension Development Host with a sample form. The backend path defaults to `backend/build/designer_backend` and can be set with `morise.backendPath`. Designer plugins are loaded from the folders in `morise.pluginPaths`; each folder holds a `designer` directory, like `QT_PLUGIN_PATH`, and the plugins must be built for the same Qt version.
 
-To package: `backend/scripts/bundle-backend.sh extension/bin` copies the backend with the Qt libraries it needs (about 78 MB, relocatable), then `npm run package` in `extension/` writes `mortise-forms-linux-x64.vsix`.
+To package: `backend/scripts/bundle-backend.sh extension/bin` copies the backend with the Qt libraries it needs (about 78 MB, relocatable), then `npm run package` in `extension/` writes `morise-linux-x64.vsix`.
 
 ## How it works
 

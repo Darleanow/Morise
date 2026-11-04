@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { TestApi } from '../src/extension';
 
-const VIEW_TYPE = 'mortise.uiEditor';
+const VIEW_TYPE = 'morise.uiEditor';
 const QT_ROOT = process.env.QT_ROOT ?? '/home/devel/Qt/6.12.0/gcc_64';
 
 async function until<T>(label: string, fn: () => Promise<T | undefined | false> | T | undefined | false, timeoutMs = 20000): Promise<T> {
@@ -27,7 +27,7 @@ async function until<T>(label: string, fn: () => Promise<T | undefined | false> 
 const activeTab = () => vscode.window.tabGroups.activeTabGroup.activeTab;
 
 export async function run(): Promise<void> {
-    const ext = vscode.extensions.getExtension<TestApi>('darleanow.mortise-forms');
+    const ext = vscode.extensions.getExtension<TestApi>('darleanow.morise');
     assert.ok(ext, 'extension is discoverable');
     const api = await ext.activate();
 
