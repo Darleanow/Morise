@@ -241,6 +241,24 @@ QJsonObject Host::gestureCmd(const QJsonObject &p)
     return snapshot(fw);
 }
 
+// The engine's menu and tool bar editors filter their own events. When one is destroyed while it has the focus,
+// ~QWidget() takes the focus away, the event reaches the editor's filter and the filter touches a half-destroyed
+// object (QDesignerMenu::handleEvent calling update(): a segmentation fault that also exists in Designer itself).
+// Taking the focus away and the filters off while the objects are still whole avoids it.
+static void quiesceMenuEditors(QWidget *root)
+{
+    const QList<QWidget *> widgets = root->findChildren<QWidget *>();
+    for (QWidget *w : widgets) {
+        const QByteArray cls = w->metaObject()->className();
+        if (cls == "QDesignerMenu" || cls == "QDesignerMenuBar" || cls == "QDesignerToolBar") {
+            w->clearFocus();
+            w->removeEventFilter(w);
+        }
+    }
+    if (QWidget *focus = QApplication::focusWidget(); focus && root->isAncestorOf(focus))
+        focus->clearFocus();
+}
+
 QJsonObject Host::close(const QJsonObject &p)
 {
     const auto it = m_forms.find(p.value(QLatin1String("docId")).toString());
@@ -253,6 +271,7 @@ QJsonObject Host::close(const QJsonObject &p)
     m_scales.remove(fw);
     fw->clearSelection(false);
     m_core->formWindowManager()->removeFormWindow(fw);
+    quiesceMenuEditors(fw);
     fw->hide();
     fw->deleteLater();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);

@@ -62,6 +62,9 @@ QJsonObject Host::preview(const QJsonObject &p)
     const qreal scale = qBound(0.25, p.value(QLatin1String("scale")).toDouble(1.0), 4.0);
     w->resize(fw->mainContainer()->size());
     w->ensurePolished();
+    // Never shown, but a menu or a combo box list placed under it asks its window for the screen: without a native
+    // window that is a null pointer (a click on a menu bar crashed the backend).
+    w->createWinId();
     // Keep it: the page can now click, type and scroll in it (previewEvent) until it stops the preview.
     const QString docId = p.value(QLatin1String("docId")).toString();
     previewStop(p);

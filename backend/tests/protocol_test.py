@@ -769,6 +769,26 @@ print(f"info: RSS growth over 50 cycles = {growth} kB")
 check("memory growth over 50 cycles is bounded (<40 MB)", growth < 40000, f"{growth} kB")
 check("backend still serves requests after the cycles", "result" in call("snapshot", docId="d1"))
 
+# ---- menus: closing a main window that has menu editors, and a click on the menu bar of the live preview
+# (both used to kill the backend: a half-destroyed QDesignerMenu got a focus event; a never-shown preview had no screen)
+_mx = open(os.path.join(HERE, "..", "testdata", "menus.ui"), encoding="utf-8").read()
+for _round in range(3):
+    call("open", docId="mc%d" % _round, xml=_mx)
+    call("addMenu", docId="mc%d" % _round, title="Edit")
+    call("addMenuEntry", docId="mc%d" % _round, menu="menuView", text="Zoom")
+    call("select", docId="mc%d" % _round, names=["menuBar"])
+    check("closing a main window after editing its menus does not crash (%d)" % _round, "error" not in call("close", docId="mc%d" % _round))
+check("the backend is still alive after closing menu forms", "result" in call("palette"))
+call("open", docId="mp1", xml=_mx)
+call("preview", docId="mp1", style="", scale=1)
+for _kind, _x in (("press", 12), ("release", 12), ("dblclick", 12), ("press", 40), ("release", 40), ("move", 70)):
+    _r = call("previewEvent", docId="mp1", kind=_kind, x=_x, y=8, button=1, mods=0)
+    check("preview %s on the menu bar answers" % _kind, "result" in _r, _r)
+call("previewStop", docId="mp1")
+check("the backend is still alive after clicking a menu bar in the preview", "result" in call("palette"))
+call("close", docId="mp1")
+
+
 # requests sent back to back (no waiting) are answered one at a time, in order, and none is lost at EOF
 pp = subprocess.Popen([BACKEND], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=env)
 pp.stdout.readline()

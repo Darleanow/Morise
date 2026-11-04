@@ -76,8 +76,8 @@ extension/src/webview/   the page, one module per concern, bundled by esbuild
 
 | Command | Covers |
 |---|---|
-| `python3 -I backend/tests/protocol_test.py` | The backend protocol end to end (275 checks, including `uic` on saved files) |
-| `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S]` | Loads the qttools `.ui` corpus, round-trips every property (about 37 000 on 97 documents), then replays random operations and reports any crash |
+| `python3 -I backend/tests/protocol_test.py` | The backend protocol end to end (286 checks, including `uic` on saved files) |
+| `python3 -u backend/tests/corpus_test.py [--fuzz N --seed S]` | Loads the qttools `.ui` corpus, round-trips every property (about 37 000 on 98 documents), then replays random operations and reports any crash |
 | `backend/testdata/roundtrip.sh <dir> <workdir>` | Round-trips every `.ui` without edits and compares `uic` output |
 | `cd extension && npm test` | 119 Node tests: client against the real backend, message validation, the whole webview in jsdom |
 | `cd extension && npm run test:integration` | A real VS Code: open, dirty state, undo, save, external change, gestures, connections. Needs a display |
@@ -93,7 +93,7 @@ extension/src/webview/   the page, one module per concern, bundled by esbuild
 - **Preview** forwards mouse, wheel and keyboard. Hover, caret blink and tool tips are reproduced. Drag and drop and menus opened by the application are not.
 - **A few exotic property types** are shown read-only.
 - **Clipboard.** Copies are mirrored to the system clipboard as Designer XML, so paste works between documents and windows. Other text is ignored.
-- **Teardown.** Destroying `QApplication` at exit still segfaults, so the backend leaves with `_Exit` when stdin closes. Closing a document is clean (50 open, edit, close cycles, 192 kB growth).
+- **Teardown.** Destroying `QApplication` at exit still segfaults, so the backend leaves with `_Exit` when stdin closes. Closing a form that has menu editors used to crash too (Designer's `QDesignerMenu` handles a focus event while being destroyed); the backend now takes the focus and the filters away first. Closing a document is clean (50 open, edit, close cycles, 192 kB growth).
 - **Not verified:** Windows and macOS, restoring a hot-exit backup, the prompt for a file changed on disk while dirty.
 
 ## License

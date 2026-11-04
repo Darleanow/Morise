@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Robustness: every real .ui in the corpus through the backend, then random operations.
-Usage: corpus_test.py [--fuzz N] [--seed S]. Exits non-zero on any crash, hang, bad document or refused round trip."""
+Usage: corpus_test.py [--fuzz N] [--seed S] [--skip-corpus] [--seed-file PATH (fuzz this one document)] [--save-every N (save and check with uic every N operations, default 25)]. Exits non-zero on any crash, hang, bad document or refused round trip."""
 import base64, glob, json, os, random, select, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -10,6 +10,8 @@ BACKEND = os.path.join(HERE, "..", "build", "designer_backend")
 args = sys.argv[1:]
 FUZZ = int(args[args.index("--fuzz") + 1]) if "--fuzz" in args else 600
 SKIP_CORPUS = "--skip-corpus" in args
+SAVE_EVERY = int(args[args.index("--save-every") + 1]) if "--save-every" in args else 25
+SEED_FILE = args[args.index("--seed-file") + 1] if "--seed-file" in args else None
 SEED = int(args[args.index("--seed") + 1]) if "--seed" in args else 1
 
 class Backend:
@@ -98,6 +100,8 @@ for kind, items in refused_by_kind.items():
 # ------------------------------------------------------------------ random operations
 rng = random.Random(SEED)
 seeds = [os.path.join(ROOT, "backend/testdata", n) for n in ("rich.ui", "free.ui", "sample.ui", "mainwindow.ui", "tabs.ui", "toolbox.ui", "interactive.ui", "freeinlayout.ui")]
+if SEED_FILE:
+    seeds = [os.path.abspath(SEED_FILE)]
 fuzz_docs = 0
 ops_done = 0
 palette = be.call("palette")["result"]["categories"]
@@ -218,7 +222,7 @@ for rnd in range(rounds):
                 snap = r["result"]
             elif k in ("undo", "redo", "action", "select") or "error" in r:
                 snap = be.call("snapshot", docId=doc)["result"]
-            if i % 25 == 24:
+            if i % SAVE_EVERY == SAVE_EVERY - 1:
                 be.call("gesture", docId=doc, phase="end", label="")
                 c = be.call("contents", docId=doc)["result"]["xml"]
                 ok, err = uic_ok(c)
