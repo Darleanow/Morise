@@ -33,6 +33,11 @@ class UiDocument implements vscode.CustomDocument {
     /** Serialises backend work for this document so webview events cannot interleave. */
     queue: Promise<unknown> = Promise.resolve();
     readonly disposables: vscode.Disposable[] = [];
+    /** The backend process that holds this document: a restarted backend knows nothing about it. */
+    client: BackendClient | undefined;
+    /** Latest XML the engine produced (kept a moment after every edit), used to rebuild the document after a backend crash. */
+    lastXml: string | undefined;
+    journalTimer: ReturnType<typeof setTimeout> | undefined;
 
     constructor(readonly uri: vscode.Uri) {}
 
@@ -50,6 +55,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
     private client: BackendClient | undefined;
     private clientStarting: Promise<BackendClient> | undefined;
     private readonly documents = new Set<UiDocument>();
+    private lastRecovery = 0;
 
     constructor(private readonly context: vscode.ExtensionContext, private readonly log: vscode.LogOutputChannel) {}
 
@@ -90,8 +96,21 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
                 } catch {
                     // no crash report: the process was stopped on purpose
                 }
+                const unexpected = this.client === client;
                 if (this.client === client) {
                     this.client = undefined;
+                }
+                // A crash is recovered from here: the next backend gets every open form back from its last known state.
+                // A crash right after a recovery is not retried, so a form that kills the engine cannot loop.
+                const now = Date.now();
+                const loop = now - this.lastRecovery < 10000;
+                if (unexpected && !loop && this.documents.size > 0) {
+                    this.lastRecovery = now;
+                    this.broadcastAll({ type: 'backendStatus', text: 'The Qt backend stopped. Restarting it and reloading your forms from their last known state...' });
+                    for (const doc of this.documents) {
+                        void this.enqueue(doc, () => this.pushState(doc)).catch((e) => this.reportError(doc, e));
+                    }
+                    return;
                 }
                 this.broadcastAll({ type: 'backendStatus', text: 'The Qt backend stopped. Run "Morise: Restart Backend". Unsaved changes in open editors are lost on restart.' });
             });
@@ -151,6 +170,11 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         return { snapshot: doc?.snapshot, properties };
     }
 
+    /** Kills the backend the way a crash would (test hook). */
+    crashBackendForTest(): void {
+        this.client?.killForTest();
+    }
+
     /** Palette as the page receives it (test hook). */
     paletteForTest(): Promise<PaletteCategory[]> {
         return this.paletteCategories();
@@ -193,7 +217,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             // A template is announced a little later: VS Code only listens to an editor once its opening has returned.
             setTimeout(() => this.changeEmitter.fire({ document: doc }), fromTemplate ? 300 : 0);
         }
-        doc.disposables.push({ dispose: () => { void this.closeInBackend(doc); } });
+        doc.disposables.push({ dispose: () => { clearTimeout(doc.journalTimer); void this.closeInBackend(doc); } });
         return doc;
     }
 
@@ -218,11 +242,26 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
     }
 
     async saveCustomDocument(doc: UiDocument, _cancellation: vscode.CancellationToken): Promise<void> {
-        await this.enqueue(doc, async () => {
+        const save = async () => {
             await this.writeTo(doc, doc.uri);
             const client = await this.ensureClient();
             doc.snapshot = await client.request('markSaved', { docId: doc.docId });
             await this.pushState(doc);
+        };
+        await this.enqueue(doc, async () => {
+            try {
+                await save();
+            } catch (e) {
+                // The backend died around this save (a crash is recovered from its exit event, a moment later): wait for the
+                // new one, get the form back and save once more instead of reporting a failure.
+                if (!/backend (exited|is not running)|unknown docId/.test(e instanceof Error ? e.message : String(e))) {
+                    throw e;
+                }
+                this.log.warn(`save of ${doc.uri.fsPath} hit a dead backend, retrying after recovery`);
+                await new Promise((r) => setTimeout(r, 400));
+                await this.revive(doc);
+                await save();
+            }
         });
     }
 
@@ -257,9 +296,52 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
     // ---- document operations -----------------------------------------------------------
 
     private enqueue<T>(doc: UiDocument, task: () => Promise<T>): Promise<T> {
-        const run = doc.queue.then(task, task);
+        const revived = async () => {
+            await this.revive(doc);
+            return task();
+        };
+        const run = doc.queue.then(revived, revived);
         doc.queue = run.catch(() => undefined);
         return run;
+    }
+
+    /**
+     * A backend that crashed and restarted has no document: before any work on one, open it again from the last XML the
+     * engine gave us (kept by journal(), a moment behind the edits) or, failing that, from disk.
+     */
+    private async revive(doc: UiDocument): Promise<void> {
+        if (!doc.snapshot) {
+            return;
+        }
+        const client = await this.ensureClient();
+        if (doc.client === client) {
+            return;
+        }
+        const xml = doc.lastXml ?? doc.diskText;
+        this.log.warn(`reopening ${doc.uri.fsPath} in the new backend (${doc.lastXml ? 'last known state' : 'disk version'})`);
+        await this.openInBackend(doc, xml);
+        void vscode.window.showWarningMessage(`The designer backend restarted. ${path.basename(doc.uri.fsPath)} was reloaded from its ${doc.lastXml ? 'last known state' : 'saved version'}; the undo history before the restart is gone.`);
+        await this.pushState(doc);
+    }
+
+    /** Keeps the engine's XML a moment behind every edit, so a crash costs almost nothing. */
+    private journal(doc: UiDocument): void {
+        clearTimeout(doc.journalTimer);
+        if (!doc.snapshot?.dirty) {
+            doc.lastXml = undefined;
+            return;
+        }
+        doc.journalTimer = setTimeout(() => {
+            void this.enqueue(doc, async () => {
+                if (doc.gesture || !doc.snapshot?.dirty) {
+                    return;
+                }
+                const { xml } = await (await this.ensureClient()).request('contents', { docId: doc.docId });
+                if (xml.includes('</ui>')) {
+                    doc.lastXml = xml;
+                }
+            }).catch(() => undefined);
+        }, 600);
     }
 
     private async readFile(uri: vscode.Uri): Promise<string> {
@@ -295,6 +377,8 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
             await client.request('close', { docId: doc.docId }).catch(() => undefined);
         }
         doc.snapshot = await client.request('open', { docId: doc.docId, xml, path: doc.uri.scheme === 'file' ? doc.uri.fsPath : undefined });
+        doc.client = client;
+        doc.lastXml = xml === doc.diskText ? undefined : xml;
         doc.selectedName = undefined;
         doc.generation++;
     }
@@ -740,6 +824,7 @@ export class UiEditorProvider implements vscode.CustomEditorProvider<UiDocument>
         for (const p of only ? [only] : doc.panels) {
             void p.webview.postMessage(message);
         }
+        this.journal(doc);
     }
 
     private paletteCache: { categories: PaletteCategory[]; fonts: string[]; locales: LocaleChoices } | undefined;

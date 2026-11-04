@@ -199,6 +199,27 @@ export async function run(): Promise<void> {
     });
     console.log('ok: connections, promotion and layout properties through the host, saved and accepted by uic');
 
+    // 11. the backend dies in the middle of an edit: the form comes back from its last known state and saves
+    const crashFile = path.join(dir, 'crash.ui');
+    fs.copyFileSync(path.resolve(__dirname, '..', '..', '..', 'backend', 'testdata', 'menus.ui'), crashFile);
+    const crashUri = vscode.Uri.file(crashFile);
+    await vscode.commands.executeCommand('vscode.openWith', crashUri, VIEW_TYPE);
+    await until('crash form opened', async () => (await api.provider.inspect(crashUri)).snapshot);
+    await api.provider.injectMessage(crashUri, { type: 'setProperty', name: 'openButton', property: 'text', value: 'Avant' });
+    await new Promise((r) => setTimeout(r, 1200)); // the engine's XML is kept a moment behind the edits
+    api.provider.crashBackendForTest();
+    await vscode.commands.executeCommand('workbench.action.files.save');
+    await until('crash form saved after the restart', () => vscode.window.tabGroups.activeTabGroup.activeTab?.isDirty === false);
+    const crashSaved = fs.readFileSync(crashFile, 'utf8');
+    assert.match(crashSaved, /<string>Avant<\/string>/, 'the edit made before the crash survived');
+    const uic4 = spawnSync(path.join(QT_ROOT, 'libexec', 'uic'), [crashFile], { encoding: 'utf8' });
+    assert.equal(uic4.status, 0, uic4.stderr);
+    await until('the form is editable again', async () => (await api.provider.inspect(crashUri, 'openButton')).properties?.properties.find((p) => p.name === 'text')?.value === 'Avant');
+    await api.provider.injectMessage(crashUri, { type: 'setProperty', name: 'openButton', property: 'text', value: 'Apres' });
+    await vscode.commands.executeCommand('workbench.action.files.save');
+    await until('saved again', () => fs.readFileSync(crashFile, 'utf8').includes('<string>Apres</string>'));
+    console.log('ok: a backend crash is recovered: the form returns from its last state and saves');
+
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     fs.rmSync(dir, { recursive: true, force: true });
 }

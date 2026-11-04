@@ -93,7 +93,7 @@ extension/src/webview/   the page, one module per concern, bundled by esbuild
 - **Preview** forwards mouse, wheel and keyboard. Hover, caret blink and tool tips are reproduced. Drag and drop and menus opened by the application are not.
 - **A few exotic property types** are shown read-only.
 - **Clipboard.** Copies are mirrored to the system clipboard as Designer XML, so paste works between documents and windows. Other text is ignored.
-- **Teardown.** Destroying `QApplication` at exit still segfaults, so the backend leaves with `_Exit` when stdin closes. Closing a form that has menu editors used to crash too (Designer's `QDesignerMenu` handles a focus event while being destroyed); the backend now takes the focus and the filters away first. Closing a document is clean (50 open, edit, close cycles, 192 kB growth).
+- **Teardown.** Destroying `QApplication` at exit still segfaults, so the backend leaves with `_Exit` when stdin closes. Closing a form that has menu editors used to crash too (Designer's `QDesignerMenu` handles a focus event while being destroyed); the backend now takes the focus and the filters away first. If the backend dies anyway, the extension restarts it and reopens every form from the engine's XML kept a moment behind your edits (the undo history before the crash is lost), and a save that hits the dead backend is retried once. Closing a document is clean (50 open, edit, close cycles, 192 kB growth).
 - **Not verified:** Windows and macOS, restoring a hot-exit backup, the prompt for a file changed on disk while dirty.
 
 ## License

@@ -72,6 +72,8 @@ export class BackendClient extends EventEmitter {
                 reject(err);
             });
             proc.stderr.setEncoding('utf8');
+            // Writing to a backend that just died raises EPIPE on stdin; the exit event rejects what was pending.
+            proc.stdin.on('error', () => undefined);
             proc.stderr.on('data', (chunk: string) => this.emit('stderr', chunk));
             proc.stdout.setEncoding('utf8');
             proc.stdout.on('data', (chunk: string) => {
@@ -127,6 +129,11 @@ export class BackendClient extends EventEmitter {
             this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
             proc.stdin.write(JSON.stringify({ id, method, params }) + '\n');
         });
+    }
+
+    /** Test hook: dies like a crash (no goodbye, no EOF). */
+    killForTest(): void {
+        this.proc?.kill('SIGKILL');
     }
 
     dispose(): void {
