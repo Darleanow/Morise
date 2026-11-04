@@ -1,9 +1,11 @@
+<p align="center"><img src="extension/media/icon.png" width="96" alt=""></p>
+
 # Qt Designer Revamped
 
 Edit Qt `.ui` files in a VS Code tab, driven by the **real Qt Designer form engine**
 (`libQt6Designer` + `libQt6DesignerComponents`), not a re-implementation.
 
-Personal project. Source audited: qttools tag `6.11.3` (`vendor/qttools`). Built against Qt 6.11.3.
+Built against Qt 6.11.3 and the matching qttools tag (`vendor/qttools`). Independent project, not affiliated with The Qt Company.
 
 ## Architecture (option C: native backend around existing Designer components)
 
@@ -221,5 +223,10 @@ Theme variables are simulated approximations of VS Code's, so this checks behavi
 - **Packaging:** the default build has an absolute RUNPATH to `~/Qt`. `backend/scripts/bundle-backend.sh <dir>` builds a relocatable folder (executable with RUNPATH `$ORIGIN/lib`, the Qt libraries and plugins, 78 MB); started from an empty environment it loads Qt 6.11.3 from that folder, and the extension uses `extension/bin/designer_backend` when it exists. Linux only. `npm run package` in `extension/` produces `qt-designer-revamped-linux-x64.vsix` (uses vsce 2.32 with a small `File` polyfill so it runs on Node 18).
 - **Webview UI Toolkit:** `@vscode/webview-ui-toolkit` is deprecated on npm, so plain HTML controls styled with
   VS Code theme variables are used.
-- **Licenses:** `lib/` is LGPL-3/GPL; `components/` is GPL-3 with Qt exception. Linking them makes the backend
-  binary GPL-3 if distributed.
+
+## License
+
+`GPL-3.0-only WITH Qt-GPL-exception-1.0`, the same open source license as the Qt Designer code it is built on
+(see [LICENSE](LICENSE), [LICENSES/](LICENSES) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)).
+The packaged extension bundles Qt libraries and the Designer libraries, so distributing it means distributing
+GPL-covered binaries: keep the notices above with it and make the matching sources available.

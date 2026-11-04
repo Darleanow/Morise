@@ -2,6 +2,8 @@
 !package.json
 !README.md
 !LICENSE
+!LICENSES/**
+!THIRD-PARTY-NOTICES.md
 !out/src/**
 !media/**
 !bin/**

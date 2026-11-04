@@ -9,3 +9,7 @@ extension/media/codicons/
 backend/build-relocatable/
 extension/bin/
 extension/README.md
+.local/
+extension/LICENSE
+extension/LICENSES/
+extension/THIRD-PARTY-NOTICES.md

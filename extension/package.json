@@ -1,17 +1,41 @@
 {
   "name": "qt-designer-revamped",
   "displayName": "Qt Designer Revamped",
-  "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine.",
-  "version": "0.0.1",
-  "private": true,
-  "publisher": "local",
-  "license": "GPL-3.0-only",
+  "description": "Edit Qt .ui files in VS Code with the real Qt Designer form engine: layouts, signals and slots, live preview, git compare.",
+  "version": "0.1.0",
+  "publisher": "darleanow",
+  "license": "GPL-3.0-only WITH Qt-GPL-exception-1.0",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#2a1d7a",
+    "theme": "dark"
+  },
+  "categories": [
+    "Visual Previews",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "qt",
+    "designer",
+    "ui",
+    "forms",
+    "qt6",
+    "pyside",
+    "pyqt",
+    "cpp"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Darleanow/QtDesignerRevamped.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Darleanow/QtDesignerRevamped/issues"
+  },
+  "homepage": "https://github.com/Darleanow/QtDesignerRevamped#readme",
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": [
-    "Other"
-  ],
   "main": "./out/src/extension.js",
   "activationEvents": [],
   "contributes": {
@@ -75,7 +99,7 @@
     "test": "npm run build && node --test out/test/",
     "test:integration": "npm run build && node out/test-integration/run.js",
     "copy-assets": "node scripts/copy-assets.js",
-    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --skip-license --allow-missing-repository --target linux-x64 -o qt-designer-revamped-linux-x64.vsix"
+    "package": "npm run build && node --require ./scripts/file-polyfill.js node_modules/@vscode/vsce/vsce package --no-dependencies --target linux-x64 -o qt-designer-revamped-linux-x64.vsix"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
